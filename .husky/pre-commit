@@ -1,0 +1,30 @@
+#!/bin/sh
+
+printf "Starting: web pre-commit checks\n"
+
+cd web || exit
+
+npm run lint || exit 1
+npm run typecheck || exit 1
+
+printf "Done: web pre-commit checks\n"
+
+cd .. || exit
+
+printf "Starting: server pre-commit checks\n"
+
+cd server || exit
+
+go fmt ./...
+go build ./... || exit 1
+go test ./... || exit 1
+
+printf "Done: server pre-commit checks\n"
+
+cd .. || exit
+
+printf "Starting: mobile pre-commit checks\n"
+
+cd mobile || exit
+
+printf "Done: mobile pre-commit checks"
