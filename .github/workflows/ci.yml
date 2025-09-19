@@ -74,14 +74,10 @@ jobs:
   compose_verify:
     needs: build
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:27-dind
     steps:
       - uses: actions/checkout@v4
-      - name: Enable Docker CLI
-        run: |
-          echo "DOCKER_HOST=tcp://localhost:2375" >> $GITHUB_ENV
+      - name: Check docker
+        run: docker --version
 
       - name: Build compose services
         run: docker compose build
