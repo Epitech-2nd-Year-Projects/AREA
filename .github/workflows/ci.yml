@@ -1,0 +1,104 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  lint_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Server
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25.1" }
+      - name: Go deps, vet, test
+        working-directory: server
+        run: |
+          go mod download
+          go vet ./...
+          go test ./...
+
+      # Web
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - name: Web deps, typecheck, lint, test
+        working-directory: web
+        run: |
+          npm ci
+          npm run typecheck --if-present
+          npm run lint --if-present
+          npm test --if-present -- --ci
+
+      # TODO: Add mobile
+
+  build:
+    needs: lint_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build server binary and image
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25.1" }
+      - name: Build server
+        working-directory: server
+        run: |
+          go build -o bin/server ./cmd/server
+      - name: Docker build server
+        run: docker build -t local/server:ci ./server
+
+      # Build web app and image
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - name: Build web
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Docker build web
+        run: docker build -t local/web:ci ./web
+
+      # TODO: Build Flutter APK and upload artifact
+
+  compose_verify:
+    needs: build
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:27-dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Docker CLI
+        run: |
+          echo "DOCKER_HOST=tcp://localhost:2375" >> $GITHUB_ENV
+
+      - name: Build compose services
+        run: docker compose build
+
+      - name: Up services
+        run: docker compose up -d
+
+      # TODO: Wait and verify endpoints /about.json and /client.apk
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [compose_verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: client.apk, path: dist }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/client.apk
+          generate_release_notes: true
