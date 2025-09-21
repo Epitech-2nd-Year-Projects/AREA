@@ -37,5 +37,12 @@
     "termsOfService": "Terms of Service",
     "and": "and",
     "privacyPolicy": "Privacy Policy"
+  },
+  "ExplorePage": {
+    "title": "Explore Services",
+    "description": "Save time and get more done",
+    "viewService": "View service",
+    "actions": "actions",
+    "reactions": "reactions"
   }
 }
