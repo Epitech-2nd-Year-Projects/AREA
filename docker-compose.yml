@@ -7,13 +7,22 @@ services:
   #TODO: Add a client_mobile
 
   client_web:
-    build: ./web
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+        API_PROXY_TARGET: ${API_PROXY_TARGET:-http://server:8080/api/v1}
+        CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:8081}
     depends_on:
       # -client_mobile
       - server
     ports: ["8081:8081"]
     volumes:
       - apkshare:/app/public
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://server:8080/api/v1}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:8081}
 
 volumes:
   apkshare:
