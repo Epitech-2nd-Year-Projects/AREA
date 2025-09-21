@@ -4,6 +4,7 @@ printf "Starting: web pre-commit checks\n"
 
 cd web || exit
 
+npx lint-staged || exit 1
 npm run lint || exit 1
 npm run typecheck || exit 1
 
