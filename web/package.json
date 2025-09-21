@@ -16,6 +16,8 @@
     "*.{js,jsx,ts,tsx,css,scss,md,json}": "prettier --write"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-query": "^5.89.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -1,5 +1,41 @@
 {
   "HomePage": {
     "title": "Hello world!"
+  },
+  "LoginPage": {
+    "welcomeBack": "Welcome back",
+    "loginToAccount": "Login to your AREA account",
+    "email": "Email",
+    "password": "Password",
+    "forgotYourPassword": "Forgot your password?",
+    "login": "Login",
+    "orContinueWith": "Or continue with",
+    "loginWithApple": "Login with Apple",
+    "loginWithGoogle": "Login with Google",
+    "loginWithMeta": "Login with Meta",
+    "dontHaveAnAccount": "Don't have an account? ",
+    "signUp": "Sign up",
+    "byClickingContinueYouAgreeToOur": "By clicking continue, you agree to our",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy"
+  },
+  "RegisterPage": {
+    "welcome": "Welcome",
+    "createAccountToAccess": "Create an account to access AREA",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "register": "Register",
+    "orRegisterWith": "Or register with",
+    "registerWithApple": "Register with Apple",
+    "registerWithGoogle": "Register with Google",
+    "registerWithMeta": "Register with Meta",
+    "alreadyHaveAnAccount": "Already have an account? ",
+    "signIn": "Sign in",
+    "byClickingContinueYouAgreeToOur": "By clicking continue, you agree to our",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy"
   }
 }
