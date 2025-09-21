@@ -34,6 +34,10 @@ jobs:
         with: { node-version: "20", cache: "npm" }
       - name: Web deps, typecheck, lint, test
         working-directory: web
+        env:
+          NEXT_PUBLIC_API_URL: /api/v1
+          API_PROXY_TARGET: http://localhost:8080/api/v1
+          CORS_ALLOWED_ORIGIN: http://localhost:8081
         run: |
           npm ci
           npm run format --if-present
@@ -64,11 +68,20 @@ jobs:
         with: { node-version: "20", cache: "npm" }
       - name: Build web
         working-directory: web
+        env:
+          NEXT_PUBLIC_API_URL: /api/v1
+          API_PROXY_TARGET: http://localhost:8080/api/v1
+          CORS_ALLOWED_ORIGIN: http://localhost:8081
         run: |
           npm ci
           npm run build
       - name: Docker build web
-        run: docker build -t local/web:ci ./web
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=/api/v1 \
+            --build-arg API_PROXY_TARGET=http://localhost:8080/api/v1 \
+            --build-arg CORS_ALLOWED_ORIGIN=http://localhost:8081 \
+            -t local/web:ci ./web
 
       # TODO: Build Flutter APK and upload artifact
 
