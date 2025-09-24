@@ -1,0 +1,10 @@
+CREATE TYPE "user_status" AS ENUM ('pending','active','suspended','deleted');
+CREATE TYPE "component_kind" AS ENUM ('action','reaction');
+CREATE TYPE "auth_kind" AS ENUM ('none','oauth2','apikey');
+CREATE TYPE "subscription_status" AS ENUM ('active','revoked','expired','needs_consent');
+CREATE TYPE "area_status" AS ENUM ('enabled','disabled','archived');
+CREATE TYPE "source_mode" AS ENUM ('webhook','polling','schedule');
+CREATE TYPE "trigger_status" AS ENUM ('pending','matched','filtered','failed');
+CREATE TYPE "job_status" AS ENUM ('queued','running','succeeded','failed','canceled','retrying');
+CREATE TYPE "dedup_status" AS ENUM ('new','duplicate','ignored');
+CREATE TYPE "link_role" AS ENUM ('action','reaction');
