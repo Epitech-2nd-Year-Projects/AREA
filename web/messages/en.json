@@ -41,7 +41,9 @@
   "ExplorePage": {
     "title": "Explore Services",
     "description": "Save time and get more done",
-    "viewService": "View service",
+    "getStarted": "Get started",
+    "connect": "Connect",
+    "linked": "Already linked",
     "actions": "actions",
     "reactions": "reactions"
   }

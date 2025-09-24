@@ -1,5 +1,7 @@
 'use client'
 import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import {
   Card,
@@ -20,11 +22,31 @@ type ServiceCardProps = {
     actions: number
     reactions: number
   }
+  authenticated: boolean
+  linked: boolean
 }
 
-export function ServiceCard({ service }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  authenticated,
+  linked
+}: ServiceCardProps) {
   const t = useTranslations('ExplorePage')
   const { theme } = useTheme()
+  const router = useRouter()
+  const buttonState = linked
+    ? { label: t('linked'), variant: 'secondary' as const, disabled: true }
+    : authenticated
+      ? { label: t('connect'), variant: 'default' as const, disabled: false }
+      : { label: t('getStarted'), variant: 'outline' as const, disabled: false }
+  const handleButtonClick = linked
+    ? undefined
+    : authenticated
+      ? () => {
+          // TODO: Redirect to back-end /oauth/:provider/start
+        }
+      : () => router.push('/register')
+
   return (
     <Card className="h-full w-full gap-0 border-none p-0 shadow-none">
       <MagicCard
@@ -47,7 +69,14 @@ export function ServiceCard({ service }: ServiceCardProps) {
           </div>
         </CardContent>
         <CardFooter className="mt-auto p-4">
-          <Button className="w-full">{t('viewService')}</Button>
+          <Button
+            className={cn('w-full', !linked && 'cursor-pointer')}
+            variant={buttonState.variant}
+            disabled={buttonState.disabled}
+            onClick={handleButtonClick}
+          >
+            {buttonState.label}
+          </Button>
         </CardFooter>
       </MagicCard>
     </Card>
