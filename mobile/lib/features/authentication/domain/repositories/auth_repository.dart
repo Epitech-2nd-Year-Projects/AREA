@@ -9,6 +9,7 @@ abstract class AuthRepository {
   Future<User> login(Email email, Password password);
   Future<User> register(Email email, Password password);
   Future<void> logout();
+  Future<User> getCurrentUser();
 
   Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider);
   Future<AuthSession> completeOAuthLogin(OAuthProvider provider,

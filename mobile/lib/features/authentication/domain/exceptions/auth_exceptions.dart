@@ -29,3 +29,8 @@ class UserAlreadyExistsException extends AuthException {
 class LogoutFailedException extends AuthException {
   LogoutFailedException() : super("Logout failed.");
 }
+
+class UserNotAuthenticatedException extends AuthException {
+  UserNotAuthenticatedException()
+      : super("No user is currently authenticated.");
+}
