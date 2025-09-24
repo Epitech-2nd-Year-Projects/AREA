@@ -1,0 +1,108 @@
+app:
+  name: AREA Server
+  environment: development
+  baseURL: http://localhost:8080
+
+server:
+  http:
+    host: 0.0.0.0
+    port: 8080
+    readTimeout: 15s
+    writeTimeout: 15s
+    idleTimeout: 60s
+    cors:
+      allowedOrigins:
+        - http://localhost:3000
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowedHeaders:
+        - Authorization
+        - Content-Type
+      allowCredentials: true
+  telemetry:
+    tracing:
+      enabled: true
+      exporter: otlp
+      endpoint: http://localhost:4317
+    metrics:
+      enabled: true
+      exporter: prometheus
+      endpoint: :9464
+    samplingRatio: 0.2
+
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  name: area
+  sslMode: disable
+  maxOpenConns: 25
+  maxIdleConns: 25
+  connMaxLifetime: 30m
+
+logging:
+  level: info
+  format: json
+  includeCaller: false
+  defaultFields:
+    service: area-server
+
+queue:
+  driver: redis
+  redis:
+    addr: localhost:6379
+    db: 0
+    consumerGroup: area-workers
+    stream: area-jobs
+
+notifier:
+  webhook:
+    timeout: 10s
+    maxRetries: 5
+    retryBackoff: 2s
+  mailer:
+    provider: sendgrid
+    fromEmail: noreply@area.local
+    sandboxMode: true
+
+secrets:
+  provider: dotenv
+  path: .env
+
+oauth:
+  allowedProviders:
+    - google
+    - github
+  providers:
+    google:
+      clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
+      clientSecretEnv: GOOGLE_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:8080/oauth/google/callback
+      scopes:
+        - email
+        - profile
+    github:
+      clientIDEnv: GITHUB_OAUTH_CLIENT_ID
+      clientSecretEnv: GITHUB_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:8080/oauth/github/callback
+      scopes:
+        - read:user
+        - user:email
+
+security:
+  jwt:
+    issuer: area-api
+    accessTokenTTL: 15m
+    refreshTokenTTL: 720h
+  password:
+    minLength: 12
+    pepperEnv: PASSWORD_PEPPER
+
+servicesCatalog:
+  refreshInterval: 5m
+  bootstrapFile: config/services.yaml
+
