@@ -2,7 +2,7 @@
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Button } from './ui/button'
+import { useTranslations } from 'next-intl'
 import {
   Card,
   CardContent,
@@ -10,10 +10,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle
-} from './ui/card'
-import { MagicCard } from './ui/magic-card'
-import { useTranslations } from 'next-intl'
-import { Badge } from './ui/badge'
+} from '../ui/card'
+import { MagicCard } from '../ui/magic-card'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
 type ServiceCardProps = {
   service: {
@@ -32,7 +32,7 @@ export function ServiceCard({
   authenticated,
   linked
 }: ServiceCardProps) {
-  const t = useTranslations('ExplorePage')
+  const t = useTranslations('ServiceCard')
   const { theme } = useTheme()
   const router = useRouter()
   const buttonState = linked

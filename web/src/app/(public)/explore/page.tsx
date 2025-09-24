@@ -1,7 +1,7 @@
 'use client'
 import { useTranslations } from 'next-intl'
 import { mockServices, mockUserLinkedServices } from '@/data/mocks'
-import { ServiceCardList } from '@/components/service-card-list'
+import { ServiceCardList } from '@/components/services/service-card-list'
 
 export default function ExplorePage() {
   const t = useTranslations('ExplorePage')
