@@ -40,12 +40,18 @@
   },
   "ExplorePage": {
     "title": "Explore Services",
-    "description": "Save time and get more done",
+    "description": "Save time and get more done"
+  },
+  "ServiceCard": {
     "getStarted": "Get started",
     "connect": "Connect",
     "linked": "Already linked",
     "actions": "actions",
     "reactions": "reactions"
+  },
+  "AreaCard": {
+    "editArea": "Edit Area",
+    "deleteArea": "Delete Area"
   },
   "Sidebar": {
     "admin": "Admin",
@@ -60,5 +66,37 @@
     "notifications": "Notifications",
     "backToHome": "Back to home",
     "logout": "Logout"
+  },
+  "DashboardPage": {
+    "searchServices": "Search services..."
+  },
+  "LinksPage": {
+    "searchAreas": "Search areas..."
+  },
+  "CreateAreaModal": {
+    "createNewArea": "Create a new AREA",
+    "title": "Create an AREA",
+    "subtitle": "Select one action, add one or more reactions, then describe your AREA.",
+    "actionLabel": "Action",
+    "actionPlaceholder": "Select an action",
+    "actionsSearchPlaceholder": "Search actions by service...",
+    "actionsEmpty": "No actions found.",
+    "actionAriaLabel": "Select an action for this AREA",
+    "configureAction": "Configure selected action",
+    "reactionsLabel": "Reactions",
+    "reactionsHelper": "You can add as many reactions as you need.",
+    "reactionAriaLabel": "Reaction",
+    "reactionPlaceholder": "Select a reaction",
+    "reactionsSearchPlaceholder": "Search reactions by service...",
+    "reactionsEmpty": "No reactions found.",
+    "configureReaction": "Configure selected reaction",
+    "removeReaction": "Remove reaction",
+    "addReaction": "Add another reaction",
+    "areaNameLabel": "AREA name",
+    "areaNamePlaceholder": "Give your AREA a descriptive name",
+    "areaDescriptionLabel": "AREA description",
+    "areaDescriptionPlaceholder": "Describe what your AREA will do",
+    "cancel": "Cancel",
+    "submit": "Create AREA"
   }
 }
