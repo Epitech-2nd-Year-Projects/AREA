@@ -1,0 +1,10 @@
+DROP TYPE IF EXISTS "link_role";
+DROP TYPE IF EXISTS "dedup_status";
+DROP TYPE IF EXISTS "job_status";
+DROP TYPE IF EXISTS "trigger_status";
+DROP TYPE IF EXISTS "source_mode";
+DROP TYPE IF EXISTS "area_status";
+DROP TYPE IF EXISTS "subscription_status";
+DROP TYPE IF EXISTS "auth_kind";
+DROP TYPE IF EXISTS "component_kind";
+DROP TYPE IF EXISTS "user_status";
