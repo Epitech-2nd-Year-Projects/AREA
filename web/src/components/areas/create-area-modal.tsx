@@ -226,11 +226,6 @@ export default function CreateAreaModal() {
                 configureLabel={t('configureAction')}
                 onChange={setActionId}
               />
-              {selectedAction?.description ? (
-                <p className="text-sm text-muted-foreground">
-                  {selectedAction.description}
-                </p>
-              ) : null}
             </div>
 
             <div className="space-y-3">
@@ -243,8 +238,6 @@ export default function CreateAreaModal() {
 
               <div className="space-y-4">
                 {reactionFields.map((field, index) => {
-                  const selectedReaction = selectedReactions[index]
-
                   return (
                     <div key={field.id} className="space-y-2">
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -274,11 +267,6 @@ export default function CreateAreaModal() {
                           </Button>
                         )}
                       </div>
-                      {selectedReaction?.description ? (
-                        <p className="text-sm text-muted-foreground">
-                          {selectedReaction.description}
-                        </p>
-                      ) : null}
                     </div>
                   )
                 })}
