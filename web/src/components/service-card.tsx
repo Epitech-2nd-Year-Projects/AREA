@@ -18,6 +18,7 @@ import { Badge } from './ui/badge'
 type ServiceCardProps = {
   service: {
     name: string
+    displayName: string
     description: string
     actions: number
     reactions: number
@@ -55,7 +56,7 @@ export function ServiceCard({
         innerClassName="flex h-full w-full flex-col"
       >
         <CardHeader className="border-b border-border p-4 [.border-b]:pb-4">
-          <CardTitle>{service.name}</CardTitle>
+          <CardTitle>{service.displayName}</CardTitle>
           <CardDescription>{service.description}</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 p-4">
