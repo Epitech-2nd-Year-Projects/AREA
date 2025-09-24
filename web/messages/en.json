@@ -46,5 +46,19 @@
     "linked": "Already linked",
     "actions": "actions",
     "reactions": "reactions"
+  },
+  "Sidebar": {
+    "admin": "Admin",
+    "adminLogs": "Logs",
+    "adminUsers": "Users management",
+    "myArea": "My area",
+    "services": "Services",
+    "links": "Links"
+  },
+  "SidebarUserNavigation": {
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "backToHome": "Back to home",
+    "logout": "Logout"
   }
 }
