@@ -3,6 +3,7 @@ import { Action } from '@/lib/api/contracts/actions'
 import { Area } from '@/lib/api/contracts/areas'
 import { Reaction } from '@/lib/api/contracts/reactions'
 import { Service } from '@/lib/api/contracts/services'
+import { User, UserRole } from '@/lib/api/contracts/users'
 
 export const mockUserLinkedServices: string[] = ['github', 'discord']
 
@@ -360,4 +361,12 @@ export const mockAbout: About = {
     currentTime: Date.now(),
     services: mockServices
   }
+}
+
+export const mockUser: User = {
+  id: '1',
+  email: 'test@test.com',
+  imageUrl: 'https://example.com/image.png',
+  role: UserRole.Admin,
+  connectedServices: mockUserLinkedServices
 }
