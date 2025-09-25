@@ -1,4 +1,4 @@
-import 'package:area/features/authentication/domain/exceptions/auth_exceptions.dart';
+import 'package:area/features/auth/domain/exceptions/auth_exceptions.dart';
 
 class Email {
     final String value;
