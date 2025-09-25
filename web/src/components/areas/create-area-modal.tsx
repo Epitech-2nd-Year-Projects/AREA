@@ -141,10 +141,13 @@ export default function CreateAreaModal() {
   const [areaName, setAreaName] = useState('')
   const [areaDescription, setAreaDescription] = useState('')
 
+  // TODO: Will be useful once the backend endpoint is available.
+  /*
   const selectedAction = actionId ? actionsById[actionId] : undefined
   const selectedReactions = reactionFields.map((field) =>
     field.reactionId ? reactionsById[field.reactionId] : undefined
   )
+  */
 
   const resetForm = () => {
     setActionId('')
