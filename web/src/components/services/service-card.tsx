@@ -3,6 +3,7 @@ import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
+import { Play, Repeat } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -10,19 +11,21 @@ import {
   CardFooter,
   CardHeader,
   CardTitle
-} from '../ui/card'
-import { MagicCard } from '../ui/magic-card'
-import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
+} from '@/components/ui/card'
+import { MagicCard } from '@/components/ui/magic-card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/components/ui/accordion'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import type { Service } from '@/lib/api/contracts/services'
 
 type ServiceCardProps = {
-  service: {
-    name: string
-    displayName: string
-    description: string
-    actions: number
-    reactions: number
-  }
+  service: Service
   authenticated: boolean
   linked: boolean
 }
@@ -49,25 +52,93 @@ export function ServiceCard({
       : () => router.push('/register')
 
   return (
-    <Card className="h-full w-full gap-0 border-none p-0 shadow-none">
+    <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
       <MagicCard
         gradientColor={theme === 'dark' ? '#262626' : '#D9D9D955'}
         className="h-full"
-        innerClassName="flex h-full w-full flex-col"
+        innerClassName="flex h-full w-full flex-col overflow-hidden"
       >
         <CardHeader className="border-b border-border p-4 [.border-b]:pb-4">
           <CardTitle>{service.displayName}</CardTitle>
           <CardDescription>{service.description}</CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 p-4">
+        <CardContent className="flex flex-1 flex-col gap-4 p-4">
           <div className="flex flex-wrap gap-2">
-            <Badge className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide">
-              {service.actions} {t('actions')}
+            <Badge variant="secondary" className="uppercase">
+              {service.actions.length} {t('actions')}
             </Badge>
-            <Badge className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide">
-              {service.reactions} {t('reactions')}
+            <Badge variant="secondary" className="uppercase">
+              {service.reactions.length} {t('reactions')}
             </Badge>
           </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="details">
+              <AccordionTrigger className="text-left text-sm font-semibold uppercase tracking-wide">
+                {t('viewCapabilities')}
+              </AccordionTrigger>
+              <AccordionContent>
+                <ScrollArea className="h-[14rem] w-full overflow-hidden rounded-lg border bg-background/40 sm:h-[16rem]">
+                  <div className="flex flex-col gap-3 p-4 pr-6">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="flex flex-col gap-3 rounded-lg border bg-background/60 p-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                            <Play className="h-4 w-4" aria-hidden />
+                            {t('actions')}
+                          </div>
+                          <Badge variant="outline">
+                            {service.actions.length}
+                          </Badge>
+                        </div>
+                        <ul className="space-y-3 text-left">
+                          {service.actions.map((action) => (
+                            <li
+                              key={action.id}
+                              className="rounded-md border border-dashed bg-background/80 p-3"
+                            >
+                              <p className="text-sm font-medium">
+                                {action.name}
+                              </p>
+                              <p className="text-muted-foreground text-xs leading-snug">
+                                {action.description}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="flex flex-col gap-3 rounded-lg border bg-background/60 p-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                            <Repeat className="h-4 w-4" aria-hidden />
+                            {t('reactions')}
+                          </div>
+                          <Badge variant="outline">
+                            {service.reactions.length}
+                          </Badge>
+                        </div>
+                        <ul className="space-y-3 text-left">
+                          {service.reactions.map((reaction) => (
+                            <li
+                              key={reaction.id}
+                              className="rounded-md border border-dashed bg-background/80 p-3"
+                            >
+                              <p className="text-sm font-medium">
+                                {reaction.name}
+                              </p>
+                              <p className="text-muted-foreground text-xs leading-snug">
+                                {reaction.description}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
         <CardFooter className="mt-auto p-4">
           <Button

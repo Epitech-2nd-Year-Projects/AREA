@@ -13,7 +13,7 @@ export function ServiceCardList({
   isUserAuthenticated
 }: ServiceCardListProps) {
   return (
-    <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid items-start gap-6 sm:grid-cols-1 xl:grid-cols-2">
       {services.map((service) => {
         return (
           <ServiceCard
