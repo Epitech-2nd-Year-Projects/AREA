@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/design_system/app_colors.dart';
 import 'core/design_system/app_typography.dart';
+import 'core/navigation/app_navigation.dart';
 import 'features/auth/presentation/router/auth_router.dart';
 import 'core/di/injection.dart';
 
@@ -147,6 +148,7 @@ class MyApp extends StatelessWidget {
 
   GoRouter _buildRouter() {
     return GoRouter(
+      navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
       routes: AuthRouter.routes,
     );
