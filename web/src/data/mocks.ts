@@ -1,48 +1,8 @@
+import { About } from '@/lib/api/contracts/about'
 import { Action } from '@/lib/api/contracts/actions'
 import { Area } from '@/lib/api/contracts/areas'
 import { Reaction } from '@/lib/api/contracts/reactions'
 import { Service } from '@/lib/api/contracts/services'
-
-export const mockServices: Service[] = [
-  {
-    name: 'github',
-    displayName: 'GitHub',
-    description: 'GitHub is a web-based Git repository hosting service.',
-    actions: 42,
-    reactions: 68
-  },
-  {
-    name: 'discord',
-    displayName: 'Discord',
-    description:
-      'Discord is a free, open-source, cross-platform instant messaging and voice-over-IP service.',
-    actions: 28,
-    reactions: 15
-  },
-  {
-    name: 'onedrive',
-    displayName: 'OneDrive',
-    description:
-      'OneDrive is a file hosting service offered by Microsoft that allows users to store, share, and collaborate on files from any device.',
-    actions: 12,
-    reactions: 60
-  },
-  {
-    name: 'slack',
-    displayName: 'Slack',
-    description:
-      'Slack is a cloud-based set of team collaboration tools and services that allows teams to communicate and collaborate more effectively.',
-    actions: 9,
-    reactions: 25
-  },
-  {
-    name: 'riot',
-    displayName: 'Riot',
-    description: 'Riot Games is a leading global gaming company.',
-    actions: 42,
-    reactions: 68
-  }
-]
 
 export const mockUserLinkedServices: string[] = ['github', 'discord']
 
@@ -54,9 +14,33 @@ export const mockActions: Action[] = [
     service_name: 'github'
   },
   {
+    id: '8',
+    name: 'A pull request is created',
+    description: 'A pull request is created in a repository',
+    service_name: 'github'
+  },
+  {
+    id: '9',
+    name: 'A commit is pushed',
+    description: 'A commit is pushed to a branch',
+    service_name: 'github'
+  },
+  {
     id: '2',
     name: 'A message is sent',
     description: 'A message is sent in a channel',
+    service_name: 'discord'
+  },
+  {
+    id: '10',
+    name: 'A user joins a server',
+    description: 'A new user joins a Discord server',
+    service_name: 'discord'
+  },
+  {
+    id: '11',
+    name: 'A reaction is added',
+    description: 'A user reacts to a message',
     service_name: 'discord'
   },
   {
@@ -66,9 +50,33 @@ export const mockActions: Action[] = [
     service_name: 'onedrive'
   },
   {
+    id: '12',
+    name: 'A file is deleted',
+    description: 'A file is deleted',
+    service_name: 'onedrive'
+  },
+  {
+    id: '13',
+    name: 'A folder is shared',
+    description: 'A folder is shared with another user',
+    service_name: 'onedrive'
+  },
+  {
     id: '4',
     name: 'A message is posted',
     description: 'A message is posted in a channel',
+    service_name: 'slack'
+  },
+  {
+    id: '14',
+    name: 'A user is mentioned',
+    description: 'A user is mentioned in a message',
+    service_name: 'slack'
+  },
+  {
+    id: '15',
+    name: 'A file is shared',
+    description: 'A file is shared in a channel',
     service_name: 'slack'
   },
   {
@@ -76,6 +84,54 @@ export const mockActions: Action[] = [
     name: 'A game is played',
     description: 'A game is played',
     service_name: 'riot'
+  },
+  {
+    id: '16',
+    name: 'A match is won',
+    description: 'A player wins a match',
+    service_name: 'riot'
+  },
+  {
+    id: '17',
+    name: 'A rank is updated',
+    description: 'A player’s rank changes',
+    service_name: 'riot'
+  },
+  {
+    id: '6',
+    name: 'A page is created',
+    description: 'A new page is created in a workspace',
+    service_name: 'notion'
+  },
+  {
+    id: '18',
+    name: 'A page is updated',
+    description: 'A page is updated in a workspace',
+    service_name: 'notion'
+  },
+  {
+    id: '19',
+    name: 'A database entry is created',
+    description: 'A new entry is created in a database',
+    service_name: 'notion'
+  },
+  {
+    id: '7',
+    name: 'An email is received',
+    description: 'An email is received in the inbox',
+    service_name: 'gmail'
+  },
+  {
+    id: '20',
+    name: 'An email is starred',
+    description: 'An email is marked with a star',
+    service_name: 'gmail'
+  },
+  {
+    id: '21',
+    name: 'An email is sent',
+    description: 'An email is sent from the account',
+    service_name: 'gmail'
   }
 ]
 
@@ -87,9 +143,33 @@ export const mockReactions: Reaction[] = [
     service_name: 'github'
   },
   {
+    id: '22',
+    name: 'Create a comment',
+    description: 'Create a comment on an issue or pull request',
+    service_name: 'github'
+  },
+  {
+    id: '23',
+    name: 'Close an issue',
+    description: 'Close an open issue',
+    service_name: 'github'
+  },
+  {
     id: '2',
     name: 'Send a message',
     description: 'Send a message in a channel',
+    service_name: 'discord'
+  },
+  {
+    id: '24',
+    name: 'Kick a user',
+    description: 'Remove a user from the server',
+    service_name: 'discord'
+  },
+  {
+    id: '25',
+    name: 'Add a role',
+    description: 'Assign a role to a user',
     service_name: 'discord'
   },
   {
@@ -99,9 +179,33 @@ export const mockReactions: Reaction[] = [
     service_name: 'onedrive'
   },
   {
+    id: '26',
+    name: 'Move a file',
+    description: 'Move a file to another folder',
+    service_name: 'onedrive'
+  },
+  {
+    id: '27',
+    name: 'Rename a file',
+    description: 'Rename a file in storage',
+    service_name: 'onedrive'
+  },
+  {
     id: '4',
     name: 'Post a message',
     description: 'Post a message in a channel',
+    service_name: 'slack'
+  },
+  {
+    id: '28',
+    name: 'Send a direct message',
+    description: 'Send a private message to a user',
+    service_name: 'slack'
+  },
+  {
+    id: '29',
+    name: 'Add a reaction',
+    description: 'Add a reaction to a message',
     service_name: 'slack'
   },
   {
@@ -109,6 +213,108 @@ export const mockReactions: Reaction[] = [
     name: 'Play a game',
     description: 'Play a game',
     service_name: 'riot'
+  },
+  {
+    id: '30',
+    name: 'Notify match result',
+    description: 'Send notification with match result',
+    service_name: 'riot'
+  },
+  {
+    id: '31',
+    name: 'Reward points',
+    description: 'Reward points to a player',
+    service_name: 'riot'
+  },
+  {
+    id: '6',
+    name: 'Create a database entry',
+    description: 'Add a new entry to a database',
+    service_name: 'notion'
+  },
+  {
+    id: '32',
+    name: 'Update a page',
+    description: 'Update the content of a page',
+    service_name: 'notion'
+  },
+  {
+    id: '33',
+    name: 'Archive a page',
+    description: 'Archive an existing page',
+    service_name: 'notion'
+  },
+  {
+    id: '7',
+    name: 'Send an email',
+    description: 'Send an email to a recipient',
+    service_name: 'gmail'
+  },
+  {
+    id: '34',
+    name: 'Forward an email',
+    description: 'Forward an email to another recipient',
+    service_name: 'gmail'
+  },
+  {
+    id: '35',
+    name: 'Mark as read',
+    description: 'Mark an email as read',
+    service_name: 'gmail'
+  }
+]
+
+export const mockServices: Service[] = [
+  {
+    name: 'github',
+    displayName: 'GitHub',
+    description: 'GitHub is a web-based Git repository hosting service.',
+    actions: [mockActions[0], mockActions[7], mockActions[8]],
+    reactions: [mockReactions[0], mockReactions[1], mockReactions[2]]
+  },
+  {
+    name: 'discord',
+    displayName: 'Discord',
+    description:
+      'Discord is a cross-platform instant messaging and voice-over-IP service.',
+    actions: [mockActions[1], mockActions[9], mockActions[10]],
+    reactions: [mockReactions[3], mockReactions[4], mockReactions[5]]
+  },
+  {
+    name: 'onedrive',
+    displayName: 'OneDrive',
+    description: 'OneDrive is a file hosting service by Microsoft.',
+    actions: [mockActions[2], mockActions[11], mockActions[12]],
+    reactions: [mockReactions[6], mockReactions[7], mockReactions[8]]
+  },
+  {
+    name: 'slack',
+    displayName: 'Slack',
+    description: 'Slack is a team collaboration tool.',
+    actions: [mockActions[3], mockActions[13], mockActions[14]],
+    reactions: [mockReactions[9], mockReactions[10], mockReactions[11]]
+  },
+  {
+    name: 'riot',
+    displayName: 'Riot',
+    description: 'Riot Games is a global gaming company.',
+    actions: [mockActions[4], mockActions[15], mockActions[16]],
+    reactions: [mockReactions[12], mockReactions[13], mockReactions[14]]
+  },
+  {
+    name: 'notion',
+    displayName: 'Notion',
+    description:
+      'Notion is an all-in-one workspace for notes, tasks, and databases.',
+    actions: [mockActions[5], mockActions[17], mockActions[18]],
+    reactions: [mockReactions[15], mockReactions[16], mockReactions[17]]
+  },
+  {
+    name: 'gmail',
+    displayName: 'Gmail',
+    description: 'Gmail is a free email service developed by Google.',
+    actions: [mockActions[6], mockActions[19], mockActions[20]],
+    reactions: [mockReactions[18], mockReactions[19], mockReactions[20]]
   }
 ]
 
@@ -145,3 +351,13 @@ export const mockUserLinkedAreas: Area[] = [
     reactions: [mockReactions[1], mockReactions[3]]
   }
 ]
+
+export const mockAbout: About = {
+  client: {
+    host: 'https://are.na'
+  },
+  server: {
+    currentTime: Date.now(),
+    services: mockServices
+  }
+}
