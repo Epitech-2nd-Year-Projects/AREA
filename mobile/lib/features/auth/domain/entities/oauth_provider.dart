@@ -1,6 +1,5 @@
 enum OAuthProvider {
   google,
+  apple,
   facebook,
-  x,
-  github,
 }
