@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/navigation/app_navigation.dart';
+import '../../../../core/navigation/main_scaffold.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_state.dart';
 import '../pages/login_page.dart';
@@ -16,7 +18,7 @@ class AuthRouter {
         return BlocProvider(
           create: (context) => AuthBloc(sl()),
           child: AuthWrapperPage(
-            authenticatedChild: child,
+              authenticatedChild: NavigationShell(child: child),
           ),
         );
       },
@@ -81,9 +83,8 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: const Center(child: Text('Dashboard Page')),
+    return const  Center(
+      child: Text('Dashboard Page 🚀'),
     );
   }
 }
@@ -93,9 +94,8 @@ class ServicesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Services')),
-      body: const Center(child: Text('Services Page')),
+    return const Center(
+      child: Text('Services Page 🔌'),
     );
   }
 }
@@ -105,9 +105,8 @@ class AreasPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Areas')),
-      body: const Center(child: Text('Areas Page')),
+    return const Center(
+      child: Text('Areas Page ⚡'),
     );
   }
 }
@@ -117,9 +116,8 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: const Center(child: Text('Profile Page')),
+    return const Center(
+      child: Text('Profile Page 👤'),
     );
   }
 }
