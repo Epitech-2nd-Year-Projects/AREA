@@ -28,16 +28,37 @@ type ServiceCardProps = {
   service: Service
   authenticated: boolean
   linked: boolean
+  isMinimal?: boolean
 }
 
 export function ServiceCard({
   service,
   authenticated,
-  linked
+  linked,
+  isMinimal = false
 }: ServiceCardProps) {
   const t = useTranslations('ServiceCard')
   const { theme } = useTheme()
   const router = useRouter()
+  const gradientColor = theme === 'dark' ? '#262626' : '#D9D9D955'
+
+  if (isMinimal) {
+    return (
+      <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
+        <MagicCard
+          gradientColor={gradientColor}
+          className="h-full"
+          innerClassName="flex h-full w-full flex-col overflow-hidden"
+        >
+          <CardHeader className="border-border p-4 [.border-b]:pb-4">
+            <CardTitle>{service.displayName}</CardTitle>
+            <CardDescription>{service.description}</CardDescription>
+          </CardHeader>
+        </MagicCard>
+      </Card>
+    )
+  }
+
   const buttonState = linked
     ? { label: t('linked'), variant: 'secondary' as const, disabled: true }
     : authenticated
@@ -54,7 +75,7 @@ export function ServiceCard({
   return (
     <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
       <MagicCard
-        gradientColor={theme === 'dark' ? '#262626' : '#D9D9D955'}
+        gradientColor={gradientColor}
         className="h-full"
         innerClassName="flex h-full w-full flex-col overflow-hidden"
       >

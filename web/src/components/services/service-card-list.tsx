@@ -5,12 +5,14 @@ type ServiceCardListProps = {
   services: Service[]
   userLinkedServices: string[]
   isUserAuthenticated: boolean
+  isMinimal?: boolean
 }
 
 export function ServiceCardList({
   services,
   userLinkedServices,
-  isUserAuthenticated
+  isUserAuthenticated,
+  isMinimal = false
 }: ServiceCardListProps) {
   return (
     <div className="grid items-start gap-6 sm:grid-cols-1 xl:grid-cols-2">
@@ -21,6 +23,7 @@ export function ServiceCardList({
             service={service}
             authenticated={isUserAuthenticated}
             linked={userLinkedServices.includes(service.name)}
+            isMinimal={isMinimal}
           />
         )
       })}
