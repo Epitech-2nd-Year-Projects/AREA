@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var defaultConfig = Config{
+var _defaultConfig = Config{
 	App: AppConfig{
 		Name:        "AREA",
 		Environment: "development",
@@ -45,33 +45,33 @@ var defaultConfig = Config{
 }
 
 func applyDefaults(v *viper.Viper) {
-	v.SetDefault("app.name", defaultConfig.App.Name)
-	v.SetDefault("app.environment", defaultConfig.App.Environment)
-	v.SetDefault("app.version", defaultConfig.App.Version)
+	v.SetDefault("app.name", _defaultConfig.App.Name)
+	v.SetDefault("app.environment", _defaultConfig.App.Environment)
+	v.SetDefault("app.version", _defaultConfig.App.Version)
 
-	v.SetDefault("http.host", defaultConfig.HTTP.Host)
-	v.SetDefault("http.port", defaultConfig.HTTP.Port)
-	v.SetDefault("http.read_timeout", defaultConfig.HTTP.ReadTimeout.String())
-	v.SetDefault("http.write_timeout", defaultConfig.HTTP.WriteTimeout.String())
-	v.SetDefault("http.idle_timeout", defaultConfig.HTTP.IdleTimeout.String())
-	v.SetDefault("http.allowed_origins", defaultConfig.HTTP.AllowedOrigins)
-	v.SetDefault("http.public_base_url", defaultConfig.HTTP.PublicBaseURL)
+	v.SetDefault("http.host", _defaultConfig.HTTP.Host)
+	v.SetDefault("http.port", _defaultConfig.HTTP.Port)
+	v.SetDefault("http.read_timeout", _defaultConfig.HTTP.ReadTimeout.String())
+	v.SetDefault("http.write_timeout", _defaultConfig.HTTP.WriteTimeout.String())
+	v.SetDefault("http.idle_timeout", _defaultConfig.HTTP.IdleTimeout.String())
+	v.SetDefault("http.allowed_origins", _defaultConfig.HTTP.AllowedOrigins)
+	v.SetDefault("http.public_base_url", _defaultConfig.HTTP.PublicBaseURL)
 
-	v.SetDefault("database.dsn", defaultConfig.Database.DSN)
-	v.SetDefault("database.max_open_conns", defaultConfig.Database.MaxOpenConns)
-	v.SetDefault("database.max_idle_conns", defaultConfig.Database.MaxIdleConns)
-	v.SetDefault("database.conn_max_lifetime", defaultConfig.Database.ConnMaxLifetime.String())
-	v.SetDefault("database.conn_max_idle_time", defaultConfig.Database.ConnMaxIdleTime.String())
-	v.SetDefault("database.migrations_path", defaultConfig.Database.MigrationsPath)
+	v.SetDefault("database.dsn", _defaultConfig.Database.DSN)
+	v.SetDefault("database.max_open_conns", _defaultConfig.Database.MaxOpenConns)
+	v.SetDefault("database.max_idle_conns", _defaultConfig.Database.MaxIdleConns)
+	v.SetDefault("database.conn_max_lifetime", _defaultConfig.Database.ConnMaxLifetime.String())
+	v.SetDefault("database.conn_max_idle_time", _defaultConfig.Database.ConnMaxIdleTime.String())
+	v.SetDefault("database.migrations_path", _defaultConfig.Database.MigrationsPath)
 
-	v.SetDefault("logging.level", defaultConfig.Logging.Level)
-	v.SetDefault("logging.format", defaultConfig.Logging.Format)
-	v.SetDefault("logging.pretty", defaultConfig.Logging.Pretty)
+	v.SetDefault("logging.level", _defaultConfig.Logging.Level)
+	v.SetDefault("logging.format", _defaultConfig.Logging.Format)
+	v.SetDefault("logging.pretty", _defaultConfig.Logging.Pretty)
 
-	v.SetDefault("telemetry.enabled", defaultConfig.Telemetry.Enabled)
-	v.SetDefault("telemetry.otlp_endpoint", defaultConfig.Telemetry.OTLPEndpoint)
-	v.SetDefault("telemetry.service_name", defaultConfig.Telemetry.ServiceName)
-	v.SetDefault("telemetry.service_version", defaultConfig.Telemetry.ServiceVersion)
-	v.SetDefault("telemetry.traces_sample_ratio", defaultConfig.Telemetry.TracesSampleRatio)
-	v.SetDefault("telemetry.metrics_interval", defaultConfig.Telemetry.MetricsInterval.String())
+	v.SetDefault("telemetry.enabled", _defaultConfig.Telemetry.Enabled)
+	v.SetDefault("telemetry.otlp_endpoint", _defaultConfig.Telemetry.OTLPEndpoint)
+	v.SetDefault("telemetry.service_name", _defaultConfig.Telemetry.ServiceName)
+	v.SetDefault("telemetry.service_version", _defaultConfig.Telemetry.ServiceVersion)
+	v.SetDefault("telemetry.traces_sample_ratio", _defaultConfig.Telemetry.TracesSampleRatio)
+	v.SetDefault("telemetry.metrics_interval", _defaultConfig.Telemetry.MetricsInterval.String())
 }

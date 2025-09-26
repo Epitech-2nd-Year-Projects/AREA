@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	defaultEnvKeyDelimiter = "_"
-	configFileEnvSuffix    = "CONFIG_FILE"
+	_defaultEnvKeyDelimiter = "_"
+	_configFileEnvSuffix    = "CONFIG_FILE"
 )
 
-// Load hydrates Config using Viper with layered sources defaults → config file → environment
+// Load hydrates Config using Viper with layered sources defaults -> config file -> environment
 func Load(opts ...Option) (Config, error) {
 	options := defaultOptions()
 	for _, opt := range opts {
@@ -36,7 +36,7 @@ func Load(opts ...Option) (Config, error) {
 
 	applyDefaults(vp)
 
-	replacer := strings.NewReplacer(".", defaultEnvKeyDelimiter, "-", defaultEnvKeyDelimiter)
+	replacer := strings.NewReplacer(".", _defaultEnvKeyDelimiter, "-", _defaultEnvKeyDelimiter)
 	if options.envPrefix != "" {
 		vp.SetEnvPrefix(options.envPrefix)
 	}
@@ -93,7 +93,7 @@ func resolveConfigFile(opts options) (string, error) {
 		return "", nil
 	}
 
-	envKey := fmt.Sprintf("%s%s%s", strings.ToUpper(opts.envPrefix), defaultEnvKeyDelimiter, configFileEnvSuffix)
+	envKey := fmt.Sprintf("%s%s%s", strings.ToUpper(opts.envPrefix), _defaultEnvKeyDelimiter, _configFileEnvSuffix)
 	candidate := strings.TrimSpace(os.Getenv(envKey))
 	if candidate == "" {
 		return "", nil
