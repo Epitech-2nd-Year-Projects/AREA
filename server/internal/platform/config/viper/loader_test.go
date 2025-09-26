@@ -15,20 +15,20 @@ func TestLoadDefaults(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if cfg.Database.DSN != defaultConfig.Database.DSN {
+	if cfg.Database.DSN != _defaultConfig.Database.DSN {
 		t.Fatalf("unexpected database DSN: %q", cfg.Database.DSN)
 	}
 
-	if cfg.HTTP.Port != defaultConfig.HTTP.Port {
-		t.Fatalf("expected http port %d got %d", defaultConfig.HTTP.Port, cfg.HTTP.Port)
+	if cfg.HTTP.Port != _defaultConfig.HTTP.Port {
+		t.Fatalf("expected http port %d got %d", _defaultConfig.HTTP.Port, cfg.HTTP.Port)
 	}
 
-	if cfg.HTTP.ReadTimeout != defaultConfig.HTTP.ReadTimeout {
-		t.Fatalf("expected http read timeout %s got %s", defaultConfig.HTTP.ReadTimeout, cfg.HTTP.ReadTimeout)
+	if cfg.HTTP.ReadTimeout != _defaultConfig.HTTP.ReadTimeout {
+		t.Fatalf("expected http read timeout %s got %s", _defaultConfig.HTTP.ReadTimeout, cfg.HTTP.ReadTimeout)
 	}
 
-	if cfg.Telemetry.ServiceName != defaultConfig.Telemetry.ServiceName {
-		t.Fatalf("expected telemetry service name %q got %q", defaultConfig.Telemetry.ServiceName, cfg.Telemetry.ServiceName)
+	if cfg.Telemetry.ServiceName != _defaultConfig.Telemetry.ServiceName {
+		t.Fatalf("expected telemetry service name %q got %q", _defaultConfig.Telemetry.ServiceName, cfg.Telemetry.ServiceName)
 	}
 }
 
