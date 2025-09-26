@@ -5,14 +5,42 @@ import (
 	"os"
 
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
+	projectlogger "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging/zap"
+	"go.uber.org/zap"
 )
 
 func main() {
-	cfg, err := configviper.Load()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to load configuration: %v\n", err)
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "cmd/server: %v\n", err)
 		os.Exit(1)
 	}
+}
 
-	fmt.Printf("configuration loaded for environment %s on %s:%d\n", cfg.App.Environment, cfg.HTTP.Host, cfg.HTTP.Port)
+func run() error {
+	cfg, err := configviper.Load()
+	if err != nil {
+		return fmt.Errorf("configviper.Load: %w", err)
+	}
+
+	logger, err := projectlogger.New(projectlogger.Config{
+		Level:  cfg.Logging.Level,
+		Format: cfg.Logging.Format,
+		Pretty: cfg.Logging.Pretty,
+	})
+	if err != nil {
+		return fmt.Errorf("projectlogger.New: %w", err)
+	}
+
+	zap.ReplaceGlobals(logger)
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	logger.Info("configuration loaded",
+		zap.String("environment", cfg.App.Environment),
+		zap.String("http_host", cfg.HTTP.Host),
+		zap.Int("http_port", cfg.HTTP.Port),
+	)
+
+	return nil
 }
