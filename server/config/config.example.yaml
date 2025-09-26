@@ -46,7 +46,7 @@ database:
 
 logging:
   level: info
-  format: json
+  format: text
   includeCaller: false
   defaultFields:
     service: area-server
