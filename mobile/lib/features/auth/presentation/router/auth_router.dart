@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/navigation/app_navigation.dart';
 import '../../../../core/navigation/main_scaffold.dart';
+import '../../../services/presentation/pages/service_details_page.dart';
+import '../../../services/presentation/pages/services_list_page.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_state.dart';
 import '../pages/login_page.dart';
@@ -18,7 +20,7 @@ class AuthRouter {
         return BlocProvider(
           create: (context) => AuthBloc(sl()),
           child: AuthWrapperPage(
-              authenticatedChild: NavigationShell(child: child),
+            authenticatedChild: NavigationShell(child: child),
           ),
         );
       },
@@ -29,7 +31,16 @@ class AuthRouter {
         ),
         GoRoute(
           path: '/services',
-          builder: (context, state) => const ServicesPage(),
+          builder: (context, state) => const ServicesListPage(),
+          routes: [
+            GoRoute(
+              path: ':serviceId',
+              builder: (context, state) {
+                final serviceId = state.pathParameters['serviceId']!;
+                return ServiceDetailsPage(serviceId: serviceId);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/areas',
@@ -83,19 +94,8 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const  Center(
-      child: Text('Dashboard Page 🚀'),
-    );
-  }
-}
-
-class ServicesPage extends StatelessWidget {
-  const ServicesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return const Center(
-      child: Text('Services Page 🔌'),
+      child: Text('Dashboard Page 🚀'),
     );
   }
 }
