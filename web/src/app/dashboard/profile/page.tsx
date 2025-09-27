@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ServiceCardList } from '@/components/services/service-card-list'
-import { mockServices, mockUser } from '@/data/mocks'
+import { mockServices, mockAuthenticatedUser } from '@/data/mocks'
 import { UserRole } from '@/lib/api/contracts/users'
 import { useTranslations } from 'next-intl'
 
@@ -25,10 +25,10 @@ type FormStatus = {
   message: string
 } | null
 
-const DEFAULT_AVATAR_URL = mockUser.imageUrl ?? ''
+const DEFAULT_AVATAR_URL = mockAuthenticatedUser.imageUrl ?? ''
 
 const getProfileInitialState = () => ({
-  email: mockUser.email,
+  email: mockAuthenticatedUser.email,
   imageUrl: DEFAULT_AVATAR_URL
 })
 
@@ -52,7 +52,9 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const roleLabel =
-    mockUser.role === UserRole.Admin ? t('roleAdmin') : t('roleUser')
+    mockAuthenticatedUser.role === UserRole.Admin
+      ? t('roleAdmin')
+      : t('roleUser')
 
   useEffect(() => {
     if (!profileForm.imageUrl) {
@@ -334,12 +336,14 @@ export default function ProfilePage() {
               <span className="text-sm font-medium">
                 {t('connectedServicesTitle')}
               </span>
-              {mockUser.connectedServices.length ? (
+              {mockAuthenticatedUser.connectedServices.length ? (
                 <ServiceCardList
                   services={mockServices.filter((service) =>
-                    mockUser.connectedServices.includes(service.name)
+                    mockAuthenticatedUser.connectedServices.includes(
+                      service.name
+                    )
                   )}
-                  userLinkedServices={mockUser.connectedServices}
+                  userLinkedServices={mockAuthenticatedUser.connectedServices}
                   isUserAuthenticated
                   isMinimal
                 />
