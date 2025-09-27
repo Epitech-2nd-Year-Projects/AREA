@@ -1,7 +1,6 @@
 'use client'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { Play, Repeat } from 'lucide-react'
 import {
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/accordion'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Service } from '@/lib/api/contracts/services'
+import { DisconnectModal } from '@/components/services/disconnect-modal'
 
 type ServiceCardProps = {
   service: Service
@@ -42,6 +42,20 @@ export function ServiceCard({
   const router = useRouter()
   const gradientColor = theme === 'dark' ? '#262626' : '#D9D9D955'
 
+  const handleDisconnectConfirm = () => {
+    // TODO: Implement service disconnect logic
+  }
+
+  const connectButtonState = authenticated
+    ? { label: t('connect'), variant: 'default' as const }
+    : { label: t('getStarted'), variant: 'outline' as const }
+
+  const handleConnectClick = authenticated
+    ? () => {
+        // TODO: Redirect to back-end /oauth/:provider/start
+      }
+    : () => router.push('/register')
+
   if (isMinimal) {
     return (
       <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
@@ -58,19 +72,6 @@ export function ServiceCard({
       </Card>
     )
   }
-
-  const buttonState = linked
-    ? { label: t('linked'), variant: 'secondary' as const, disabled: true }
-    : authenticated
-      ? { label: t('connect'), variant: 'default' as const, disabled: false }
-      : { label: t('getStarted'), variant: 'outline' as const, disabled: false }
-  const handleButtonClick = linked
-    ? undefined
-    : authenticated
-      ? () => {
-          // TODO: Redirect to back-end /oauth/:provider/start
-        }
-      : () => router.push('/register')
 
   return (
     <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
@@ -162,14 +163,20 @@ export function ServiceCard({
           </Accordion>
         </CardContent>
         <CardFooter className="mt-auto p-4">
-          <Button
-            className={cn('w-full', !linked && 'cursor-pointer')}
-            variant={buttonState.variant}
-            disabled={buttonState.disabled}
-            onClick={handleButtonClick}
-          >
-            {buttonState.label}
-          </Button>
+          {linked ? (
+            <DisconnectModal
+              serviceName={service.displayName}
+              onConfirm={handleDisconnectConfirm}
+            />
+          ) : (
+            <Button
+              className="w-full cursor-pointer"
+              variant={connectButtonState.variant}
+              onClick={handleConnectClick}
+            >
+              {connectButtonState.label}
+            </Button>
+          )}
         </CardFooter>
       </MagicCard>
     </Card>

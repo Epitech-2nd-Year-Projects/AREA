@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 
 export default function DashboardPage() {
   const t = useTranslations('DashboardPage')
-  const isUserAuthenticated = false
+  const isUserAuthenticated = true
 
   // TODO: Replace with real data
   const services = mockServices

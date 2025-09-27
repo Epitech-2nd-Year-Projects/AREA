@@ -63,6 +63,13 @@
     "reactions": "reactions",
     "viewCapabilities": "View capabilities"
   },
+  "DisconnectModal": {
+    "trigger": "Disconnect",
+    "title": "Disconnect service",
+    "description": "Are you sure you want to disconnect {service}?",
+    "cancel": "Cancel",
+    "confirm": "Disconnect"
+  },
   "AreaCard": {
     "editArea": "Edit Area",
     "deleteArea": "Delete Area"
