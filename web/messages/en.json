@@ -142,5 +142,24 @@
     "areaDescriptionPlaceholder": "Describe what your AREA will do",
     "cancel": "Cancel",
     "submit": "Create AREA"
+  },
+  "ComponentConfigSheet": {
+    "titleAction": "Configure {componentName}",
+    "titleReaction": "Configure {componentName}",
+    "fallbackActionName": "the action",
+    "fallbackReactionName": "the reaction",
+    "descriptionAction": "Provide credentials and parameters for the selected action.",
+    "descriptionReaction": "Provide credentials and parameters for this reaction.",
+    "secretsRefLabel": "Secrets reference",
+    "secretsRefPlaceholder": "e.g. github-main-token",
+    "paramsLabel": "Parameters",
+    "paramsHelper": "Key/value pairs sent to the service when the component runs.",
+    "emptyParams": "No parameters configured yet.",
+    "addParam": "Add parameter",
+    "paramKey": "Key",
+    "paramValue": "Value",
+    "removeParam": "Remove parameter",
+    "cancel": "Cancel",
+    "save": "Save configuration"
   }
 }

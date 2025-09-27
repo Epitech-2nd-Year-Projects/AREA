@@ -34,6 +34,13 @@ import {
   CommandList
 } from '../ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import {
+  ComponentConfigSheet,
+  type ComponentConfigState,
+  type ConfigEditorTarget,
+  cloneComponentConfig,
+  createEmptyComponentConfig
+} from './component-config-sheet'
 
 type GroupedItems<T extends { service_name: string }> = {
   serviceName: string
@@ -44,6 +51,7 @@ type GroupedItems<T extends { service_name: string }> = {
 type ReactionField = {
   id: string
   reactionId: string
+  config: ComponentConfigState | null
 }
 
 const textareaClasses =
@@ -130,28 +138,35 @@ const createReactionFieldId = () => {
   return `reaction-${reactionFieldIndex}-${Date.now().toString(36)}`
 }
 
+const createReactionField = (): ReactionField => ({
+  id: createReactionFieldId(),
+  reactionId: '',
+  config: null
+})
+
 export default function CreateAreaModal() {
   const t = useTranslations('CreateAreaModal')
 
   const [open, setOpen] = useState(false)
   const [actionId, setActionId] = useState('')
+  const [actionConfig, setActionConfig] = useState<ComponentConfigState | null>(
+    null
+  )
   const [reactionFields, setReactionFields] = useState<ReactionField[]>([
-    { id: createReactionFieldId(), reactionId: '' }
+    createReactionField()
   ])
+  const [configEditorTarget, setConfigEditorTarget] =
+    useState<ConfigEditorTarget | null>(null)
   const [areaName, setAreaName] = useState('')
   const [areaDescription, setAreaDescription] = useState('')
 
-  // TODO: Will be useful once the backend endpoint is available.
-  /*
   const selectedAction = actionId ? actionsById[actionId] : undefined
-  const selectedReactions = reactionFields.map((field) =>
-    field.reactionId ? reactionsById[field.reactionId] : undefined
-  )
-  */
 
   const resetForm = () => {
     setActionId('')
-    setReactionFields([{ id: createReactionFieldId(), reactionId: '' }])
+    setActionConfig(null)
+    setReactionFields([createReactionField()])
+    setConfigEditorTarget(null)
     setAreaName('')
     setAreaDescription('')
   }
@@ -165,10 +180,7 @@ export default function CreateAreaModal() {
   }
 
   const handleAddReactionField = () => {
-    setReactionFields((previous) => [
-      ...previous,
-      { id: createReactionFieldId(), reactionId: '' }
-    ])
+    setReactionFields((previous) => [...previous, createReactionField()])
   }
 
   const handleRemoveReactionField = (id: string) => {
@@ -179,20 +191,150 @@ export default function CreateAreaModal() {
 
       return previous.filter((field) => field.id !== id)
     })
+    setConfigEditorTarget((current) => {
+      if (current?.type === 'reaction' && current.fieldId === id) {
+        return null
+      }
+
+      return current
+    })
   }
 
   const handleReactionValueChange = (id: string, reactionId: string) => {
     setReactionFields((previous) =>
-      previous.map((field) =>
-        field.id === id
-          ? {
-              ...field,
-              reactionId
-            }
-          : field
+      previous.map((field) => {
+        if (field.id !== id) {
+          return field
+        }
+
+        if (!reactionId) {
+          return {
+            ...field,
+            reactionId: '',
+            config: null
+          }
+        }
+
+        const shouldResetConfig = field.reactionId !== reactionId
+        const nextConfig =
+          shouldResetConfig || !field.config
+            ? createEmptyComponentConfig()
+            : cloneComponentConfig(field.config)
+
+        return {
+          ...field,
+          reactionId,
+          config: nextConfig
+        }
+      })
+    )
+    setConfigEditorTarget((current) => {
+      if (!current || current.type !== 'reaction' || current.fieldId !== id) {
+        return current
+      }
+
+      if (!reactionId) {
+        return null
+      }
+
+      return {
+        type: 'reaction',
+        fieldId: id,
+        componentId: reactionId
+      }
+    })
+  }
+
+  const handleActionValueChange = (nextActionId: string) => {
+    setActionId(nextActionId)
+
+    if (!nextActionId) {
+      setActionConfig(null)
+      setConfigEditorTarget((current) =>
+        current?.type === 'action' ? null : current
       )
+      return
+    }
+
+    setActionConfig((previous) => {
+      if (actionId === nextActionId && previous) {
+        return previous
+      }
+
+      return createEmptyComponentConfig()
+    })
+
+    setConfigEditorTarget((current) =>
+      current?.type === 'action'
+        ? { type: 'action', componentId: nextActionId }
+        : current
     )
   }
+
+  const handleOpenConfigEditorForAction = () => {
+    if (!actionId) {
+      return
+    }
+
+    setConfigEditorTarget({ type: 'action', componentId: actionId })
+  }
+
+  const handleOpenConfigEditorForReaction = (fieldId: string) => {
+    const field = reactionFields.find(
+      (reactionField) => reactionField.id === fieldId
+    )
+
+    if (!field?.reactionId) {
+      return
+    }
+
+    setConfigEditorTarget({
+      type: 'reaction',
+      fieldId,
+      componentId: field.reactionId
+    })
+  }
+
+  const handleConfigOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setConfigEditorTarget(null)
+    }
+  }
+
+  const handleConfigSave = (config: ComponentConfigState) => {
+    if (!configEditorTarget) {
+      return
+    }
+
+    if (configEditorTarget.type === 'action') {
+      setActionConfig(cloneComponentConfig(config))
+    } else {
+      setReactionFields((previous) =>
+        previous.map((field) =>
+          field.id === configEditorTarget.fieldId
+            ? {
+                ...field,
+                config: cloneComponentConfig(config)
+              }
+            : field
+        )
+      )
+    }
+
+    setConfigEditorTarget(null)
+  }
+
+  const configSheetOpen = configEditorTarget !== null
+
+  const currentReactionField =
+    configEditorTarget?.type === 'reaction'
+      ? reactionFields.find((field) => field.id === configEditorTarget.fieldId)
+      : undefined
+
+  const configSheetInitialConfig =
+    configEditorTarget?.type === 'action'
+      ? (actionConfig ?? createEmptyComponentConfig())
+      : (currentReactionField?.config ?? createEmptyComponentConfig())
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -227,7 +369,8 @@ export default function CreateAreaModal() {
                 emptyText={t('actionsEmpty')}
                 ariaLabel={t('actionAriaLabel')}
                 configureLabel={t('configureAction')}
-                onChange={setActionId}
+                onChange={handleActionValueChange}
+                onConfigure={handleOpenConfigEditorForAction}
               />
             </div>
 
@@ -255,6 +398,9 @@ export default function CreateAreaModal() {
                           configureLabel={t('configureReaction')}
                           onChange={(value) =>
                             handleReactionValueChange(field.id, value)
+                          }
+                          onConfigure={() =>
+                            handleOpenConfigEditorForReaction(field.id)
                           }
                         />
                         {reactionFields.length > 1 && (
@@ -322,6 +468,15 @@ export default function CreateAreaModal() {
           </DialogFooter>
         </form>
       </DialogContent>
+      <ComponentConfigSheet
+        open={configSheetOpen}
+        onOpenChange={handleConfigOpenChange}
+        target={configEditorTarget}
+        selectedActionName={selectedAction?.name ?? ''}
+        getReactionName={(reactionId) => reactionsById[reactionId]?.name ?? ''}
+        initialConfig={configSheetInitialConfig}
+        onSave={handleConfigSave}
+      />
     </Dialog>
   )
 }
@@ -334,6 +489,7 @@ type ActionComboboxProps = {
   ariaLabel: string
   configureLabel: string
   onChange: (value: string) => void
+  onConfigure: () => void
 }
 
 function ActionCombobox({
@@ -343,7 +499,8 @@ function ActionCombobox({
   emptyText,
   ariaLabel,
   configureLabel,
-  onChange
+  onChange,
+  onConfigure
 }: ActionComboboxProps) {
   const [open, setOpen] = useState(false)
   const selectedAction = value ? actionsById[value] : undefined
@@ -404,6 +561,7 @@ function ActionCombobox({
           variant="ghost"
           size="icon"
           aria-label={configureLabel}
+          onClick={onConfigure}
         >
           <PenIcon className="size-4" />
         </Button>
@@ -420,6 +578,7 @@ type ReactionComboboxProps = {
   ariaLabel: string
   configureLabel: string
   onChange: (value: string) => void
+  onConfigure: () => void
 }
 
 function ReactionCombobox({
@@ -429,7 +588,8 @@ function ReactionCombobox({
   emptyText,
   ariaLabel,
   configureLabel,
-  onChange
+  onChange,
+  onConfigure
 }: ReactionComboboxProps) {
   const [open, setOpen] = useState(false)
   const selectedReaction = value ? reactionsById[value] : undefined
@@ -490,6 +650,7 @@ function ReactionCombobox({
           variant="ghost"
           size="icon"
           aria-label={configureLabel}
+          onClick={onConfigure}
         >
           <PenIcon className="size-4" />
         </Button>
