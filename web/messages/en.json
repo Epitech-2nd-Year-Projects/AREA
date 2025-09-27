@@ -84,6 +84,29 @@
   "DashboardPage": {
     "searchServices": "Search services..."
   },
+  "AdminUsersPage": {
+    "title": "Users management",
+    "table": {
+      "filterPlaceholder": "Filter emails...",
+      "noResults": "No results.",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "columns": {
+        "id": "ID",
+        "email": "Email",
+        "role": "Role",
+        "actions": "Actions"
+      },
+      "actions": {
+        "openMenu": "Open menu",
+        "label": "Actions",
+        "copyId": "Copy user ID",
+        "editUser": "Edit user"
+      }
+    }
+  },
   "LinksPage": {
     "searchAreas": "Search areas..."
   },

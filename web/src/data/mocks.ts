@@ -363,10 +363,28 @@ export const mockAbout: About = {
   }
 }
 
-export const mockUser: User = {
-  id: '1',
-  email: 'test@test.com',
-  imageUrl: 'https://example.com/image.png',
-  role: UserRole.Admin,
-  connectedServices: mockUserLinkedServices
-}
+export const mockUsers: User[] = [
+  {
+    id: '1',
+    email: 'test@test.com',
+    imageUrl: 'https://example.com/image.png',
+    role: UserRole.Admin,
+    connectedServices: mockUserLinkedServices
+  },
+  {
+    id: '2',
+    email: 'test2@test.com',
+    imageUrl: 'https://example.com/image2.png',
+    role: UserRole.User,
+    connectedServices: mockUserLinkedServices
+  },
+  {
+    id: '3',
+    email: 'test3@test.com',
+    imageUrl: 'https://example.com/image3.png',
+    role: UserRole.User,
+    connectedServices: mockUserLinkedServices
+  }
+]
+
+export const mockAuthenticatedUser: User = mockUsers[0]

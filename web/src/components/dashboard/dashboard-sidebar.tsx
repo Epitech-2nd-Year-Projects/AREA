@@ -26,7 +26,7 @@ import {
 import { UserRole } from '@/lib/api/contracts/users'
 import { useTranslations } from 'next-intl'
 import { UserDropdown } from './user-dropdown'
-import { mockUser } from '@/data/mocks'
+import { mockAuthenticatedUser } from '@/data/mocks'
 
 type NavItem = {
   internationalizedTitle: string
@@ -90,7 +90,7 @@ export function DashboardSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
   // TODO: Check if user is logged in, redirect accordingly
-  const user = mockUser
+  const user = mockAuthenticatedUser
 
   return (
     <Sidebar {...props}>
