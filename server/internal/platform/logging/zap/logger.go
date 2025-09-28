@@ -15,10 +15,11 @@ import (
 
 // Config controls zap logger construction
 type Config struct {
-	Level  string
-	Format string
-	Pretty bool
-	Writer io.Writer
+	Level         string
+	Format        string
+	Pretty        bool
+	IncludeCaller bool
+	Writer        io.Writer
 }
 
 // New constructs a zap.Logger based on Config
@@ -57,7 +58,11 @@ func New(cfg Config) (*zap.Logger, error) {
 	}
 
 	core := zapcore.NewCore(encoder, writer, level)
-	return zap.New(core, zap.AddCaller()), nil
+	var opts []zap.Option
+	if cfg.IncludeCaller {
+		opts = append(opts, zap.AddCaller())
+	}
+	return zap.New(core, opts...), nil
 }
 
 func buildWriter(w io.Writer) zapcore.WriteSyncer {
