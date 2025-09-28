@@ -39,10 +39,14 @@ database:
   host: localhost
   port: 5432
   name: area
+  userEnv: DATABASE_USER
+  passwordEnv: DATABASE_PASSWORD
+  dsnEnv: DATABASE_URL
   sslMode: disable
   maxOpenConns: 25
   maxIdleConns: 25
   connMaxLifetime: 30m
+  connMaxIdleTime: 10m
 
 logging:
   level: info
@@ -56,6 +60,7 @@ queue:
   redis:
     addr: localhost:6379
     db: 0
+    passwordEnv: REDIS_PASSWORD
     consumerGroup: area-workers
     stream: area-jobs
 
@@ -68,6 +73,7 @@ notifier:
     provider: sendgrid
     fromEmail: noreply@area.local
     sandboxMode: true
+    apiKeyEnv: SENDGRID_API_KEY
 
 secrets:
   provider: dotenv
@@ -98,6 +104,8 @@ security:
     issuer: area-api
     accessTokenTTL: 15m
     refreshTokenTTL: 720h
+    accessSecretEnv: JWT_ACCESS_SECRET
+    refreshSecretEnv: JWT_REFRESH_SECRET
   password:
     minLength: 12
     pepperEnv: PASSWORD_PEPPER
@@ -105,4 +113,3 @@ security:
 servicesCatalog:
   refreshInterval: 5m
   bootstrapFile: config/services.yaml
-

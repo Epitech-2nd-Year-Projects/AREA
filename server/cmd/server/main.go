@@ -23,9 +23,10 @@ func run() error {
 	}
 
 	logger, err := projectlogger.New(projectlogger.Config{
-		Level:  cfg.Logging.Level,
-		Format: cfg.Logging.Format,
-		Pretty: cfg.Logging.Pretty,
+		Level:         cfg.Logging.Level,
+		Format:        cfg.Logging.Format,
+		Pretty:        cfg.Logging.Pretty,
+		IncludeCaller: cfg.Logging.IncludeCaller,
 	})
 	if err != nil {
 		return fmt.Errorf("projectlogger.New: %w", err)
@@ -38,8 +39,8 @@ func run() error {
 
 	logger.Info("configuration loaded",
 		zap.String("environment", cfg.App.Environment),
-		zap.String("http_host", cfg.HTTP.Host),
-		zap.Int("http_port", cfg.HTTP.Port),
+		zap.String("http_host", cfg.Server.HTTP.Host),
+		zap.Int("http_port", cfg.Server.HTTP.Port),
 	)
 
 	return nil
