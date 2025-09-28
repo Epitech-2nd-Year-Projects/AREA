@@ -71,7 +71,11 @@
     "confirm": "Disconnect"
   },
   "AreaCard": {
+    "actionsLabel": "Action",
+    "openActions": "Open action menu",
+    "testRunArea": "Test run",
     "editArea": "Edit Area",
+    "duplicateArea": "Duplicate Area",
     "deleteArea": "Delete Area",
     "enableArea": "Enable Area",
     "disableArea": "Disable Area"
@@ -174,6 +178,58 @@
     "areaDescriptionPlaceholder": "Describe what your AREA will do",
     "cancel": "Cancel",
     "submit": "Create AREA"
+  },
+  "EditAreaModal": {
+    "title": "Edit AREA",
+    "subtitle": "Update the action, reactions, and description for this AREA.",
+    "actionLabel": "Action",
+    "actionPlaceholder": "Select an action",
+    "actionsSearchPlaceholder": "Search actions by service...",
+    "actionsEmpty": "No actions found.",
+    "actionAriaLabel": "Select an action for this AREA",
+    "configureAction": "Configure selected action",
+    "reactionsLabel": "Reactions",
+    "reactionsHelper": "You can add as many reactions as you need.",
+    "reactionAriaLabel": "Select reaction #{index}",
+    "reactionPlaceholder": "Select a reaction",
+    "reactionsSearchPlaceholder": "Search reactions by service...",
+    "reactionsEmpty": "No reactions found.",
+    "configureReaction": "Configure selected reaction",
+    "removeReaction": "Remove reaction",
+    "addReaction": "Add another reaction",
+    "areaNameLabel": "AREA name",
+    "areaNamePlaceholder": "Give your AREA a descriptive name",
+    "areaDescriptionLabel": "AREA description",
+    "areaDescriptionPlaceholder": "Describe what your AREA will do",
+    "cancel": "Cancel",
+    "submit": "Save changes"
+  },
+  "DuplicateAreaModal": {
+    "title": "Duplicate AREA",
+    "description": "A copy of {area} will be created. You can adjust the details after duplication.",
+    "cancel": "Cancel",
+    "confirm": "Duplicate"
+  },
+  "DeleteAreaModal": {
+    "title": "Delete AREA",
+    "description": "Are you sure you want to delete {area}? This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
+  "TestRunAreaModal": {
+    "title": "Test run",
+    "description": "Preview how {area} would execute right now.",
+    "summaryTitle": "Latest test summary",
+    "statusIdle": "Not run",
+    "statusCompleted": "Completed",
+    "idleDescription": "Trigger a test run to simulate the workflow and review the results.",
+    "runAt": "Simulated at {date}",
+    "actionHeading": "Action",
+    "reactionsHeading": "Reactions",
+    "noReactions": "No reactions configured.",
+    "close": "Close",
+    "runTest": "Run test",
+    "runAgain": "Run again"
   },
   "ComponentConfigSheet": {
     "titleAction": "Configure {componentName}",
