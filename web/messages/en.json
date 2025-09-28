@@ -72,7 +72,9 @@
   },
   "AreaCard": {
     "editArea": "Edit Area",
-    "deleteArea": "Delete Area"
+    "deleteArea": "Delete Area",
+    "enableArea": "Enable Area",
+    "disableArea": "Disable Area"
   },
   "Sidebar": {
     "admin": "Admin",
