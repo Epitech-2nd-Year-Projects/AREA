@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/router"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
 	ginhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver/gin"
 	projectlogging "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	projectlogger "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging/zap"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"go.uber.org/zap"
 )
 
@@ -66,6 +70,37 @@ func run() error {
 	server, err := ginhttp.New(httpCfg, ginhttp.WithLogger(logger))
 	if err != nil {
 		return fmt.Errorf("ginhttp.New: %w", err)
+	}
+
+	var loaders []catalog.Loader
+
+	dbCtx := context.Background()
+	db, dbErr := postgres.Open(dbCtx, cfg.Database)
+	if dbErr != nil {
+		logger.Warn("postgres connection unavailable", zap.Error(dbErr))
+	} else {
+		loaders = append(loaders, catalog.DBLoader{DB: db})
+		sqlDB, err := db.DB()
+		if err != nil {
+			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
+		} else {
+			defer func() {
+				_ = sqlDB.Close()
+			}()
+		}
+	}
+
+	if path := strings.TrimSpace(cfg.ServicesCatalog.BootstrapFile); path != "" {
+		loaders = append(loaders, catalog.FileLoader{Path: path})
+	}
+	if len(loaders) == 0 {
+		loaders = append(loaders, catalog.EmptyLoader{})
+	}
+
+	if err := router.Register(server.Engine(), router.Dependencies{
+		AboutLoader: catalog.NewChainLoader(loaders...),
+	}); err != nil {
+		return fmt.Errorf("router.Register: %w", err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
