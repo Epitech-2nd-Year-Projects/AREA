@@ -30,12 +30,13 @@ class ServicesListLoaded extends ServicesListState {
     List<ServiceWithStatus>? services,
     List<ServiceWithStatus>? filteredServices,
     ServiceCategory? selectedCategory,
+    bool clearCategory = false, // Nouveau paramètre pour forcer null
     String? searchQuery,
   }) {
     return ServicesListLoaded(
       services: services ?? this.services,
       filteredServices: filteredServices ?? this.filteredServices,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }

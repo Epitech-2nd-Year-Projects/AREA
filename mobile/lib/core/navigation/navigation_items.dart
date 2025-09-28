@@ -51,7 +51,11 @@ class AppNavigationItems {
 
   static NavigationItem? getDestinationFromPath(String path) {
     try {
-      return destinations.firstWhere((item) => item.path == path);
+      try {
+        return destinations.firstWhere((item) => item.path == path);
+      } catch (_) {
+        return destinations.firstWhere((item) => path.startsWith(item.path));
+      }
     } catch (_) {
       return null;
     }

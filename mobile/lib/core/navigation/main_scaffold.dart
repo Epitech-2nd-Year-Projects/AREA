@@ -14,7 +14,6 @@ class MainScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentLocation = GoRouterState.of(context).uri.toString();
-
     final selectedIndex = AppNavigationItems.getIndexFromPath(currentLocation);
 
     return Scaffold(
@@ -23,9 +22,7 @@ class MainScaffold extends StatelessWidget {
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) {
           final destination = AppNavigationItems.destinations[index];
-          if (destination.path != currentLocation) {
-            context.go(destination.path);
-          }
+          context.go(destination.path);
         },
       ),
     );

@@ -60,7 +60,6 @@ class _ServiceDetailsPageContent extends StatelessWidget {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          // Refresh service details to update subscription status
           context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
         } else if (subscriptionState is ServiceUnsubscribed) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +121,7 @@ class _ServiceDetailsPageContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ServiceInfoCard(service: state.service),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
                 ComponentsSection(
                   components: state.filteredComponents,
                   selectedKind: state.selectedComponentKind,

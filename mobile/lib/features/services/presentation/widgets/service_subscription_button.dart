@@ -25,31 +25,51 @@ class ServiceSubscriptionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSubscribed = subscription?.isActive ?? false;
 
-    return ElevatedButton.icon(
-      onPressed: isLoading ? null : (isSubscribed ? onUnsubscribe : onSubscribe),
-      icon: isLoading
-          ? const SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      )
-          : Icon(
-        isSubscribed ? Icons.remove_circle : Icons.add_circle,
-        size: 18,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: (isSubscribed ? AppColors.error : AppColors.primary).withOpacity(0.2),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      label: Text(isSubscribed ? 'Unsubscribe' : 'Subscribe'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSubscribed ? AppColors.error : AppColors.primary,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      child: ElevatedButton.icon(
+        onPressed: isLoading ? null : (isSubscribed ? onUnsubscribe : onSubscribe),
+        icon: isLoading
+            ? SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
+            : Icon(
+          isSubscribed ? Icons.remove_circle_rounded : Icons.add_circle_rounded,
+          size: 16,
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+        label: Text(
+          isSubscribed ? 'Unsubscribe' : 'Subscribe',
+          style: AppTypography.labelMedium.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSubscribed ? AppColors.error : AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          minimumSize: const Size(0, 36),
         ),
       ),
     );

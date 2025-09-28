@@ -84,7 +84,7 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
       final currentState = state as ServicesListLoaded;
 
       emit(currentState.copyWith(
-        selectedCategory: null,
+        clearCategory: true, // Utilise le nouveau paramètre
         searchQuery: '',
         filteredServices: currentState.services,
       ));

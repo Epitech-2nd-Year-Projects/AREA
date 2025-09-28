@@ -7,11 +7,15 @@ import '../../domain/value_objects/service_category.dart';
 class ServicesFilterChips extends StatelessWidget {
   final ServiceCategory? selectedCategory;
   final Function(ServiceCategory?) onCategorySelected;
+  final bool hasActiveFilters;
+  final VoidCallback? onClearFilters;
 
   const ServicesFilterChips({
     super.key,
     required this.selectedCategory,
     required this.onCategorySelected,
+    this.hasActiveFilters = false,
+    this.onClearFilters,
   });
 
   @override

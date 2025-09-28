@@ -112,31 +112,23 @@ class _ServicesListPageContent extends StatelessWidget {
               context.read<ServicesListBloc>().add(SearchServices(query));
             },
             initialValue: state is ServicesListLoaded ? state.searchQuery : '',
+            onClear: () {
+              context.read<ServicesListBloc>().add(ClearFilters());
+            },
+            hasActiveFilters: state is ServicesListLoaded &&
+                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: ServicesFilterChips(
-                  selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
-                  onCategorySelected: (category) {
-                    context.read<ServicesListBloc>().add(FilterByCategory(category));
-                  },
-                ),
-              ),
-              if (state is ServicesListLoaded &&
-                  (state.selectedCategory != null || state.searchQuery.isNotEmpty))
-                TextButton.icon(
-                  onPressed: () {
-                    context.read<ServicesListBloc>().add(ClearFilters());
-                  },
-                  icon: const Icon(Icons.clear, size: 18),
-                  label: const Text('Clear'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                  ),
-                ),
-            ],
+          ServicesFilterChips(
+            selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
+            onCategorySelected: (category) {
+              context.read<ServicesListBloc>().add(FilterByCategory(category));
+            },
+            hasActiveFilters: state is ServicesListLoaded &&
+                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+            onClearFilters: () {
+              context.read<ServicesListBloc>().add(ClearFilters());
+            },
           ),
         ],
       ),
