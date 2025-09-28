@@ -6,6 +6,8 @@ import '../storage/cache_manager.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/presentation/blocs/auth_bloc.dart';
+import '../../features/services/data/repositories/services_repository_impl.dart';
+import '../../features/services/domain/repositories/services_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -22,4 +24,6 @@ Future<void> initCoreDependencies() async {
 
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
   sl.registerFactory<AuthBloc>(() => AuthBloc(sl<AuthRepository>()));
+
+  sl.registerLazySingleton<ServicesRepository>(() => ServicesRepositoryImpl());
 }
