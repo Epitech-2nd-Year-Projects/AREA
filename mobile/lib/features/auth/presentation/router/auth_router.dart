@@ -3,11 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/navigation/app_navigation.dart';
-import '../../../../core/navigation/main_scaffold.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../blocs/auth_bloc.dart';
-import '../blocs/auth_state.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
 import '../pages/oauth_callback_page.dart';
@@ -34,7 +32,7 @@ class AuthRouter {
           builder: (context, state) => const ServicesListPage(),
           routes: [
             GoRoute(
-              path: ':serviceId',
+              path: '/:serviceId',
               builder: (context, state) {
                 final serviceId = state.pathParameters['serviceId']!;
                 return ServiceDetailsPage(serviceId: serviceId);
@@ -55,11 +53,17 @@ class AuthRouter {
 
     GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginPage(),
+      builder: (context, state) => BlocProvider(
+        create: (context) => AuthBloc(sl()),
+        child: const LoginPage(),
+      ),
     ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterPage(),
+      builder: (context, state) => BlocProvider(
+        create: (context) => AuthBloc(sl()),
+        child: const RegisterPage(),
+      ),
     ),
     GoRoute(
       path: '/oauth/callback/:provider',
@@ -68,23 +72,25 @@ class AuthRouter {
         final code = state.uri.queryParameters['code'];
         final error = state.uri.queryParameters['error'];
 
-        return OAuthCallbackPage(
-          provider: provider,
-          code: code,
-          error: error,
+        return BlocProvider(
+          create: (context) => AuthBloc(sl()),
+          child: OAuthCallbackPage(
+            provider: provider,
+            code: code,
+            error: error,
+          ),
         );
       },
     ),
 
     GoRoute(
       path: '/',
-      redirect: (context, state) {
-        final authState = context.read<AuthBloc>().state;
-        if (authState is Authenticated) {
-          return '/dashboard';
-        }
-        return '/login';
-      },
+      builder: (context, state) => BlocProvider(
+        create: (context) => AuthBloc(sl()),
+        child: const AuthWrapperPage(
+          authenticatedChild: SizedBox(),
+        ),
+      ),
     ),
   ];
 }
@@ -94,9 +100,7 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Dashboard Page 🚀'),
-    );
+    return const Center(child: Text('Dashboard Page 🚀'));
   }
 }
 
@@ -105,9 +109,7 @@ class AreasPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Areas Page ⚡'),
-    );
+    return const Center(child: Text('Areas Page ⚡'));
   }
 }
 
@@ -116,8 +118,6 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Profile Page 👤'),
-    );
+    return const Center(child: Text('Profile Page 👤'));
   }
 }

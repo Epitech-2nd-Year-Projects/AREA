@@ -111,7 +111,7 @@ class ServiceDetailsLoadingView extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.gray200.withOpacity(0.5),
+        color: AppColors.gray200.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
