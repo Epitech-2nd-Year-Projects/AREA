@@ -26,65 +26,115 @@ class ServiceInfoCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gray200.withOpacity(0.08),
+            color: AppColors.gray200.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExtremelyCompact = constraints.maxWidth < 250;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildServiceIcon(context),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service.displayName,
-                      style: AppTypography.headlineLarge.copyWith(
-                        color: AppColors.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        return _buildBadges(context, constraints.maxWidth);
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              if (isExtremelyCompact)
+                _buildCompactHeader(context)
+              else
+                _buildNormalHeader(context, constraints.maxWidth),
+              const SizedBox(height: AppSpacing.xl),
+              _buildAuthenticationSection(context, constraints.maxWidth),
             ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          _buildAuthenticationSection(context),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildServiceIcon(BuildContext context) {
+  Widget _buildCompactHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildServiceIcon(context, 50),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          service.displayName,
+          style: AppTypography.headlineLarge.copyWith(
+            color: AppColors.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          children: [
+            _buildCategoryChip(context, true),
+            _buildStatusBadge(context, true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNormalHeader(BuildContext context, double width) {
+    final isSmall = width < 350;
+    final isMedium = width < 450;
+
+    final iconSize = isSmall ? 60.0 : isMedium ? 68.0 : 76.0;
+    final titleFontSize = isSmall ? 20.0 : isMedium ? 22.0 : null;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildServiceIcon(context, iconSize),
+        SizedBox(width: isSmall ? AppSpacing.md : AppSpacing.lg),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                service.displayName,
+                style: AppTypography.headlineLarge.copyWith(
+                  color: AppColors.getTextPrimaryColor(context),
+                  fontWeight: FontWeight.w700,
+                  fontSize: titleFontSize,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _buildBadges(context, width),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServiceIcon(BuildContext context, double size) {
     return Container(
-      width: 72,
-      height: 72,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
+            AppColors.primary.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -96,81 +146,68 @@ class ServiceInfoCard extends StatelessWidget {
           style: AppTypography.displayMedium.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 28,
+            fontSize: size * 0.35,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBadges(BuildContext context, double maxWidth) {
-    final categoryChip = _buildCategoryChip(context);
-    final statusBadge = _buildStatusBadge(context);
+  Widget _buildBadges(BuildContext context, double width) {
+    final isSmall = width < 350;
 
-    if (maxWidth > 200) {
-      return Row(
-        children: [
-          Flexible(child: categoryChip),
-          const SizedBox(width: AppSpacing.sm),
-          statusBadge,
-        ],
-      );
-    } else {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          categoryChip,
-          const SizedBox(height: AppSpacing.sm),
-          statusBadge,
-        ],
-      );
-    }
+    final categoryChip = _buildCategoryChip(context, isSmall);
+    final statusBadge = _buildStatusBadge(context, isSmall);
+
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: [categoryChip, statusBadge],
+    );
   }
 
-  Widget _buildCategoryChip(BuildContext context) {
+  Widget _buildCategoryChip(BuildContext context, bool isSmall) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmall ? AppSpacing.sm : AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
           width: 0.5,
         ),
       ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          service.category.displayName,
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+      child: Text(
+        service.category.displayName,
+        style: AppTypography.labelLarge.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
+          fontSize: isSmall ? 12 : null,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context) {
+  Widget _buildStatusBadge(BuildContext context, bool isSmall) {
     final isActive = service.isEnabled;
     final statusColor = isActive ? AppColors.success : AppColors.error;
     final statusText = isActive ? 'Active' : 'Inactive';
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmall ? AppSpacing.sm : AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        color: statusColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: statusColor.withOpacity(0.2),
+          color: statusColor.withValues(alpha: 0.2),
           width: 0.5,
         ),
       ),
@@ -178,8 +215,8 @@ class ServiceInfoCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 6,
+            height: 6,
             decoration: BoxDecoration(
               color: statusColor,
               shape: BoxShape.circle,
@@ -191,6 +228,7 @@ class ServiceInfoCard extends StatelessWidget {
             style: AppTypography.labelLarge.copyWith(
               color: statusColor,
               fontWeight: FontWeight.w600,
+              fontSize: isSmall ? 12 : null,
             ),
           ),
         ],
@@ -198,30 +236,31 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAuthenticationSection(BuildContext context) {
+  Widget _buildAuthenticationSection(BuildContext context, double width) {
     final authInfo = _getAuthInfo();
+    final isSmall = width < 350;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(isSmall ? AppSpacing.md : AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: EdgeInsets.all(isSmall ? AppSpacing.sm : AppSpacing.md),
             decoration: BoxDecoration(
-              color: authInfo.color.withOpacity(0.1),
+              color: authInfo.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               authInfo.icon,
               color: authInfo.color,
-              size: 20,
+              size: isSmall ? 16 : 20,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -234,6 +273,7 @@ class ServiceInfoCard extends StatelessWidget {
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.getTextSecondaryColor(context),
                     fontWeight: FontWeight.w500,
+                    fontSize: isSmall ? 12 : null,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -242,18 +282,19 @@ class ServiceInfoCard extends StatelessWidget {
                   style: AppTypography.bodyLarge.copyWith(
                     color: AppColors.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w600,
+                    fontSize: isSmall ? 14 : null,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmall ? AppSpacing.xs : AppSpacing.sm,
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: authInfo.color.withOpacity(0.08),
+              color: authInfo.color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -261,6 +302,7 @@ class ServiceInfoCard extends StatelessWidget {
               style: AppTypography.labelMedium.copyWith(
                 color: authInfo.color,
                 fontWeight: FontWeight.w600,
+                fontSize: isSmall ? 11 : null,
               ),
             ),
           ),

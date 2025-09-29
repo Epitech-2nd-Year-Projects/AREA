@@ -27,11 +27,14 @@ class SubscriptionStatusBadge extends StatelessWidget {
           color: AppColors.gray200,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(
-          'Available',
-          style: AppTypography.labelMedium.copyWith(
-            color: AppColors.gray700,
-            fontWeight: FontWeight.w600,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Available',
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.gray700,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -61,11 +64,16 @@ class SubscriptionStatusBadge extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
-          Text(
-            text,
-            style: AppTypography.labelMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                text,
+                style: AppTypography.labelMedium.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -78,25 +86,25 @@ class SubscriptionStatusBadge extends StatelessWidget {
       case SubscriptionStatus.active:
         return (
         AppColors.success,
-        AppColors.success.withOpacity(0.1),
+        AppColors.success.withValues(alpha: 0.1),
         'Active'
         );
       case SubscriptionStatus.expired:
         return (
         AppColors.warning,
-        AppColors.warning.withOpacity(0.1),
+        AppColors.warning.withValues(alpha: 0.1),
         'Expired'
         );
       case SubscriptionStatus.revoked:
         return (
         AppColors.error,
-        AppColors.error.withOpacity(0.1),
+        AppColors.error.withValues(alpha: 0.1),
         'Revoked'
         );
       case SubscriptionStatus.needsConsent:
         return (
         AppColors.warning,
-        AppColors.warning.withOpacity(0.1),
+        AppColors.warning.withValues(alpha: 0.1),
         'Action Required'
         );
     }

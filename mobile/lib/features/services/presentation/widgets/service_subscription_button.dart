@@ -25,53 +25,62 @@ class ServiceSubscriptionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSubscribed = subscription?.isActive ?? false;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: (isSubscribed ? AppColors.error : AppColors.primary).withOpacity(0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: isLoading ? null : (isSubscribed ? onUnsubscribe : onSubscribe),
-        icon: isLoading
-            ? SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
-            : Icon(
-          isSubscribed ? Icons.remove_circle_rounded : Icons.add_circle_rounded,
-          size: 16,
-        ),
-        label: Text(
-          isSubscribed ? 'Unsubscribe' : 'Subscribe',
-          style: AppTypography.labelMedium.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSubscribed ? AppColors.error : AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: (isSubscribed ? AppColors.error : AppColors.primary)
+                    .withValues(alpha: 0.2),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+          child: ElevatedButton.icon(
+            onPressed: isLoading ? null : (isSubscribed ? onUnsubscribe : onSubscribe),
+            icon: isLoading
+                ? SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+                : Icon(
+              isSubscribed ? Icons.remove_circle_rounded : Icons.add_circle_rounded,
+              size: constraints.maxWidth < 120 ? 14 : 16,
+            ),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                isSubscribed ? 'Unsubscribe' : 'Subscribe',
+                style: AppTypography.labelMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: constraints.maxWidth < 120 ? 11 : null,
+                ),
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isSubscribed ? AppColors.error : AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: constraints.maxWidth < 120 ? AppSpacing.sm : AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              minimumSize: const Size(0, 36),
+            ),
           ),
-          minimumSize: const Size(0, 36),
-        ),
-      ),
+        );
+      },
     );
   }
 }

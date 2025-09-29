@@ -60,7 +60,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gray200.withOpacity(0.08),
+            color: AppColors.gray200.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -72,7 +72,10 @@ class _ComponentsSectionState extends State<ComponentsSection>
           _buildHeader(context),
           _buildSearchBar(context),
           _buildTabs(context, actions.length, reactions.length),
-          _buildTabContent(context, actions, reactions),
+          SizedBox(
+            height: 400,
+            child: _buildTabContent(context, actions, reactions),
+          ),
         ],
       ),
     );
@@ -81,29 +84,67 @@ class _ComponentsSectionState extends State<ComponentsSection>
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.extension_rounded,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            'Available Components',
-            style: AppTypography.headlineMedium.copyWith(
-              color: AppColors.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Seulement en très compact et on centre bien
+          final isVeryCompact = constraints.maxWidth < 280;
+
+          if (isVeryCompact) {
+            return Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.extension_rounded,
+                    color: AppColors.primary,
+                    size: 20, // Plus petit
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Available Components',
+                  style: AppTypography.headlineMedium.copyWith(
+                    color: AppColors.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18, // Plus petit mais lisible
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.extension_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  'Available Components',
+                  style: AppTypography.headlineMedium.copyWith(
+                    color: AppColors.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -113,10 +154,10 @@ class _ComponentsSectionState extends State<ComponentsSection>
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+          color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.getBorderColor(context).withOpacity(0.3),
+            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
           ),
         ),
         child: TextField(
@@ -164,44 +205,47 @@ class _ComponentsSectionState extends State<ComponentsSection>
       margin: const EdgeInsets.all(AppSpacing.xl),
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.getSurfaceVariantColor(context).withOpacity(0.4),
+        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Réduction de la taille de police seulement si vraiment nécessaire
+          final fontSize = constraints.maxWidth < 280 ? 11.0 : null;
+
+          return TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        indicatorPadding: const EdgeInsets.all(2),
-        labelColor: Colors.white,
-        unselectedLabelColor: AppColors.getTextSecondaryColor(context),
-        labelStyle: AppTypography.labelLarge.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: AppTypography.labelLarge.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
-        dividerColor: Colors.transparent,
-        indicatorSize: TabBarIndicatorSize.tab,
-        tabs: [
-          Tab(
-            child: Text('All (${widget.components.length})'),
-          ),
-          Tab(
-            child: Text('Actions ($actionsCount)'),
-          ),
-          Tab(
-            child: Text('Reactions ($reactionsCount)'),
-          ),
-        ],
+            indicatorPadding: const EdgeInsets.all(2),
+            labelColor: Colors.white,
+            unselectedLabelColor: AppColors.getTextSecondaryColor(context),
+            labelStyle: AppTypography.labelLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: fontSize,
+            ),
+            unselectedLabelStyle: AppTypography.labelLarge.copyWith(
+              fontWeight: FontWeight.w500,
+              fontSize: fontSize,
+            ),
+            dividerColor: Colors.transparent,
+            indicatorSize: TabBarIndicatorSize.tab,
+            tabs: [
+              Tab(text: 'All (${widget.components.length})'),
+              Tab(text: 'Actions ($actionsCount)'),
+              Tab(text: 'Reactions ($reactionsCount)'),
+            ],
+          );
+        },
       ),
     );
   }
@@ -211,16 +255,13 @@ class _ComponentsSectionState extends State<ComponentsSection>
       List<ServiceComponent> actions,
       List<ServiceComponent> reactions,
       ) {
-    return SizedBox(
-      height: 400,
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildComponentsList(widget.components),
-          _buildComponentsList(actions),
-          _buildComponentsList(reactions),
-        ],
-      ),
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildComponentsList(widget.components),
+        _buildComponentsList(actions),
+        _buildComponentsList(reactions),
+      ],
     );
   }
 
@@ -233,7 +274,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.gray200.withOpacity(0.3),
+                color: AppColors.gray200.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -274,54 +315,50 @@ class _ComponentsSectionState extends State<ComponentsSection>
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: component.isAction
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: component.isAction
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : AppColors.success.withValues(alpha: 0.2),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  component.isAction ? Icons.play_arrow_rounded : Icons.bolt_rounded,
+                  color: component.isAction ? AppColors.primary : AppColors.success,
+                  size: 16,
                 ),
-                decoration: BoxDecoration(
-                  color: component.isAction
-                      ? AppColors.primary.withOpacity(0.1)
-                      : AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: component.isAction
-                        ? AppColors.primary.withOpacity(0.2)
-                        : AppColors.success.withOpacity(0.2),
-                    width: 0.5,
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  component.kind.displayName,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: component.isAction ? AppColors.primary : AppColors.success,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      component.isAction ? Icons.play_arrow_rounded : Icons.bolt_rounded,
-                      color: component.isAction ? AppColors.primary : AppColors.success,
-                      size: 16,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      component.kind.displayName,
-                      style: AppTypography.labelMedium.copyWith(
-                        color: component.isAction ? AppColors.primary : AppColors.success,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

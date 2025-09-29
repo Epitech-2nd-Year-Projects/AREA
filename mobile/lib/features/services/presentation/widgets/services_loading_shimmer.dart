@@ -9,17 +9,24 @@ class ServicesLoadingShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.85,
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
-        ),
-        itemCount: 6,
-        itemBuilder: (context, index) => _buildShimmerCard(context),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+          const aspectRatio = 0.8;
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: aspectRatio,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+            ),
+            itemCount: 6,
+            itemBuilder: (context, index) => _buildShimmerCard(context),
+          );
+        },
       ),
     );
   }
@@ -38,27 +45,17 @@ class ServicesLoadingShimmer extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                _buildShimmerBox(48, 48, borderRadius: 12),
-                const Spacer(),
-                _buildShimmerBox(60, 24, borderRadius: 12),
-              ],
-            ),
+            _buildShimmerBox(56, 56, borderRadius: 14),
             const SizedBox(height: AppSpacing.md),
             _buildShimmerBox(double.infinity, 20),
+            const SizedBox(height: AppSpacing.xs),
+            _buildShimmerBox(100, 16),
             const SizedBox(height: AppSpacing.sm),
-            _buildShimmerBox(80, 16),
+            _buildShimmerBox(80, 24, borderRadius: 12),
             const Spacer(),
-            Row(
-              children: [
-                _buildShimmerBox(16, 16),
-                const Spacer(),
-                _buildShimmerBox(16, 16),
-              ],
-            ),
+            _buildShimmerBox(60, 20, borderRadius: 10),
           ],
         ),
       ),
@@ -74,7 +71,7 @@ class ServicesLoadingShimmer extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.gray200.withOpacity(0.5),
+        color: AppColors.gray200.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );

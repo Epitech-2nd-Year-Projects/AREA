@@ -168,25 +168,32 @@ class _ServicesListPageContent extends StatelessWidget {
 
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.9,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-          ),
-          delegate: SliverChildBuilderDelegate(
-                (context, index) {
-              final service = state.filteredServices[index];
-              return ServiceCard(
-                service: service,
-                onTap: () {
-                  context.push('/services/${service.provider.id}');
+        sliver: SliverLayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.crossAxisExtent > 600 ? 3 : 2;
+            const aspectRatio = 0.8;
+
+            return SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: aspectRatio,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                  final service = state.filteredServices[index];
+                  return ServiceCard(
+                    service: service,
+                    onTap: () {
+                      context.push('/services/${service.provider.id}');
+                    },
+                  );
                 },
-              );
-            },
-            childCount: state.filteredServices.length,
-          ),
+                childCount: state.filteredServices.length,
+              ),
+            );
+          },
         ),
       );
     }

@@ -35,7 +35,6 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
   @override
   void didUpdateWidget(ServicesSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Synchronise le contrôleur avec la valeur externe
     if (widget.initialValue != _controller.text) {
       _controller.text = widget.initialValue;
     }
@@ -50,109 +49,117 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.getBorderColor(context),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.gray200.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              style: AppTypography.bodyLarge.copyWith(
-                color: AppColors.getTextPrimaryColor(context),
-              ),
-              decoration: InputDecoration(
-                hintText: 'Search services by name...',
-                hintStyle: AppTypography.bodyLarge.copyWith(
-                  color: AppColors.getTextTertiaryColor(context),
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: AppColors.getTextSecondaryColor(context),
-                  size: 20,
-                ),
-                suffixIcon: _controller.text.isNotEmpty
-                    ? IconButton(
-                  onPressed: () {
-                    _controller.clear();
-                    widget.onSearch('');
-                    setState(() {});
-                  },
-                  icon: Icon(
-                    Icons.clear,
-                    color: AppColors.getTextSecondaryColor(context),
-                    size: 20,
-                  ),
-                )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {});
-                widget.onSearch(value);
-              },
-              textInputAction: TextInputAction.search,
-            ),
-          ),
-          if (widget.hasActiveFilters) ...[
-            Container(
-              height: 32,
-              width: 1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
               color: AppColors.getBorderColor(context),
             ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onClear,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.gray200.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.getTextPrimaryColor(context),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.filter_alt_off,
-                        color: AppColors.primary,
-                        size: 18,
+                  decoration: InputDecoration(
+                    hintText: constraints.maxWidth > 300
+                        ? 'Search services by name...'
+                        : 'Search services...',
+                    hintStyle: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.getTextTertiaryColor(context),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: AppColors.getTextSecondaryColor(context),
+                      size: 20,
+                    ),
+                    suffixIcon: _controller.text.isNotEmpty
+                        ? IconButton(
+                      onPressed: () {
+                        _controller.clear();
+                        widget.onSearch('');
+                        setState(() {});
+                      },
+                      icon: Icon(
+                        Icons.clear,
+                        color: AppColors.getTextSecondaryColor(context),
+                        size: 20,
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        'Clear',
-                        style: AppTypography.labelMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: constraints.maxWidth > 350 ? AppSpacing.md : AppSpacing.sm,
+                    ),
                   ),
+                  onChanged: (value) {
+                    setState(() {});
+                    widget.onSearch(value);
+                  },
+                  textInputAction: TextInputAction.search,
                 ),
               ),
-            ),
-          ],
-        ],
-      ),
+              if (widget.hasActiveFilters && constraints.maxWidth > 250) ...[
+                Container(
+                  height: 32,
+                  width: 1,
+                  color: AppColors.getBorderColor(context),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onClear,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.filter_alt_off,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                          if (constraints.maxWidth > 300) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              'Clear',
+                              style: AppTypography.labelMedium.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
