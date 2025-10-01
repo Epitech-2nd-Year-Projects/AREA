@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: AREA Server API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /about.json:
+    get:
+      summary: Describe server capabilities
+      operationId: getAbout
+      tags:
+        - metadata
+      responses:
+        '200':
+          description: About payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutResponse'
+components:
+  schemas:
+    AboutResponse:
+      type: object
+      required: [client, server]
+      properties:
+        client:
+          $ref: '#/components/schemas/AboutClient'
+        server:
+          $ref: '#/components/schemas/AboutServer'
+    AboutClient:
+      type: object
+      required: [host]
+      properties:
+        host:
+          type: string
+          description: IP address of the client issuing the request
+    AboutServer:
+      type: object
+      required: [current_time, services]
+      properties:
+        current_time:
+          type: integer
+          format: int64
+          description: Unix epoch timestamp
+        services:
+          type: array
+          description: Services supported by the server
+          items:
+            $ref: '#/components/schemas/Service'
+    Service:
+      type: object
+      required: [name, actions, reactions]
+      properties:
+        name:
+          type: string
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+    Component:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string

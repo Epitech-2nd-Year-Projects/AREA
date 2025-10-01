@@ -120,7 +120,7 @@ var _defaultConfig = Config{
 	},
 	ServicesCatalog: ServicesCatalogConfig{
 		RefreshInterval: 5 * time.Minute,
-		BootstrapFile:   "config/services.yaml",
+		BootstrapFile:   "",
 	},
 }
 

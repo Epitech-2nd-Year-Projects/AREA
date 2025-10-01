@@ -6,31 +6,54 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"sort"
 	"sync"
 
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Config controls zap logger construction
-type Config struct {
-	Level         string
-	Format        string
-	Pretty        bool
-	IncludeCaller bool
-	Writer        io.Writer
+// Option customises logger construction beyond Config values
+type Option func(*builderOptions)
+
+type builderOptions struct {
+	writer     io.Writer
+	zapOptions []zap.Option
 }
 
-// New constructs a zap.Logger based on Config
-func New(cfg Config) (*zap.Logger, error) {
-	level := zap.NewAtomicLevelAt(zap.InfoLevel)
-	rawLevel := strings.TrimSpace(cfg.Level)
-	if rawLevel != "" {
-		normalized := strings.ToLower(rawLevel)
-		if err := level.UnmarshalText([]byte(normalized)); err != nil {
-			return nil, fmt.Errorf("zap.AtomicLevel.UnmarshalText(%q): %w", cfg.Level, err)
+// WithWriter overrides the destination for log output
+func WithWriter(w io.Writer) Option {
+	return func(o *builderOptions) {
+		o.writer = w
+	}
+}
+
+// WithZapOptions appends arbitrary zap options to the constructed logger
+func WithZapOptions(opts ...zap.Option) Option {
+	return func(o *builderOptions) {
+		if len(opts) == 0 {
+			return
 		}
+		o.zapOptions = append(o.zapOptions, opts...)
+	}
+}
+
+// New constructs a zap.Logger using the provided configuration
+func New(cfg logging.Config, optFns ...Option) (*zap.Logger, error) {
+	cfg.Normalize()
+
+	buildOpts := builderOptions{}
+	for _, optFn := range optFns {
+		if optFn == nil {
+			continue
+		}
+		optFn(&buildOpts)
+	}
+
+	level := zap.NewAtomicLevelAt(zap.InfoLevel)
+	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
+		return nil, fmt.Errorf("zap.AtomicLevel.UnmarshalText(%q): %w", cfg.Level, err)
 	}
 
 	encoderCfg := zap.NewProductionEncoderConfig()
@@ -38,10 +61,9 @@ func New(cfg Config) (*zap.Logger, error) {
 	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
 	encoderCfg.EncodeDuration = zapcore.StringDurationEncoder
 
-	format := strings.ToLower(strings.TrimSpace(cfg.Format))
 	var encoder zapcore.Encoder
-	switch format {
-	case "", "json":
+	switch cfg.Format {
+	case "json":
 		encoder = zapcore.NewJSONEncoder(encoderCfg)
 	case "text":
 		encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
@@ -50,18 +72,21 @@ func New(cfg Config) (*zap.Logger, error) {
 		return nil, fmt.Errorf("unsupported format %q", cfg.Format)
 	}
 
-	writer := buildWriter(cfg.Writer)
-	if format == "" || format == "json" {
-		if cfg.Pretty {
-			writer = newPrettyJSONWriter(writer)
-		}
+	writer := buildWriter(buildOpts.writer)
+	if cfg.Format == "json" && cfg.Pretty {
+		writer = newPrettyJSONWriter(writer)
 	}
 
 	core := zapcore.NewCore(encoder, writer, level)
-	var opts []zap.Option
+
+	opts := append([]zap.Option(nil), buildOpts.zapOptions...)
 	if cfg.IncludeCaller {
 		opts = append(opts, zap.AddCaller())
 	}
+	if len(cfg.DefaultFields) > 0 {
+		opts = append(opts, zap.Fields(defaultFields(cfg.DefaultFields)...))
+	}
+
 	return zap.New(core, opts...), nil
 }
 
@@ -73,6 +98,20 @@ func buildWriter(w io.Writer) zapcore.WriteSyncer {
 		return ws
 	}
 	return zapcore.AddSync(w)
+}
+
+func defaultFields(fields map[string]string) []zap.Field {
+	keys := make([]string, 0, len(fields))
+	for key := range fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	result := make([]zap.Field, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, zap.String(key, fields[key]))
+	}
+	return result
 }
 
 type prettyJSONWriter struct {

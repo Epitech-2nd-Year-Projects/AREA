@@ -10,5 +10,11 @@ CREATE TABLE "service_providers" (
                                      "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                      PRIMARY KEY ("id")
 );
+
 CREATE UNIQUE INDEX "uq_service_providers_name" ON "service_providers" ("name");
 CREATE INDEX "service_providers_index_enabled_name" ON "service_providers" ("name");
+
+ALTER TABLE "user_identities"
+    ADD CONSTRAINT "fk_user_identities_provider_name"
+        FOREIGN KEY ("provider") REFERENCES "service_providers"("name")
+            ON DELETE NO ACTION ON UPDATE NO ACTION;

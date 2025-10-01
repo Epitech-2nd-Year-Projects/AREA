@@ -112,4 +112,4 @@ security:
 
 servicesCatalog:
   refreshInterval: 5m
-  bootstrapFile: config/services.yaml
+  bootstrapFile: ""
