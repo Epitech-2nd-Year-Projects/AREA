@@ -158,8 +158,10 @@ type OAuthProviderConfig struct {
 
 // SecurityConfig captures authentication-related configuration
 type SecurityConfig struct {
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Password PasswordConfig `mapstructure:"password"`
+	JWT          JWTConfig          `mapstructure:"jwt"`
+	Password     PasswordConfig     `mapstructure:"password"`
+	Sessions     SessionConfig      `mapstructure:"sessions"`
+	Verification VerificationConfig `mapstructure:"verification"`
 }
 
 // JWTConfig defines JWT token lifetimes and secrets
@@ -178,6 +180,22 @@ type PasswordConfig struct {
 	MinLength int    `mapstructure:"minLength"`
 	PepperEnv string `mapstructure:"pepperEnv"`
 	Pepper    string `mapstructure:"-"`
+}
+
+// SessionConfig controls cookie-based session issuance
+type SessionConfig struct {
+	CookieName string        `mapstructure:"cookieName"`
+	Domain     string        `mapstructure:"domain"`
+	Path       string        `mapstructure:"path"`
+	Secure     bool          `mapstructure:"secure"`
+	HTTPOnly   bool          `mapstructure:"httpOnly"`
+	SameSite   string        `mapstructure:"sameSite"`
+	TTL        time.Duration `mapstructure:"ttl"`
+}
+
+// VerificationConfig tunes email verification semantics
+type VerificationConfig struct {
+	TokenTTL time.Duration `mapstructure:"tokenTTL"`
 }
 
 // ServicesCatalogConfig configures service discovery bootstrap

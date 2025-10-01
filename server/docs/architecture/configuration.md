@@ -123,6 +123,16 @@ security:
   password:
     minLength: 12
     pepperEnv: PASSWORD_PEPPER
+  sessions:
+    cookieName: area_session
+    domain: ""
+    path: /
+    secure: false
+    httpOnly: true
+    sameSite: lax
+    ttl: 168h
+  verification:
+    tokenTTL: 48h
 
 servicesCatalog:
   refreshInterval: 5m
