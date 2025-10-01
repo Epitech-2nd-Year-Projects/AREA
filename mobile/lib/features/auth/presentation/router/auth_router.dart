@@ -3,9 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/navigation/app_navigation.dart';
-import '../../../../core/navigation/main_scaffold.dart';
+import '../../../areas/presentation/pages/areas_page.dart';
+import '../../../areas/presentation/pages/area_form_page.dart';
+import '../../../areas/domain/entities/area.dart';
 import '../blocs/auth_bloc.dart';
-import '../blocs/auth_state.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
 import '../pages/oauth_callback_page.dart';
@@ -34,6 +35,19 @@ class AuthRouter {
         GoRoute(
           path: '/areas',
           builder: (context, state) => const AreasPage(),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (context, state) => const AreaFormPage(),
+            ),
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) {
+                final area = state.extra as Area; // on reçoit l'Area à éditer
+                return AreaFormPage(areaToEdit: area);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/profile',
@@ -68,11 +82,7 @@ class AuthRouter {
     GoRoute(
       path: '/',
       redirect: (context, state) {
-        final authState = context.read<AuthBloc>().state;
-        if (authState is Authenticated) {
-          return '/dashboard';
-        }
-        return '/login';
+        return '/services';
       },
     ),
   ];
@@ -100,16 +110,16 @@ class ServicesPage extends StatelessWidget {
   }
 }
 
-class AreasPage extends StatelessWidget {
-  const AreasPage({super.key});
+// class AreasPage extends StatelessWidget {
+//   const AreasPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Areas Page ⚡'),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Center(
+//       child: Text('Areas Page ⚡'),
+//     );
+//   }
+// }
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
