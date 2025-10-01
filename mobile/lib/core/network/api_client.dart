@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'dart:io';
-
 import 'api_config.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
@@ -11,8 +10,9 @@ import 'interceptors/retry_interceptor.dart';
 class ApiClient {
     late final Dio _dio;
     late final PersistCookieJar cookieJar;
+    final String? _cookieDirPath;
 
-    ApiClient({String? baseUrl}) {
+    ApiClient({String? baseUrl, String? cookieDirPath}) : _cookieDirPath = cookieDirPath {
       _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl ?? ApiConfig.baseUrl,
@@ -21,9 +21,10 @@ class ApiClient {
           headers: ApiConfig.defaultHeaders,
         ),
       );
+      final cookiesPath = _cookieDirPath ?? "${Directory.systemTemp.path}/cookies";
       cookieJar = PersistCookieJar(
         ignoreExpires: false,
-        storage: FileStorage("${Directory.systemTemp.path}/cookies"),
+        storage: FileStorage(cookiesPath),
       );
       _dio.interceptors.add(CookieManager(cookieJar));
 

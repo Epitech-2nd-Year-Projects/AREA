@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../network/api_client.dart';
+import 'package:path_provider/path_provider.dart';
 import '../storage/secure_storage_manager.dart';
 import '../storage/local_prefs_manager.dart';
 import '../storage/cache_manager.dart';
@@ -12,7 +13,8 @@ import '../../features/services/domain/repositories/services_repository.dart';
 final sl = GetIt.instance;
 
 Future<void> initCoreDependencies() async {
-  sl.registerLazySingleton<ApiClient>(() => ApiClient());
+  final supportDir = await getApplicationSupportDirectory();
+  sl.registerLazySingleton<ApiClient>(() => ApiClient(cookieDirPath: '${supportDir.path}/cookies'));
 
   sl.registerLazySingleton<SecureStorageManager>(() => SecureStorageManager(null));
 
