@@ -4,6 +4,7 @@ import 'package:area/features/areas/domain/use_cases/delete_area.dart';
 import 'package:area/features/areas/presentation/cubits/areas_state.dart';
 import 'package:area/features/areas/domain/repositories/area_repository.dart';
 
+
 class AreasCubit extends Cubit<AreasState> {
   late final GetAreas _getAreas;
   late final DeleteArea _deleteArea;
@@ -19,7 +20,7 @@ class AreasCubit extends Cubit<AreasState> {
       final areasList = await _getAreas();
       emit(AreasLoaded(areasList));
     } catch (e) {
-      emit(AreasError("Impossible de charger les Areas"));
+      emit(AreasError("Unable to load Areas"));
     }
   }
 
@@ -30,7 +31,7 @@ class AreasCubit extends Cubit<AreasState> {
       final updatedList = await _getAreas();
       emit(AreasLoaded(updatedList));
     } catch (e) {
-      emit(AreasError("Erreur lors de la suppression"));
+      emit(AreasError("Error deleting Area"));
     }
   }
 }
