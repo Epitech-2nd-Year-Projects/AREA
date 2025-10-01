@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/navigation/app_navigation.dart';
+import '../../../areas/presentation/pages/areas_page.dart';
+import '../../../areas/presentation/pages/area_form_page.dart';
+import '../../../areas/domain/entities/area.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../blocs/auth_bloc.dart';
@@ -41,9 +44,25 @@ class AuthRouter {
           ],
         ),
         GoRoute(
-          path: '/areas',
-          builder: (context, state) => const AreasPage(),
-        ),
+              name: 'areas',
+              path: '/areas',
+              builder: (_, __) => const AreasPage(),
+              routes: [
+                GoRoute(
+                  name: 'area-new',
+                  path: 'new',
+                  builder: (_, __) => const AreaFormPage(),
+                ),
+                GoRoute(
+                  name: 'area-edit',
+                  path: 'edit',
+                  builder: (context, state) {
+                    final area = state.extra as Area;
+                    return AreaFormPage(areaToEdit: area);
+                  },
+                ),
+              ],
+            ),
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
@@ -104,14 +123,16 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
-class AreasPage extends StatelessWidget {
-  const AreasPage({super.key});
+// class AreasPage extends StatelessWidget {
+//   const AreasPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Areas Page ⚡'));
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Center(
+//       child: Text('Areas Page ⚡'),
+//     );
+//   }
+// }
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
