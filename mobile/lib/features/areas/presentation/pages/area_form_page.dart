@@ -5,11 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/entities/area.dart';
 import '../../domain/repositories/area_repository.dart';
-import '../../domain/use_cases/create_area.dart';
-import '../../domain/use_cases/update_area.dart';
 import '../cubits/area_form_cubit.dart';
 import '../cubits/area_form_state.dart';
-import '../cubits/areas_cubit.dart';
+import '../../../services/domain/repositories/services_repository.dart';
+
+import '../widgets/service_and_component_picker.dart';
+import '../widgets/service_picker_sheet.dart';
 
 class AreaFormPage extends StatelessWidget {
   final Area? areaToEdit;
@@ -19,70 +20,42 @@ class AreaFormPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => AreaFormCubit(
-        createArea: CreateArea(sl<AreaRepository>()),
-        updateArea: UpdateArea(sl<AreaRepository>()),
+        sl<AreaRepository>(),
+        sl<ServicesRepository>(),
         initialArea: areaToEdit,
-      ),
-      child: _AreaFormScaffold(areaToEdit: areaToEdit),
+      )..primeSubscriptionCache(),
+      child: _AreaFormScreen(),
     );
   }
 }
 
-class _AreaFormScaffold extends StatelessWidget {
-  final Area? areaToEdit;
-  const _AreaFormScaffold({required this.areaToEdit});
-
+class _AreaFormScreen extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    final isEdit = areaToEdit != null;
-    return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit Area' : 'New Area')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _AreaFormContent(area: areaToEdit),
-      ),
-    );
-  }
+  State<_AreaFormScreen> createState() => _AreaFormScreenState();
 }
 
-class _AreaFormContent extends StatefulWidget {
-  final Area? area;
-  const _AreaFormContent({this.area});
-
-  @override
-  State<_AreaFormContent> createState() => _AreaFormContentState();
-}
-
-class _AreaFormContentState extends State<_AreaFormContent> {
+class _AreaFormScreenState extends State<_AreaFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _nameCtrl;
   bool _isActive = true;
 
-  String? _selectedAction;
-  String? _selectedReaction;
+  String? _actionProviderId;
+  String? _actionProviderLabel;
+  bool? _actionIsSubscribed;
+  String? _actionComponentId;
 
-  static const List<String> kActionOptions = [
-    'issue_created',
-    'mail_with_attachment',
-  ];
-  static const List<String> kReactionOptions = [
-    'send_teams_message',
-    'save_to_onedrive',
-  ];
+  String? _reactionProviderId;
+  String? _reactionProviderLabel;
+  bool? _reactionIsSubscribed;
+  String? _reactionComponentId;
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.area?.name ?? '');
-    _isActive = widget.area?.isActive ?? true;
-
-    _selectedAction = (widget.area != null && kActionOptions.contains(widget.area!.actionName))
-        ? widget.area!.actionName
-        : null;
-
-    _selectedReaction = (widget.area != null && kReactionOptions.contains(widget.area!.reactionName))
-        ? widget.area!.reactionName
-        : null;
+    final initial = context.read<AreaFormCubit>().initialArea;
+    _nameCtrl = TextEditingController(text: initial?.name ?? '');
+    _isActive = initial?.isActive ?? true;
   }
 
   @override
@@ -91,116 +64,255 @@ class _AreaFormContentState extends State<_AreaFormContent> {
     super.dispose();
   }
 
-  String _labelForAction(String key) {
-    switch (key) {
-      case 'issue_created': return 'Issue GitHub created';
-      case 'mail_with_attachment': return 'E-mail with attachment';
-      default: return key;
+  Future<void> _pickActionService() async {
+    final res = await showServicePickerSheet(context, title: 'Select Action Service');
+    if (res == null) return;
+
+    if (!res.isSubscribed) {
+      final go = await _confirmSubscribe(res.providerName);
+      if (go) {
+        await context.push('/services');
+        await context.read<AreaFormCubit>().primeSubscriptionCache();
+      }
+      return;
     }
+
+    setState(() {
+      _actionProviderId = res.providerId;
+      _actionProviderLabel = res.providerName;
+      _actionIsSubscribed = res.isSubscribed;
+      _actionComponentId = null;
+    });
   }
 
-  String _labelForReaction(String key) {
-    switch (key) {
-      case 'send_teams_message': return 'Send Teams message';
-      case 'save_to_onedrive': return 'Save to OneDrive';
-      default: return key;
+  Future<void> _pickReactionService() async {
+    final res = await showServicePickerSheet(context, title: 'Select Reaction Service');
+    if (res == null) return;
+
+    if (!res.isSubscribed) {
+      final go = await _confirmSubscribe(res.providerName);
+      if (go) {
+        await context.push('/services');
+        await context.read<AreaFormCubit>().primeSubscriptionCache();
+      }
+      return;
     }
+
+    setState(() {
+      _reactionProviderId = res.providerId;
+      _reactionProviderLabel = res.providerName;
+      _reactionIsSubscribed = res.isSubscribed;
+      _reactionComponentId = null;
+    });
+  }
+
+  Future<bool> _confirmSubscribe(String serviceName) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Not subscribed'),
+            content: Text('You are not subscribed to "$serviceName". Subscribe now?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Go to Services')),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  void _submit() {
+    final valid = _formKey.currentState?.validate() ?? false;
+    if (!valid) return;
+
+    if (_actionProviderId == null || _reactionProviderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick Action & Reaction services')),
+      );
+      return;
+    }
+    if (_actionComponentId == null || _reactionComponentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick Action & Reaction components')),
+      );
+      return;
+    }
+
+    context.read<AreaFormCubit>().submit(
+          name: _nameCtrl.text.trim(),
+          isActive: _isActive,
+          actionName: _actionComponentId!,
+          reactionName: _reactionComponentId!,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    final actionItems = <String>{
-      if (_selectedAction != null) _selectedAction!,
-      ...kActionOptions,
-    }.toList();
-
-    final reactionItems = <String>{
-      if (_selectedReaction != null) _selectedReaction!,
-      ...kReactionOptions,
-    }.toList();
-
-    final actionValue = actionItems.contains(_selectedAction) ? _selectedAction : null;
-    final reactionValue = reactionItems.contains(_selectedReaction) ? _selectedReaction : null;
+    final cubit = context.read<AreaFormCubit>();
+    final isEdit = cubit.initialArea != null;
 
     return BlocConsumer<AreaFormCubit, AreaFormState>(
       listener: (context, state) {
         if (state is AreaFormSuccess) {
-          final areasCubit = context.findAncestorStateOfType<State>() != null
-              ? context.read<AreasCubit?>()
-              : null;
-          areasCubit?.fetchAreas();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Save successful!')),
-          );
-          context.pop();
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Area saved successfully!')));
+          context.pop(true);
         } else if (state is AreaFormError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
         final isSubmitting = state is AreaFormSubmitting;
 
-        return Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name of the automation'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Name cannot be empty' : null,
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                title: const Text('Activate this Area'),
-                value: _isActive,
-                onChanged: (v) => setState(() => _isActive = v),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Action'),
-                initialValue: actionValue,
-                hint: const Text('Choose an action'),
-                items: actionItems
-                    .map((e) => DropdownMenuItem(value: e, child: Text(_labelForAction(e))))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedAction = v),
-                validator: (v) => v == null ? 'Select an action' : null,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Reaction'),
-                initialValue: reactionValue,
-                hint: const Text('Choose a reaction'),
-                items: reactionItems
-                    .map((e) => DropdownMenuItem(value: e, child: Text(_labelForReaction(e))))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedReaction = v),
-                validator: (v) => v == null ? 'Select a reaction' : null,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: isSubmitting
-                    ? null
-                    : () {
-                        if (_formKey.currentState!.validate()) {
-                          context.read<AreaFormCubit>().submit(
-                                name: _nameCtrl.text.trim(),
-                                isActive: _isActive,
-                                actionName: _selectedAction!,
-                                reactionName: _selectedReaction!,
-                              );
-                        }
-                      },
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(widget.area == null ? 'Create' : 'Save'),
-              ),
-            ],
+        return Scaffold(
+          appBar: AppBar(title: Text(isEdit ? 'Edit Area' : 'New Area')),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 900;
+              final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 900;
+              final horizontalPadding = isWide ? 48.0 : (isTablet ? 24.0 : 16.0);
+              const maxContentWidth = 1100.0;
+
+              final content = Form(
+                key: _formKey,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Wrap(
+                            runSpacing: 12,
+                            spacing: 16,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: isWide ? 420 : (isTablet ? 380 : double.infinity),
+                                child: TextFormField(
+                                  controller: _nameCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: 'Name',
+                                    hintText: 'Enter area name',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty) ? 'Name cannot be empty' : null,
+                                  enabled: !isSubmitting,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Active'),
+                                  Switch(
+                                    value: _isActive,
+                                    onChanged: isSubmitting ? null : (v) => setState(() => _isActive = v),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      if (isWide)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: ServiceAndComponentPicker(
+                                title: 'Action',
+                                providerId: _actionProviderId,
+                                providerLabel: _actionProviderLabel,
+                                isSubscribed: _actionIsSubscribed,
+                                selectedComponentId: _actionComponentId,
+                                kind: ServiceComponentKind.action,
+                                onSelectService: _pickActionService,
+                                onComponentChanged: (id) => setState(() => _actionComponentId = id),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ServiceAndComponentPicker(
+                                title: 'Reaction',
+                                providerId: _reactionProviderId,
+                                providerLabel: _reactionProviderLabel,
+                                isSubscribed: _reactionIsSubscribed,
+                                selectedComponentId: _reactionComponentId,
+                                kind: ServiceComponentKind.reaction,
+                                onSelectService: _pickReactionService,
+                                onComponentChanged: (id) => setState(() => _reactionComponentId = id),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Column(
+                          children: [
+                            ServiceAndComponentPicker(
+                              title: 'Action',
+                              providerId: _actionProviderId,
+                              providerLabel: _actionProviderLabel,
+                              isSubscribed: _actionIsSubscribed,
+                              selectedComponentId: _actionComponentId,
+                              kind: ServiceComponentKind.action,
+                              onSelectService: _pickActionService,
+                              onComponentChanged: (id) => setState(() => _actionComponentId = id),
+                            ),
+                            const SizedBox(height: 16),
+                            ServiceAndComponentPicker(
+                              title: 'Reaction',
+                              providerId: _reactionProviderId,
+                              providerLabel: _reactionProviderLabel,
+                              isSubscribed: _reactionIsSubscribed,
+                              selectedComponentId: _reactionComponentId,
+                              kind: ServiceComponentKind.reaction,
+                              onSelectService: _pickReactionService,
+                              onComponentChanged: (id) => setState(() => _reactionComponentId = id),
+                            ),
+                          ],
+                        ),
+
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          icon: isSubmitting
+                              ? const SizedBox(
+                                  width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.save),
+                          label: Text(isEdit ? 'Save' : 'Create'),
+                          onPressed: isSubmitting ? null : _submit,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+
+              return SafeArea(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: content,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
