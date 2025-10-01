@@ -117,6 +117,17 @@ var _defaultConfig = Config{
 			MinLength: 12,
 			PepperEnv: "PASSWORD_PEPPER",
 		},
+		Sessions: SessionConfig{
+			CookieName: "area_session",
+			Path:       "/",
+			Secure:     false,
+			HTTPOnly:   true,
+			SameSite:   "lax",
+			TTL:        168 * time.Hour,
+		},
+		Verification: VerificationConfig{
+			TokenTTL: 48 * time.Hour,
+		},
 	},
 	ServicesCatalog: ServicesCatalogConfig{
 		RefreshInterval: 5 * time.Minute,
@@ -201,6 +212,14 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("security.jwt.refreshSecretEnv", _defaultConfig.Security.JWT.RefreshSecretEnv)
 	v.SetDefault("security.password.minLength", _defaultConfig.Security.Password.MinLength)
 	v.SetDefault("security.password.pepperEnv", _defaultConfig.Security.Password.PepperEnv)
+	v.SetDefault("security.sessions.cookieName", _defaultConfig.Security.Sessions.CookieName)
+	v.SetDefault("security.sessions.domain", _defaultConfig.Security.Sessions.Domain)
+	v.SetDefault("security.sessions.path", _defaultConfig.Security.Sessions.Path)
+	v.SetDefault("security.sessions.secure", _defaultConfig.Security.Sessions.Secure)
+	v.SetDefault("security.sessions.httpOnly", _defaultConfig.Security.Sessions.HTTPOnly)
+	v.SetDefault("security.sessions.sameSite", _defaultConfig.Security.Sessions.SameSite)
+	v.SetDefault("security.sessions.ttl", _defaultConfig.Security.Sessions.TTL.String())
+	v.SetDefault("security.verification.tokenTTL", _defaultConfig.Security.Verification.TokenTTL.String())
 
 	v.SetDefault("servicesCatalog.refreshInterval", _defaultConfig.ServicesCatalog.RefreshInterval.String())
 	v.SetDefault("servicesCatalog.bootstrapFile", _defaultConfig.ServicesCatalog.BootstrapFile)

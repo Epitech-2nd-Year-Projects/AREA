@@ -141,6 +141,22 @@ func normalizeConfig(cfg *Config) {
 	if cfg.Secrets.Path == "" {
 		cfg.Secrets.Path = _defaultConfig.Secrets.Path
 	}
+
+	if cfg.Security.Sessions.CookieName == "" {
+		cfg.Security.Sessions.CookieName = _defaultConfig.Security.Sessions.CookieName
+	}
+	if cfg.Security.Sessions.Path == "" {
+		cfg.Security.Sessions.Path = _defaultConfig.Security.Sessions.Path
+	}
+	if cfg.Security.Sessions.SameSite == "" {
+		cfg.Security.Sessions.SameSite = _defaultConfig.Security.Sessions.SameSite
+	}
+	if cfg.Security.Sessions.TTL == 0 {
+		cfg.Security.Sessions.TTL = _defaultConfig.Security.Sessions.TTL
+	}
+	if cfg.Security.Verification.TokenTTL == 0 {
+		cfg.Security.Verification.TokenTTL = _defaultConfig.Security.Verification.TokenTTL
+	}
 }
 
 func loadSecrets(cfg SecretsConfig) error {
