@@ -325,6 +325,7 @@ export const mockUserLinkedAreas: Area[] = [
     name: 'Issue to Discord',
     description:
       'When an issue is opened in a repository, send a message in a channel',
+    enabled: true,
     action: mockActions[0],
     reactions: [mockReactions[1]]
   },
@@ -333,6 +334,7 @@ export const mockUserLinkedAreas: Area[] = [
     name: 'Message to Discord',
     description:
       'When a message is sent in a channel, send a message in a channel',
+    enabled: true,
     action: mockActions[1],
     reactions: [mockReactions[1]]
   },
@@ -340,6 +342,7 @@ export const mockUserLinkedAreas: Area[] = [
     id: '3',
     name: 'File to Discord',
     description: 'When a file is uploaded, send a message in a channel',
+    enabled: false,
     action: mockActions[2],
     reactions: [mockReactions[1]]
   },
@@ -348,6 +351,7 @@ export const mockUserLinkedAreas: Area[] = [
     name: 'File to Discord & Slack',
     description:
       'When a file is uploaded, send a message in a channel and post a message in a channel',
+    enabled: true,
     action: mockActions[2],
     reactions: [mockReactions[1], mockReactions[3]]
   }

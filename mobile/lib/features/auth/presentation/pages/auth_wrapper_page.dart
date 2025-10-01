@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/auth_state.dart';
 import 'login_page.dart';
 
-class AuthWrapperPage extends StatelessWidget {
+class AuthWrapperPage extends StatefulWidget {
   final Widget authenticatedChild;
 
   const AuthWrapperPage({
@@ -15,26 +16,57 @@ class AuthWrapperPage extends StatelessWidget {
   });
 
   @override
+  State<AuthWrapperPage> createState() => _AuthWrapperPageState();
+}
+
+class _AuthWrapperPageState extends State<AuthWrapperPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthBloc>().add(AppStarted());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final currentLocation = GoRouterState.of(context).uri.path;
 
     return BlocConsumer<AuthBloc, AuthState>(
-      listener: (context, state) {},
-      builder: (context, state) {
-        if (state is AuthInitial) {
-          context.read<AuthBloc>().add(AppStarted());
-          return _buildLoadingScreen(theme);
+      listener: (context, state) {
+        if (state is Unauthenticated) {
+          debugPrint('🔓 User is unauthenticated');
+        } else if (state is Authenticated) {
+          debugPrint('🔒 User is authenticated: ${state.user.email}');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && currentLocation == '/') {
+              context.go('/dashboard');
+            }
+          });
         }
-
-        if (state is AuthLoading) {
+      },
+      builder: (context, state) {
+        if (state is AuthInitial || state is AuthLoading) {
           return _buildLoadingScreen(theme);
         }
 
         if (state is Authenticated) {
-          return authenticatedChild;
+          if (currentLocation == '/') {
+            return _buildLoadingScreen(theme);
+          }
+          return widget.authenticatedChild;
         }
 
-        return const LoginPage();
+        if (state is Unauthenticated) {
+          return _buildUnauthenticatedView();
+        }
+
+        if (state is AuthError) {
+          return _buildErrorScreen(theme, state.message);
+        }
+
+        return _buildLoadingScreen(theme);
       },
     );
   }
@@ -43,8 +75,60 @@ class AuthWrapperPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+            SizedBox(height: 16),
+            Text('Loading...'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnauthenticatedView() {
+    return const LoginPage();
+  }
+
+  Widget _buildErrorScreen(ThemeData theme, String message) {
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.error,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Authentication Error',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<AuthBloc>().add(AppStarted());
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       ),
     );
