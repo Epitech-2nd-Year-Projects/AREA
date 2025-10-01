@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,13 +11,19 @@ import (
 	"time"
 
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/router"
+	loggerMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/logger"
+	sendgridMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/sendgrid"
+	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
+	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
 	ginhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver/gin"
 	projectlogging "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	projectlogger "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging/zap"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/password"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +79,10 @@ func run() error {
 		return fmt.Errorf("ginhttp.New: %w", err)
 	}
 
-	var loaders []catalog.Loader
+	var (
+		loaders     []catalog.Loader
+		authHandler *authapp.Handler
+	)
 
 	dbCtx := context.Background()
 	db, dbErr := postgres.Open(dbCtx, cfg.Database)
@@ -80,6 +90,35 @@ func run() error {
 		logger.Warn("postgres connection unavailable", zap.Error(dbErr))
 	} else {
 		loaders = append(loaders, catalog.DBLoader{DB: db})
+
+		repo := authpostgres.NewRepository(db)
+
+		mailer := buildMailer(cfg, logger)
+
+		authService := authapp.NewService(
+			repo.Users(),
+			repo.Sessions(),
+			repo.VerificationTokens(),
+			mailer,
+			password.Hasher{Pepper: cfg.Security.Password.Pepper},
+			nil,
+			logger,
+			authapp.Config{
+				PasswordMinLength: cfg.Security.Password.MinLength,
+				SessionTTL:        cfg.Security.Sessions.TTL,
+				VerificationTTL:   cfg.Security.Verification.TokenTTL,
+				BaseURL:           cfg.App.BaseURL,
+				CookieName:        cfg.Security.Sessions.CookieName,
+			},
+		)
+
+		authHandler = authapp.NewHandler(authService, authapp.CookieConfig{
+			Domain:   cfg.Security.Sessions.Domain,
+			Path:     cfg.Security.Sessions.Path,
+			Secure:   cfg.Security.Sessions.Secure,
+			HTTPOnly: cfg.Security.Sessions.HTTPOnly,
+			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
+		})
 		sqlDB, err := db.DB()
 		if err != nil {
 			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
@@ -99,6 +138,7 @@ func run() error {
 
 	if err := router.Register(server.Engine(), router.Dependencies{
 		AboutLoader: catalog.NewChainLoader(loaders...),
+		AuthHandler: authHandler,
 	}); err != nil {
 		return fmt.Errorf("router.Register: %w", err)
 	}
@@ -117,4 +157,32 @@ func run() error {
 
 	logger.Info("http server stopped gracefully")
 	return nil
+}
+
+func buildMailer(cfg configviper.Config, logger *zap.Logger) outbound.Mailer {
+	provider := strings.TrimSpace(strings.ToLower(cfg.Notifier.Mailer.Provider))
+	switch provider {
+	case "sendgrid":
+		return sendgridMailer.Mailer{
+			APIKey:    cfg.Notifier.Mailer.APIKey,
+			FromEmail: cfg.Notifier.Mailer.FromEmail,
+			FromName:  cfg.App.Name,
+			Sandbox:   cfg.Notifier.Mailer.SandboxMode,
+		}
+	default:
+		return loggerMailer.Mailer{Logger: logger}
+	}
+}
+
+func parseSameSite(mode string) http.SameSite {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	case "lax":
+		fallthrough
+	default:
+		return http.SameSiteLaxMode
+	}
 }
