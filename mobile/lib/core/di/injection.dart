@@ -1,3 +1,5 @@
+import 'package:area/features/areas/data/repositories/area_repository_impl.dart';
+import 'package:area/features/areas/domain/repositories/area_repository.dart';
 import 'package:get_it/get_it.dart';
 import '../network/api_client.dart';
 import '../storage/secure_storage_manager.dart';
@@ -22,4 +24,6 @@ Future<void> initCoreDependencies() async {
 
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
   sl.registerFactory<AuthBloc>(() => AuthBloc(sl<AuthRepository>()));
+
+  sl.registerLazySingleton<AreaRepository>(() => AreaRepositoryImpl());
 }
