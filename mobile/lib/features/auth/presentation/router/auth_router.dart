@@ -44,22 +44,25 @@ class AuthRouter {
           ],
         ),
         GoRoute(
-          path: '/areas',
-          builder: (context, state) => const AreasPage(),
-          routes: [
-            GoRoute(
-              path: 'new',
-              builder: (context, state) => const AreaFormPage(),
+              name: 'areas',
+              path: '/areas',
+              builder: (_, __) => const AreasPage(),
+              routes: [
+                GoRoute(
+                  name: 'area-new',
+                  path: 'new',
+                  builder: (_, __) => const AreaFormPage(),
+                ),
+                GoRoute(
+                  name: 'area-edit',
+                  path: 'edit',
+                  builder: (context, state) {
+                    final area = state.extra as Area;
+                    return AreaFormPage(areaToEdit: area);
+                  },
+                ),
+              ],
             ),
-            GoRoute(
-              path: 'edit',
-              builder: (context, state) {
-                final area = state.extra as Area; // on reçoit l'Area à éditer
-                return AreaFormPage(areaToEdit: area);
-              },
-            ),
-          ],
-        ),
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
