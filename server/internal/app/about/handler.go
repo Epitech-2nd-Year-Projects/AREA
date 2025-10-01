@@ -41,7 +41,7 @@ func New(loader catalog.Loader, clock Clock) *Handler {
 
 // Register installs the about route on the provided Gin router
 func (h *Handler) Register(r gin.IRouter) {
-	openapi.RegisterHandlers(r, h)
+	r.GET("/about.json", h.GetAbout)
 }
 
 // GetAbout handles the OpenAPI getAbout operation
