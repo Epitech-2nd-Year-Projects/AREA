@@ -14,10 +14,12 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // AboutClient defines model for AboutClient.
@@ -41,10 +43,32 @@ type AboutServer struct {
 	Services []Service `json:"services"`
 }
 
+// AuthSessionResponse defines model for AuthSessionResponse.
+type AuthSessionResponse struct {
+	User User `json:"user"`
+}
+
 // Component defines model for Component.
 type Component struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
+}
+
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// RegisterUserRequest defines model for RegisterUserRequest.
+type RegisterUserRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// RegisterUserResponse defines model for RegisterUserResponse.
+type RegisterUserResponse struct {
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // Service defines model for Service.
@@ -54,11 +78,55 @@ type Service struct {
 	Reactions []Component `json:"reactions"`
 }
 
+// User defines model for User.
+type User struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	Email       string             `json:"email"`
+	Id          openapi_types.UUID `json:"id"`
+	LastLoginAt *time.Time         `json:"last_login_at"`
+	Status      string             `json:"status"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+// UserResponse defines model for UserResponse.
+type UserResponse struct {
+	User User `json:"user"`
+}
+
+// VerifyEmailRequest defines model for VerifyEmailRequest.
+type VerifyEmailRequest struct {
+	Token string `json:"token"`
+}
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
+// VerifyEmailJSONRequestBody defines body for VerifyEmail for application/json ContentType.
+type VerifyEmailJSONRequestBody = VerifyEmailRequest
+
+// RegisterUserJSONRequestBody defines body for RegisterUser for application/json ContentType.
+type RegisterUserJSONRequestBody = RegisterUserRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Describe server capabilities
 	// (GET /about.json)
 	GetAbout(c *gin.Context)
+	// Authenticate using email and password
+	// (POST /v1/auth/login)
+	Login(c *gin.Context)
+	// Revoke the current session
+	// (POST /v1/auth/logout)
+	Logout(c *gin.Context)
+	// Retrieve the authenticated user profile
+	// (GET /v1/auth/me)
+	GetCurrentUser(c *gin.Context)
+	// Verify email address and create a session
+	// (POST /v1/auth/verify)
+	VerifyEmail(c *gin.Context)
+	// Register a new user
+	// (POST /v1/users)
+	RegisterUser(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -81,6 +149,71 @@ func (siw *ServerInterfaceWrapper) GetAbout(c *gin.Context) {
 	}
 
 	siw.Handler.GetAbout(c)
+}
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.Login(c)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.Logout(c)
+}
+
+// GetCurrentUser operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentUser(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCurrentUser(c)
+}
+
+// VerifyEmail operation middleware
+func (siw *ServerInterfaceWrapper) VerifyEmail(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.VerifyEmail(c)
+}
+
+// RegisterUser operation middleware
+func (siw *ServerInterfaceWrapper) RegisterUser(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RegisterUser(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -111,6 +244,11 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/about.json", wrapper.GetAbout)
+	router.POST(options.BaseURL+"/v1/auth/login", wrapper.Login)
+	router.POST(options.BaseURL+"/v1/auth/logout", wrapper.Logout)
+	router.GET(options.BaseURL+"/v1/auth/me", wrapper.GetCurrentUser)
+	router.POST(options.BaseURL+"/v1/auth/verify", wrapper.VerifyEmail)
+	router.POST(options.BaseURL+"/v1/users", wrapper.RegisterUser)
 }
 
 type GetAboutRequestObject struct {
@@ -129,11 +267,180 @@ func (response GetAbout200JSONResponse) VisitGetAboutResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type LoginRequestObject struct {
+	Body *LoginJSONRequestBody
+}
+
+type LoginResponseObject interface {
+	VisitLoginResponse(w http.ResponseWriter) error
+}
+
+type Login200ResponseHeaders struct {
+	SetCookie string
+}
+
+type Login200JSONResponse struct {
+	Body    AuthSessionResponse
+	Headers Login200ResponseHeaders
+}
+
+func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Set-Cookie", fmt.Sprint(response.Headers.SetCookie))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type Login400Response struct {
+}
+
+func (response Login400Response) VisitLoginResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type Login403Response struct {
+}
+
+func (response Login403Response) VisitLoginResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type LogoutRequestObject struct {
+}
+
+type LogoutResponseObject interface {
+	VisitLogoutResponse(w http.ResponseWriter) error
+}
+
+type Logout204Response struct {
+}
+
+func (response Logout204Response) VisitLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GetCurrentUserRequestObject struct {
+}
+
+type GetCurrentUserResponseObject interface {
+	VisitGetCurrentUserResponse(w http.ResponseWriter) error
+}
+
+type GetCurrentUser200JSONResponse UserResponse
+
+func (response GetCurrentUser200JSONResponse) VisitGetCurrentUserResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCurrentUser401Response struct {
+}
+
+func (response GetCurrentUser401Response) VisitGetCurrentUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type VerifyEmailRequestObject struct {
+	Body *VerifyEmailJSONRequestBody
+}
+
+type VerifyEmailResponseObject interface {
+	VisitVerifyEmailResponse(w http.ResponseWriter) error
+}
+
+type VerifyEmail200ResponseHeaders struct {
+	SetCookie string
+}
+
+type VerifyEmail200JSONResponse struct {
+	Body    AuthSessionResponse
+	Headers VerifyEmail200ResponseHeaders
+}
+
+func (response VerifyEmail200JSONResponse) VisitVerifyEmailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Set-Cookie", fmt.Sprint(response.Headers.SetCookie))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type VerifyEmail400Response struct {
+}
+
+func (response VerifyEmail400Response) VisitVerifyEmailResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type VerifyEmail410Response struct {
+}
+
+func (response VerifyEmail410Response) VisitVerifyEmailResponse(w http.ResponseWriter) error {
+	w.WriteHeader(410)
+	return nil
+}
+
+type RegisterUserRequestObject struct {
+	Body *RegisterUserJSONRequestBody
+}
+
+type RegisterUserResponseObject interface {
+	VisitRegisterUserResponse(w http.ResponseWriter) error
+}
+
+type RegisterUser202JSONResponse RegisterUserResponse
+
+func (response RegisterUser202JSONResponse) VisitRegisterUserResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterUser400Response struct {
+}
+
+func (response RegisterUser400Response) VisitRegisterUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type RegisterUser409Response struct {
+}
+
+func (response RegisterUser409Response) VisitRegisterUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Describe server capabilities
 	// (GET /about.json)
 	GetAbout(ctx context.Context, request GetAboutRequestObject) (GetAboutResponseObject, error)
+	// Authenticate using email and password
+	// (POST /v1/auth/login)
+	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+	// Revoke the current session
+	// (POST /v1/auth/logout)
+	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// Retrieve the authenticated user profile
+	// (GET /v1/auth/me)
+	GetCurrentUser(ctx context.Context, request GetCurrentUserRequestObject) (GetCurrentUserResponseObject, error)
+	// Verify email address and create a session
+	// (POST /v1/auth/verify)
+	VerifyEmail(ctx context.Context, request VerifyEmailRequestObject) (VerifyEmailResponseObject, error)
+	// Register a new user
+	// (POST /v1/users)
+	RegisterUser(ctx context.Context, request RegisterUserRequestObject) (RegisterUserResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -173,18 +480,177 @@ func (sh *strictHandler) GetAbout(ctx *gin.Context) {
 	}
 }
 
+// Login operation middleware
+func (sh *strictHandler) Login(ctx *gin.Context) {
+	var request LoginRequestObject
+
+	var body LoginJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.Login(ctx, request.(LoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Login")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(LoginResponseObject); ok {
+		if err := validResponse.VisitLoginResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Logout operation middleware
+func (sh *strictHandler) Logout(ctx *gin.Context) {
+	var request LogoutRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.Logout(ctx, request.(LogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Logout")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(LogoutResponseObject); ok {
+		if err := validResponse.VisitLogoutResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCurrentUser operation middleware
+func (sh *strictHandler) GetCurrentUser(ctx *gin.Context) {
+	var request GetCurrentUserRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCurrentUser(ctx, request.(GetCurrentUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCurrentUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetCurrentUserResponseObject); ok {
+		if err := validResponse.VisitGetCurrentUserResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyEmail operation middleware
+func (sh *strictHandler) VerifyEmail(ctx *gin.Context) {
+	var request VerifyEmailRequestObject
+
+	var body VerifyEmailJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyEmail(ctx, request.(VerifyEmailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyEmail")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(VerifyEmailResponseObject); ok {
+		if err := validResponse.VisitVerifyEmailResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterUser operation middleware
+func (sh *strictHandler) RegisterUser(ctx *gin.Context) {
+	var request RegisterUserRequestObject
+
+	var body RegisterUserJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterUser(ctx, request.(RegisterUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(RegisterUserResponseObject); ok {
+		if err := validResponse.VisitRegisterUserResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
