@@ -1,0 +1,115 @@
+package auth
+
+import (
+	"time"
+
+	authdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/auth"
+	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
+	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
+	"github.com/google/uuid"
+)
+
+type userModel struct {
+	ID           uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
+	Email        string     `gorm:"column:email"`
+	PasswordHash string     `gorm:"column:password_hash"`
+	Status       string     `gorm:"column:status"`
+	CreatedAt    time.Time  `gorm:"column:created_at"`
+	UpdatedAt    time.Time  `gorm:"column:updated_at"`
+	LastLoginAt  *time.Time `gorm:"column:last_login_at"`
+}
+
+func (userModel) TableName() string { return "users" }
+
+func (m userModel) toDomain() userdomain.User {
+	return userdomain.User{
+		ID:           m.ID,
+		Email:        m.Email,
+		PasswordHash: m.PasswordHash,
+		Status:       userdomain.Status(m.Status),
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+		LastLoginAt:  m.LastLoginAt,
+	}
+}
+
+func userFromDomain(u userdomain.User) userModel {
+	return userModel{
+		ID:           u.ID,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash,
+		Status:       string(u.Status),
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+		LastLoginAt:  u.LastLoginAt,
+	}
+}
+
+type sessionModel struct {
+	ID        uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
+	UserID    uuid.UUID  `gorm:"column:user_id"`
+	IssuedAt  time.Time  `gorm:"column:issued_at"`
+	ExpiresAt time.Time  `gorm:"column:expires_at"`
+	RevokedAt *time.Time `gorm:"column:revoked_at"`
+	IP        string     `gorm:"column:ip"`
+	UserAgent string     `gorm:"column:user_agent"`
+}
+
+func (sessionModel) TableName() string { return "sessions" }
+
+func (m sessionModel) toDomain() sessiondomain.Session {
+	return sessiondomain.Session{
+		ID:        m.ID,
+		UserID:    m.UserID,
+		IssuedAt:  m.IssuedAt,
+		ExpiresAt: m.ExpiresAt,
+		RevokedAt: m.RevokedAt,
+		IP:        m.IP,
+		UserAgent: m.UserAgent,
+	}
+}
+
+func sessionFromDomain(s sessiondomain.Session) sessionModel {
+	return sessionModel{
+		ID:        s.ID,
+		UserID:    s.UserID,
+		IssuedAt:  s.IssuedAt,
+		ExpiresAt: s.ExpiresAt,
+		RevokedAt: s.RevokedAt,
+		IP:        s.IP,
+		UserAgent: s.UserAgent,
+	}
+}
+
+type verificationTokenModel struct {
+	ID         uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
+	UserID     uuid.UUID  `gorm:"column:user_id"`
+	Token      string     `gorm:"column:token"`
+	ExpiresAt  time.Time  `gorm:"column:expires_at"`
+	ConsumedAt *time.Time `gorm:"column:consumed_at"`
+	CreatedAt  time.Time  `gorm:"column:created_at"`
+}
+
+func (verificationTokenModel) TableName() string { return "email_verification_tokens" }
+
+func (m verificationTokenModel) toDomain() authdomain.VerificationToken {
+	return authdomain.VerificationToken{
+		ID:        m.ID,
+		UserID:    m.UserID,
+		Token:     m.Token,
+		ExpiresAt: m.ExpiresAt,
+		Consumed:  m.ConsumedAt,
+		CreatedAt: m.CreatedAt,
+	}
+}
+
+func verificationTokenFromDomain(t authdomain.VerificationToken) verificationTokenModel {
+	return verificationTokenModel{
+		ID:         t.ID,
+		UserID:     t.UserID,
+		Token:      t.Token,
+		ExpiresAt:  t.ExpiresAt,
+		ConsumedAt: t.Consumed,
+		CreatedAt:  t.CreatedAt,
+	}
+}
