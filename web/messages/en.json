@@ -74,6 +74,7 @@
     "actionsLabel": "Action",
     "openActions": "Open action menu",
     "testRunArea": "Test run",
+    "seeHistory": "See history",
     "editArea": "Edit Area",
     "duplicateArea": "Duplicate Area",
     "deleteArea": "Delete Area",
@@ -249,5 +250,20 @@
     "removeParam": "Remove parameter",
     "cancel": "Cancel",
     "save": "Save configuration"
+  },
+  "AreaHistoryModal": {
+    "title": "Run history",
+    "description": "Review the recent activity for {area}.",
+    "empty": "No runs recorded yet.",
+    "statusSuccess": "Success",
+    "statusFailure": "Failed",
+    "successSummary": "{count, plural, one {# reaction completed} other {# reactions completed}} in {duration}.",
+    "failureSummary": "Failed after {duration}. {error}",
+    "triggeredBy": "Triggered by {action}",
+    "reactionsTriggered": "{count, plural, one {# reaction executed} other {# reactions executed}}",
+    "durationSeconds": "{seconds} s",
+    "duration": "Duration: {duration}",
+    "close": "Close",
+    "unknownError": "Unknown error"
   }
 }

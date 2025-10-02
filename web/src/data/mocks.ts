@@ -357,6 +357,59 @@ export const mockUserLinkedAreas: Area[] = [
   }
 ]
 
+export type MockAreaRunStatus = 'success' | 'failure'
+
+export type MockAreaRun = {
+  id: string
+  executedAt: Date
+  status: MockAreaRunStatus
+  durationMs: number
+  reactionsTriggered: number
+  errorMessage?: string
+}
+
+const mockAreaRunFailureMessages = [
+  'Timeout while notifying the service',
+  'Missing credential when executing the reaction',
+  'Service responded with an unexpected status'
+] as const
+
+export function buildMockAreaHistory(area: Area): MockAreaRun[] {
+  const seed = area.id
+    .split('')
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const items: MockAreaRun[] = []
+
+  for (let index = 0; index < 6; index += 1) {
+    const executedAt = new Date(
+      Date.now() - (index + 1) * ((seed % 6) + 2) * 60 * 60 * 1000
+    )
+    const isFailure = (seed + index) % 5 === 0
+    const durationMs = ((seed % 4) + index + 1) * 750
+    const reactionsTriggered =
+      area.reactions.length === 0
+        ? 0
+        : ((seed + index) % area.reactions.length) + 1
+    const failureMessageIndex =
+      (seed + index) % mockAreaRunFailureMessages.length
+
+    const run: MockAreaRun = {
+      id: `${area.id}-run-${index}`,
+      executedAt,
+      status: isFailure ? 'failure' : 'success',
+      durationMs,
+      reactionsTriggered,
+      errorMessage: isFailure
+        ? mockAreaRunFailureMessages[failureMessageIndex]
+        : undefined
+    }
+
+    items.push(run)
+  }
+
+  return items.sort((a, b) => b.executedAt.getTime() - a.executedAt.getTime())
+}
+
 export const mockAbout: About = {
   client: {
     host: 'https://are.na'
