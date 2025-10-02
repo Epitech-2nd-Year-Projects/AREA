@@ -8,6 +8,7 @@ import '../../../areas/presentation/pages/area_form_page.dart';
 import '../../../areas/domain/entities/area.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
+import '../../../profile/presentation/pages/profile_page.dart';
 import '../blocs/auth_bloc.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
@@ -120,25 +121,5 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: Text('Dashboard Page 🚀'));
-  }
-}
-
-// class AreasPage extends StatelessWidget {
-//   const AreasPage({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Center(
-//       child: Text('Areas Page ⚡'),
-//     );
-//   }
-// }
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Profile Page 👤'));
   }
 }
