@@ -1,20 +1,128 @@
-import { cn } from '@/lib/utils'
+'use client'
+import { FormEvent, useEffect, useState, useTransition } from 'react'
+import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { mockLoginUser, mockResendVerificationEmail } from '@/data/mocks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+
+type FeedbackState = {
+  message: string
+  variant: 'success' | 'error'
+}
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const serializedSearchParams = searchParams.toString()
   const t = useTranslations('LoginPage')
+  const tAuth = useTranslations('AuthShared')
+  const [isPending, startTransition] = useTransition()
+  const [isResending, startResendTransition] = useTransition()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+  const [resendFeedback, setResendFeedback] = useState<FeedbackState | null>(
+    null
+  )
+
+  useEffect(() => {
+    const params = new URLSearchParams(serializedSearchParams)
+    const needsVerification = params.get('needsVerification')
+    const emailParam = params.get('email')
+
+    if (needsVerification && emailParam) {
+      const normalizedEmail = emailParam.trim()
+      setStatusMessage(t('emailNotVerified', { email: normalizedEmail }))
+      setUnverifiedEmail(normalizedEmail)
+      setErrorMessage(null)
+      setResendFeedback(null)
+      router.replace('/login')
+    }
+  }, [router, serializedSearchParams, t])
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+
+    const email = String(formData.get('email') ?? '').trim()
+    const password = String(formData.get('password') ?? '')
+
+    setErrorMessage(null)
+    setStatusMessage(null)
+    setResendFeedback(null)
+
+    if (!email) {
+      setErrorMessage(t('errors.emailRequired'))
+      return
+    }
+
+    if (!password) {
+      setErrorMessage(t('errors.passwordRequired'))
+      return
+    }
+
+    startTransition(async () => {
+      const result = await mockLoginUser({ email, password })
+
+      if (result.status === 'error') {
+        const message =
+          result.code === 'INVALID_CREDENTIALS'
+            ? t('errors.invalidCredentials')
+            : t('errors.generic')
+        setErrorMessage(message)
+        setUnverifiedEmail(null)
+        return
+      }
+
+      if (result.status === 'unverified') {
+        setUnverifiedEmail(result.email)
+        setStatusMessage(t('emailNotVerified', { email: result.email }))
+        return
+      }
+
+      setUnverifiedEmail(null)
+      setStatusMessage(t('loginSuccess'))
+      form.reset()
+    })
+  }
+
+  const handleResend = () => {
+    if (!unverifiedEmail) return
+
+    setResendFeedback(null)
+    startResendTransition(async () => {
+      const result = await mockResendVerificationEmail(unverifiedEmail)
+
+      if (result.status === 'error') {
+        setResendFeedback({
+          message: tAuth('resendVerificationError'),
+          variant: 'error'
+        })
+        return
+      }
+
+      setResendFeedback({
+        message: tAuth('resendVerificationSuccess', { email: result.email }),
+        variant: 'success'
+      })
+    })
+  }
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent>
-          <form className="p-6 md:p-8">
+          <form className="p-6 md:p-8" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">{t('welcomeBack')}</h1>
@@ -22,12 +130,68 @@ export function LoginForm({
                   {t('loginToAccount')}
                 </p>
               </div>
+              {statusMessage ? (
+                <div
+                  className={cn(
+                    'rounded-md border p-4',
+                    unverifiedEmail
+                      ? 'border-primary/20 bg-primary/5'
+                      : 'border-muted'
+                  )}
+                  role="status"
+                >
+                  <p className="font-semibold">{statusMessage}</p>
+                  {unverifiedEmail ? (
+                    <>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {t('emailNotVerifiedInstructions')}
+                      </p>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleResend}
+                          disabled={isResending}
+                        >
+                          {isResending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          {tAuth('resendVerification')}
+                        </Button>
+                        {resendFeedback ? (
+                          <span
+                            className={cn(
+                              'text-sm',
+                              resendFeedback.variant === 'error'
+                                ? 'text-destructive'
+                                : 'text-muted-foreground'
+                            )}
+                          >
+                            {resendFeedback.message}
+                          </span>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      {t('loginSuccessDetails')}
+                    </p>
+                  )}
+                </div>
+              ) : null}
+              {errorMessage ? (
+                <p className="text-destructive text-sm" role="alert">
+                  {errorMessage}
+                </p>
+              ) : null}
               <div className="grid gap-3">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="m@example.com"
+                  defaultValue={searchParams.get('email') ?? ''}
                   required
                 />
               </div>
@@ -41,9 +205,12 @@ export function LoginForm({
                     {t('forgotYourPassword')}
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input id="password" name="password" type="password" required />
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 {t('login')}
               </Button>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
