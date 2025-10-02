@@ -6,6 +6,7 @@ import { Area } from '@/lib/api/contracts/areas'
 import {
   ChevronDownIcon,
   CopyIcon,
+  HistoryIcon,
   PenIcon,
   PlayIcon,
   PowerIcon,
@@ -31,6 +32,7 @@ import {
 } from '../ui/dropdown-menu'
 import { EditAreaModal } from './edit-area-modal'
 import { TestRunAreaModal } from './test-run-area-modal'
+import { AreaHistoryModal } from './area-history-modal'
 import { DuplicateAreaModal } from './duplicate-area-modal'
 import { DeleteAreaModal } from './delete-area-modal'
 
@@ -43,6 +45,7 @@ export function AreaCard({ area }: AreaCardProps) {
   const { theme } = useTheme()
   const [isEnabled, setIsEnabled] = useState(area.enabled)
   const [isTestRunOpen, setIsTestRunOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDuplicateOpen, setIsDuplicateOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -108,6 +111,10 @@ export function AreaCard({ area }: AreaCardProps) {
                     <PlayIcon className="size-4" />
                     {t('testRunArea')}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsHistoryOpen(true)}>
+                    <HistoryIcon className="size-4" />
+                    {t('seeHistory')}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setIsEditOpen(true)}>
                     <PenIcon className="size-4" />
                     {t('editArea')}
@@ -136,6 +143,11 @@ export function AreaCard({ area }: AreaCardProps) {
         area={area}
         open={isTestRunOpen}
         onOpenChange={setIsTestRunOpen}
+      />
+      <AreaHistoryModal
+        area={area}
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
       />
       <EditAreaModal
         area={area}
