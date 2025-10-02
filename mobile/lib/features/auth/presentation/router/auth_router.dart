@@ -9,6 +9,7 @@ import '../../../areas/domain/entities/area.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../blocs/auth_bloc.dart';
+import '../pages/email_verification_page.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
 import '../pages/oauth_callback_page.dart';
@@ -77,6 +78,18 @@ class AuthRouter {
         child: const LoginPage(),
       ),
     ),
+
+    GoRoute(
+      path: '/verify-email',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'];
+        return BlocProvider(
+          create: (context) => sl<AuthBloc>(),
+          child: EmailVerificationPage(token: token),
+        );
+      },
+    ),
+
     GoRoute(
       path: '/register',
       builder: (context, state) => BlocProvider(
