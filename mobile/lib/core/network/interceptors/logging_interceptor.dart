@@ -28,6 +28,7 @@ class LoggingInterceptor extends Interceptor {
     void onResponse(Response response, ResponseInterceptorHandler handler) {
         if (ApiConfig.enableLogging) {
           _logger.i("✅ [${response.statusCode}] ${response.requestOptions.uri}\n"
+              "Headers: ${response.headers}\n"
               "Body: ${response.data}");
         }
         super.onResponse(response, handler);

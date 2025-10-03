@@ -46,11 +46,12 @@ class _RegisterPageContent extends StatelessWidget {
               if (state is RegisterSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Account created! Please check your email to confirm.'),
+                    content: Text('Account created! Please check your email to verify.'),
                     backgroundColor: AppColors.success,
+                    duration: Duration(seconds: 5),
                   ),
                 );
-                context.go('/login');
+                context.go('/verify-email');
               } else if (state is RegisterError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
