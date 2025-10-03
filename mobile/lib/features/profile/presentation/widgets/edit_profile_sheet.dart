@@ -1,0 +1,126 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubits/profile_state.dart';
+import '../cubits/profile_cubit.dart';
+
+class EditProfileSheet extends StatefulWidget {
+  final ProfileLoaded state;
+
+  const EditProfileSheet({super.key, required this.state});
+
+  @override
+  State<EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<EditProfileSheet> {
+  late final TextEditingController nameController;
+  late final TextEditingController emailController;
+  final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.state.displayName);
+    emailController = TextEditingController(text: widget.state.user.email);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewInsets = MediaQuery.of(context).viewInsets;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min, // wrap content
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Edit profile',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display name',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.alternate_email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _saving = true);
+                          final cubit = context.read<ProfileCubit>();
+                          final ok = await cubit.updateProfile(
+                            newName: nameController.text.trim(),
+                            newEmail: emailController.text.trim(),
+                          );
+                          if (!mounted) return;
+                          if (ok) {
+                            Navigator.of(context).pop(true); // succès
+                          } else {
+                            setState(() => _saving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to update profile')),
+                            );
+                          }
+                        },
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: const Text('Save'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
