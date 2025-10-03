@@ -18,7 +18,17 @@
     "byClickingContinueYouAgreeToOur": "By clicking continue, you agree to our",
     "termsOfService": "Terms of Service",
     "and": "and",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "emailNotVerified": "We noticed {email} still needs to be verified.",
+    "emailNotVerifiedInstructions": "Check your inbox for our verification email, then try signing in again.",
+    "loginSuccess": "Logged in successfully!",
+    "loginSuccessDetails": "Great! We'll redirect you once the dashboard is ready.",
+    "errors": {
+      "emailRequired": "Please enter your email address.",
+      "passwordRequired": "Please enter your password.",
+      "invalidCredentials": "Invalid email or password.",
+      "generic": "Something went wrong. Please try again."
+    }
   },
   "RegisterPage": {
     "welcome": "Welcome",
@@ -36,7 +46,20 @@
     "byClickingContinueYouAgreeToOur": "By clicking continue, you agree to our",
     "termsOfService": "Terms of Service",
     "and": "and",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "verificationEmailSent": "We just sent a verification email to {email}.",
+    "verificationEmailInstructions": "Please confirm your address before trying to sign in.",
+    "errors": {
+      "emailRequired": "Please enter your email address.",
+      "passwordMismatch": "Passwords do not match.",
+      "emailAlreadyUsed": "An account already exists for {email}.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "AuthShared": {
+    "resendVerification": "Resend verification email",
+    "resendVerificationSuccess": "Verification email resent to {email}.",
+    "resendVerificationError": "We couldn't resend the verification email right now. Please try again."
   },
   "ExplorePage": {
     "title": "Explore Services",

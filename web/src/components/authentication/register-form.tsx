@@ -1,20 +1,70 @@
-import { cn } from '@/lib/utils'
+'use client'
+import { FormEvent, useState, useTransition } from 'react'
+import { Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { mockRegisterUser } from '@/data/mocks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  const router = useRouter()
   const t = useTranslations('RegisterPage')
+  const [isPending, startTransition] = useTransition()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+
+    const email = String(formData.get('email') ?? '').trim()
+    const password = String(formData.get('password') ?? '')
+    const confirmPassword = String(formData.get('confirmPassword') ?? '')
+
+    setErrorMessage(null)
+
+    if (!email) {
+      setErrorMessage(t('errors.emailRequired'))
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage(t('errors.passwordMismatch'))
+      return
+    }
+
+    startTransition(async () => {
+      const result = await mockRegisterUser({ email, password })
+
+      if (result.status === 'error') {
+        const message =
+          result.code === 'EMAIL_IN_USE'
+            ? t('errors.emailAlreadyUsed', { email })
+            : t('errors.generic')
+        setErrorMessage(message)
+        return
+      }
+
+      form.reset()
+      router.push(
+        `/login?needsVerification=1&email=${encodeURIComponent(result.email)}`
+      )
+    })
+  }
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent>
-          <form className="p-6 md:p-8">
+          <form className="p-6 md:p-8" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">{t('welcome')}</h1>
@@ -22,10 +72,16 @@ export function RegisterForm({
                   {t('createAccountToAccess')}
                 </p>
               </div>
+              {errorMessage ? (
+                <p className="text-destructive text-sm" role="alert">
+                  {errorMessage}
+                </p>
+              ) : null}
               <div className="grid gap-3">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="m@example.com"
                   required
@@ -33,13 +89,21 @@ export function RegisterForm({
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="password">{t('password')}</Label>
-                <Input id="password" type="password" required />
+                <Input id="password" name="password" type="password" required />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
-                <Input id="confirmPassword" type="password" required />
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                />
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 {t('register')}
               </Button>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">

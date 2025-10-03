@@ -426,6 +426,7 @@ export const mockUsers: User[] = [
     email: 'test@test.com',
     imageUrl: 'https://example.com/image.png',
     role: UserRole.Admin,
+    emailVerified: true,
     connectedServices: mockUserLinkedServices
   },
   {
@@ -433,6 +434,7 @@ export const mockUsers: User[] = [
     email: 'test2@test.com',
     imageUrl: 'https://example.com/image2.png',
     role: UserRole.User,
+    emailVerified: true,
     connectedServices: mockUserLinkedServices
   },
   {
@@ -440,8 +442,179 @@ export const mockUsers: User[] = [
     email: 'test3@test.com',
     imageUrl: 'https://example.com/image3.png',
     role: UserRole.User,
+    emailVerified: false,
     connectedServices: mockUserLinkedServices
   }
 ]
 
 export const mockAuthenticatedUser: User = mockUsers[0]
+
+const mockUserPasswords = new Map<string, string>([
+  ['test@test.com', 'password123'],
+  ['test2@test.com', 'password123'],
+  ['test3@test.com', 'password123']
+])
+
+const mockVerificationRequests = new Map<string, number>()
+
+const simulateNetworkDelay = async () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 300)
+  })
+
+type MockRegisterUserParams = {
+  email: string
+  password: string
+}
+
+type MockErrorCode =
+  | 'EMAIL_IN_USE'
+  | 'INVALID_CREDENTIALS'
+  | 'USER_NOT_FOUND'
+  | 'UNKNOWN'
+
+type MockRegisterUserResult =
+  | { status: 'needs-verification'; email: string }
+  | {
+      status: 'error'
+      message: string
+      code: Extract<MockErrorCode, 'EMAIL_IN_USE' | 'UNKNOWN'>
+    }
+
+export const mockRegisterUser = async ({
+  email,
+  password
+}: MockRegisterUserParams): Promise<MockRegisterUserResult> => {
+  await simulateNetworkDelay()
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const existingUser = mockUsers.find(
+    (user) => user.email.toLowerCase() === normalizedEmail
+  )
+
+  if (existingUser) {
+    return {
+      status: 'error',
+      message: 'Email already in use.',
+      code: 'EMAIL_IN_USE'
+    }
+  }
+
+  const newUser: User = {
+    id: (mockUsers.length + 1).toString(),
+    email: normalizedEmail,
+    role: UserRole.User,
+    emailVerified: false,
+    connectedServices: []
+  }
+
+  mockUsers.push(newUser)
+  mockUserPasswords.set(newUser.email, password)
+  mockVerificationRequests.set(newUser.email, Date.now())
+
+  return {
+    status: 'needs-verification',
+    email: newUser.email
+  }
+}
+
+type MockLoginParams = {
+  email: string
+  password: string
+}
+
+type MockLoginResult =
+  | { status: 'success'; user: User }
+  | { status: 'unverified'; email: string }
+  | {
+      status: 'error'
+      message: string
+      code: Extract<MockErrorCode, 'INVALID_CREDENTIALS' | 'UNKNOWN'>
+    }
+
+export const mockLoginUser = async ({
+  email,
+  password
+}: MockLoginParams): Promise<MockLoginResult> => {
+  await simulateNetworkDelay()
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const user = mockUsers.find(
+    (candidate) => candidate.email.toLowerCase() === normalizedEmail
+  )
+
+  if (!user) {
+    return {
+      status: 'error',
+      message: 'Invalid email or password.',
+      code: 'INVALID_CREDENTIALS'
+    }
+  }
+
+  const storedPassword = mockUserPasswords.get(user.email)
+  if (storedPassword && storedPassword !== password) {
+    return {
+      status: 'error',
+      message: 'Invalid email or password.',
+      code: 'INVALID_CREDENTIALS'
+    }
+  }
+
+  if (!user.emailVerified) {
+    mockVerificationRequests.set(user.email, Date.now())
+    return {
+      status: 'unverified',
+      email: user.email
+    }
+  }
+
+  return {
+    status: 'success',
+    user
+  }
+}
+
+type MockResendVerificationResult =
+  | { status: 'sent'; email: string }
+  | {
+      status: 'error'
+      message: string
+      code: Extract<MockErrorCode, 'USER_NOT_FOUND' | 'UNKNOWN'>
+    }
+
+export const mockResendVerificationEmail = async (
+  email: string
+): Promise<MockResendVerificationResult> => {
+  await simulateNetworkDelay()
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const user = mockUsers.find(
+    (candidate) => candidate.email.toLowerCase() === normalizedEmail
+  )
+
+  if (!user) {
+    return {
+      status: 'error',
+      message: 'No account found with that email.',
+      code: 'USER_NOT_FOUND'
+    }
+  }
+
+  mockVerificationRequests.set(user.email, Date.now())
+
+  return {
+    status: 'sent',
+    email: user.email
+  }
+}
+
+export const mockMarkUserEmailVerified = (email: string) => {
+  const normalizedEmail = email.trim().toLowerCase()
+  const user = mockUsers.find(
+    (candidate) => candidate.email.toLowerCase() === normalizedEmail
+  )
+
+  if (user) {
+    user.emailVerified = true
+  }
+}
