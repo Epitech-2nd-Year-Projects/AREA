@@ -99,7 +99,6 @@ apis:
               color: '#B08900'
         codeBlock:
           backgroundColor: '#0F172A'
-          textColor: '#E2E8F0'
         codeSample:
           backgroundColor: '#0B1626'
         sidebar:
