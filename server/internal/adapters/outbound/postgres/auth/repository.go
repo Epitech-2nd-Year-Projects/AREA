@@ -8,9 +8,11 @@ import (
 	"time"
 
 	authdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/auth"
+	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
+	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -47,6 +49,11 @@ func (r Repository) Sessions() outbound.SessionRepository {
 // VerificationTokens returns a VerificationTokenRepository implementation
 func (r Repository) VerificationTokens() outbound.VerificationTokenRepository {
 	return verificationTokenRepo{db: r.db}
+}
+
+// Identities returns an identity repository implementation
+func (r Repository) Identities() identityport.Repository {
+	return identityRepo{db: r.db}
 }
 
 type userRepo struct {
@@ -205,4 +212,108 @@ func (r verificationTokenRepo) DeleteByUser(ctx context.Context, userID uuid.UUI
 
 func isUniqueViolation(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "duplicate")
+}
+
+type identityRepo struct {
+	db *gorm.DB
+}
+
+func (r identityRepo) Create(ctx context.Context, identity identitydomain.Identity) (identitydomain.Identity, error) {
+	model := identityFromDomain(identity)
+	if model.ID == uuid.Nil {
+		model.ID = uuid.New()
+	}
+	if model.CreatedAt.IsZero() {
+		model.CreatedAt = time.Now().UTC()
+	}
+	if model.UpdatedAt.IsZero() {
+		model.UpdatedAt = model.CreatedAt
+	}
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		if isUniqueViolation(err) {
+			return identitydomain.Identity{}, outbound.ErrConflict
+		}
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.Create: %w", err)
+	}
+	return model.toDomain(), nil
+}
+
+func (r identityRepo) Update(ctx context.Context, identity identitydomain.Identity) error {
+	model := identityFromDomain(identity)
+	if model.ID == uuid.Nil {
+		return fmt.Errorf("postgres.auth.identityRepo.Update: missing id")
+	}
+	updates := map[string]any{
+		"access_token":  model.AccessToken,
+		"refresh_token": model.RefreshToken,
+		"scopes":        model.Scopes,
+		"expires_at":    model.ExpiresAt,
+		"updated_at":    model.UpdatedAt,
+	}
+	if err := r.db.WithContext(ctx).
+		Model(&identityModel{}).
+		Where("id = ?", model.ID).
+		Updates(updates).Error; err != nil {
+		return fmt.Errorf("postgres.auth.identityRepo.Update: %w", err)
+	}
+	return nil
+}
+
+func (r identityRepo) FindByID(ctx context.Context, id uuid.UUID) (identitydomain.Identity, error) {
+	var model identityModel
+	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identitydomain.Identity{}, outbound.ErrNotFound
+		}
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByID: %w", err)
+	}
+	return model.toDomain(), nil
+}
+
+func (r identityRepo) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider string) (identitydomain.Identity, error) {
+	var model identityModel
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND provider = ?", userID, provider).
+		Take(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identitydomain.Identity{}, outbound.ErrNotFound
+		}
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByUserAndProvider: %w", err)
+	}
+	return model.toDomain(), nil
+}
+
+func (r identityRepo) FindByProviderSubject(ctx context.Context, provider string, subject string) (identitydomain.Identity, error) {
+	var model identityModel
+	if err := r.db.WithContext(ctx).
+		Where("provider = ? AND subject = ?", provider, subject).
+		Take(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identitydomain.Identity{}, outbound.ErrNotFound
+		}
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByProviderSubject: %w", err)
+	}
+	return model.toDomain(), nil
+}
+
+func (r identityRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]identitydomain.Identity, error) {
+	var models []identityModel
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at ASC").
+		Find(&models).Error; err != nil {
+		return nil, fmt.Errorf("postgres.auth.identityRepo.ListByUser: %w", err)
+	}
+	identities := make([]identitydomain.Identity, 0, len(models))
+	for _, model := range models {
+		identities = append(identities, model.toDomain())
+	}
+	return identities, nil
+}
+
+func (r identityRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	if err := r.db.WithContext(ctx).Delete(&identityModel{}, "id = ?", id).Error; err != nil {
+		return fmt.Errorf("postgres.auth.identityRepo.Delete: %w", err)
+	}
+	return nil
 }
