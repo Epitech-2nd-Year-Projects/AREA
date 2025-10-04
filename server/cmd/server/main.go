@@ -13,6 +13,7 @@ import (
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/router"
 	loggerMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/logger"
 	sendgridMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/sendgrid"
+	oauthadapter "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/oauth"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
@@ -80,8 +81,9 @@ func run() error {
 	}
 
 	var (
-		loaders     []catalog.Loader
-		authHandler *authapp.Handler
+		loaders      []catalog.Loader
+		authHandler  *authapp.Handler
+		oauthService *authapp.OAuthService
 	)
 
 	dbCtx := context.Background()
@@ -95,6 +97,14 @@ func run() error {
 
 		mailer := buildMailer(cfg, logger)
 
+		authCfg := authapp.Config{
+			PasswordMinLength: cfg.Security.Password.MinLength,
+			SessionTTL:        cfg.Security.Sessions.TTL,
+			VerificationTTL:   cfg.Security.Verification.TokenTTL,
+			BaseURL:           cfg.App.BaseURL,
+			CookieName:        cfg.Security.Sessions.CookieName,
+		}
+
 		authService := authapp.NewService(
 			repo.Users(),
 			repo.Sessions(),
@@ -103,16 +113,17 @@ func run() error {
 			password.Hasher{Pepper: cfg.Security.Password.Pepper},
 			nil,
 			logger,
-			authapp.Config{
-				PasswordMinLength: cfg.Security.Password.MinLength,
-				SessionTTL:        cfg.Security.Sessions.TTL,
-				VerificationTTL:   cfg.Security.Verification.TokenTTL,
-				BaseURL:           cfg.App.BaseURL,
-				CookieName:        cfg.Security.Sessions.CookieName,
-			},
+			authCfg,
 		)
 
-		authHandler = authapp.NewHandler(authService, authapp.CookieConfig{
+		oauthManager, managerErr := buildOAuthManager(cfg, logger)
+		if managerErr != nil {
+			logger.Warn("failed to build oauth manager", zap.Error(managerErr))
+		} else if oauthManager != nil {
+			oauthService = authapp.NewOAuthService(oauthManager, repo.Identities(), repo.Users(), repo.Sessions(), nil, logger, authCfg)
+		}
+
+		authHandler = authapp.NewHandler(authService, oauthService, authapp.CookieConfig{
 			Domain:   cfg.Security.Sessions.Domain,
 			Path:     cfg.Security.Sessions.Path,
 			Secure:   cfg.Security.Sessions.Secure,
@@ -172,6 +183,55 @@ func buildMailer(cfg configviper.Config, logger *zap.Logger) outbound.Mailer {
 	default:
 		return loggerMailer.Mailer{Logger: logger}
 	}
+}
+
+func buildOAuthManager(cfg configviper.Config, logger *zap.Logger) (*oauthadapter.Manager, error) {
+	providerConfigs := make(map[string]oauthadapter.ProviderCredentials)
+	for name, provider := range cfg.OAuth.Providers {
+		key := strings.ToLower(strings.TrimSpace(name))
+		if key == "" {
+			continue
+		}
+
+		clientID := strings.TrimSpace(provider.ClientID)
+		clientSecret := strings.TrimSpace(provider.ClientSecret)
+		redirectURI := strings.TrimSpace(provider.RedirectURI)
+		if clientID == "" || clientSecret == "" || redirectURI == "" {
+			logger.Warn("oauth provider configuration incomplete",
+				zap.String("provider", key))
+			continue
+		}
+
+		creds := oauthadapter.ProviderCredentials{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURI:  redirectURI,
+			Scopes:       append([]string(nil), provider.Scopes...),
+		}
+		providerConfigs[key] = creds
+	}
+
+	if len(providerConfigs) == 0 {
+		return nil, nil
+	}
+
+	allowed := make([]string, 0, len(cfg.OAuth.AllowedProviders))
+	for _, name := range cfg.OAuth.AllowedProviders {
+		if trimmed := strings.ToLower(strings.TrimSpace(name)); trimmed != "" {
+			allowed = append(allowed, trimmed)
+		}
+	}
+
+	managerCfg := oauthadapter.ManagerConfig{
+		Allowed:   allowed,
+		Providers: providerConfigs,
+	}
+
+	manager, err := oauthadapter.NewManager(oauthadapter.BuiltIn(), managerCfg)
+	if err != nil {
+		return nil, err
+	}
+	return manager, nil
 }
 
 func parseSameSite(mode string) http.SameSite {
