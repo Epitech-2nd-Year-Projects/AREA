@@ -6,6 +6,11 @@
     "husky": "^9.1.7"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "docs:build": "npx @redocly/cli@latest build-docs area-server@v1 --output server/docs/reference/area-server.html",
+    "docs:preview": "npx @redocly/cli@latest preview --product redoc --project-dir ."
+  },
+  "dependencies": {
+    "@redocly/redoc": "^0.125.3"
   }
 }

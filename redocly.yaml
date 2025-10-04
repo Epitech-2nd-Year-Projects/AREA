@@ -49,3 +49,7 @@ metadata:
     label: AREA Server API Reference
     description: API reference documentation for the AREA automation server backend.
     owner: AREA Team
+ignore:
+  - mobile/**
+  - poc/**
+  - server/scripts/**
