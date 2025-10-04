@@ -4,6 +4,9 @@ import type { ServerRequestOptions } from '../common'
 import {
   AuthSessionResponseDTO,
   LoginRequestDTO,
+  OAuthAuthorizationRequestDTO,
+  OAuthAuthorizationResponseDTO,
+  OAuthExchangeRequestDTO,
   UserResponseDTO,
   VerifyEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
@@ -60,5 +63,41 @@ export function currentUserServer(options?: ServerRequestOptions) {
   return apiFetchServer<UserResponseDTO>(
     '/v1/auth/me',
     buildServerOptions(options)
+  )
+}
+
+export function authorizeOAuthServer(
+  provider: string,
+  body?: OAuthAuthorizationRequestDTO,
+  options?: ServerRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    throw new Error('OAuth authorize mock not implemented')
+  }
+  return apiFetchServer<OAuthAuthorizationResponseDTO>(
+    `/v1/oauth/${provider}/authorize`,
+    {
+      method: 'POST',
+      body,
+      ...buildServerOptions(options)
+    }
+  )
+}
+
+export function exchangeOAuthServer(
+  provider: string,
+  body: OAuthExchangeRequestDTO,
+  options?: ServerRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    throw new Error('OAuth exchange mock not implemented')
+  }
+  return apiFetchServer<AuthSessionResponseDTO>(
+    `/v1/oauth/${provider}/exchange`,
+    {
+      method: 'POST',
+      body,
+      ...buildServerOptions(options)
+    }
   )
 }

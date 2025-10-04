@@ -28,6 +28,15 @@
       "passwordRequired": "Please enter your password.",
       "invalidCredentials": "Invalid email or password.",
       "generic": "Something went wrong. Please try again."
+    },
+    "oauth": {
+      "starting": "Redirecting to Google...",
+      "exchanging": "Signing you in with Google...",
+      "canceled": "Google sign-in was cancelled.",
+      "stateMismatch": "The sign-in link is no longer valid. Please try again.",
+      "initFailed": "We couldn't start Google sign-in. Please try again.",
+      "unavailable": "Google sign-in is not available right now.",
+      "exchangeFailed": "We couldn't complete Google sign-in. Please try again."
     }
   },
   "RegisterPage": {
@@ -63,7 +72,8 @@
   },
   "ExplorePage": {
     "title": "Explore Services",
-    "description": "Save time and get more done"
+    "description": "Save time and get more done",
+    "loading": "Loading services..."
   },
   "AboutPage": {
     "title": "About AREA",
@@ -76,7 +86,8 @@
     "currentTimeLabel": "Current time",
     "servicesLabel": "Services",
     "actionsLabel": "actions",
-    "reactionsLabel": "reactions"
+    "reactionsLabel": "reactions",
+    "loading": "Loading details..."
   },
   "ServiceCard": {
     "getStarted": "Get started",
@@ -119,7 +130,8 @@
     "logout": "Logout"
   },
   "DashboardPage": {
-    "searchServices": "Search services..."
+    "searchServices": "Search services...",
+    "loading": "Loading dashboard..."
   },
   "AdminUsersPage": {
     "title": "Users management",
@@ -152,30 +164,29 @@
     "pageDescription": "View and manage your account preferences.",
     "profileInformationTitle": "Profile information",
     "profileInformationDescription": "Update your email address and avatar.",
-    "avatarHelper": "Upload a new picture to refresh how your profile appears across AREA.",
     "avatarUploadLabel": "Profile picture",
-    "avatarUploadButton": "Upload a picture",
+    "avatarUploadButton": "Upload picture",
     "avatarResetButton": "Reset to default",
-    "avatarFileSelected": "Selected: {fileName}",
     "emailLabel": "Email",
-    "saveChanges": "Save changes",
+    "saveProfileButton": "Save changes",
+    "cancelProfileButton": "Cancel",
     "profileSaved": "Profile information updated.",
-    "passwordTitle": "Change password",
-    "passwordDescription": "Set a new password to keep your account secure.",
+    "passwordSectionTitle": "Change password",
+    "passwordSectionDescription": "Set a new password to keep your account secure.",
     "currentPasswordLabel": "Current password",
     "newPasswordLabel": "New password",
     "confirmPasswordLabel": "Confirm new password",
-    "updatePassword": "Update password",
+    "updatePasswordButton": "Update password",
+    "cancelPasswordButton": "Cancel",
     "passwordMissing": "Please fill in all password fields.",
     "passwordMismatch": "New password and confirmation do not match.",
     "passwordUpdated": "Password updated successfully.",
-    "accountDetailsTitle": "Account details",
-    "accountDetailsDescription": "Quick overview of your account status.",
-    "roleLabel": "Role",
     "roleAdmin": "Administrator",
     "roleUser": "User",
     "connectedServicesTitle": "Connected services",
-    "emptyServices": "No services connected yet."
+    "connectedServicesDescription": "Review the services connected to your AREA account.",
+    "noServices": "No services connected yet.",
+    "loading": "Loading profile..."
   },
   "CreateAreaModal": {
     "createNewArea": "Create a new AREA",

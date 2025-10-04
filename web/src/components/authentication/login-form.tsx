@@ -1,20 +1,34 @@
 'use client'
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useLoginMutation } from '@/lib/api/openapi/auth'
+import {
+  useAuthorizeOAuthMutation,
+  useExchangeOAuthMutation,
+  useLoginMutation
+} from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import {
+  buildCleanOAuthPath,
+  clearOAuthState,
+  extractRedirectFromUri,
+  persistOAuthState,
+  readOAuthState,
+  sanitizeRedirectTarget
+} from '@/lib/auth/oauth'
 
 type FeedbackState = {
   message: string
   variant: 'success' | 'error'
 }
+
+const GOOGLE_PROVIDER = 'google'
 
 export function LoginForm({
   className,
@@ -26,12 +40,32 @@ export function LoginForm({
   const t = useTranslations('LoginPage')
   const tAuth = useTranslations('AuthShared')
   const loginMutation = useLoginMutation()
+  const { mutateAsync: authorizeOAuth, isPending: isAuthorizePending } =
+    useAuthorizeOAuthMutation()
+  const { mutateAsync: exchangeOAuth, isPending: isExchangePending } =
+    useExchangeOAuthMutation()
   const isPending = loginMutation.isPending
+  const isOAuthPending = isAuthorizePending || isExchangePending
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [resendFeedback, setResendFeedback] = useState<FeedbackState | null>(
     null
+  )
+  const redirectParam = useMemo(() => {
+    const params = new URLSearchParams(serializedSearchParams)
+    return sanitizeRedirectTarget(params.get('redirect'))
+  }, [serializedSearchParams])
+
+  const completeLogin = useCallback(
+    (preferredRedirect?: string | null) => {
+      const destination =
+        sanitizeRedirectTarget(preferredRedirect) ??
+        redirectParam ??
+        '/dashboard'
+      router.push(destination)
+    },
+    [redirectParam, router]
   )
 
   useEffect(() => {
@@ -51,6 +85,123 @@ export function LoginForm({
       router.replace('/login')
     }
   }, [router, serializedSearchParams, t, tAuth])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(serializedSearchParams)
+    const code = params.get('code')
+    const oauthError = params.get('error')
+    const stateParam = params.get('state')
+
+    if (!code && !oauthError) {
+      return
+    }
+
+    const cleanAndReplace = () => {
+      const cleanPath = buildCleanOAuthPath(params)
+      router.replace(cleanPath, { scroll: false })
+    }
+
+    if (oauthError) {
+      clearOAuthState(GOOGLE_PROVIDER)
+      setStatusMessage(null)
+      setResendFeedback(null)
+      setUnverifiedEmail(null)
+      if (oauthError === 'access_denied') {
+        setErrorMessage(t('oauth.canceled'))
+      } else {
+        setErrorMessage(t('oauth.exchangeFailed'))
+      }
+      cleanAndReplace()
+      return
+    }
+
+    if (!code) {
+      return
+    }
+
+    let cancelled = false
+
+    const runExchange = async () => {
+      setErrorMessage(null)
+      setResendFeedback(null)
+      setUnverifiedEmail(null)
+      setStatusMessage(t('oauth.exchanging'))
+
+      const storedState = readOAuthState(GOOGLE_PROVIDER)
+
+      if (!storedState) {
+        clearOAuthState(GOOGLE_PROVIDER)
+        setStatusMessage(null)
+        setErrorMessage(t('oauth.stateMismatch'))
+        cleanAndReplace()
+        return
+      }
+
+      if (storedState.state && stateParam && storedState.state !== stateParam) {
+        clearOAuthState(GOOGLE_PROVIDER)
+        setStatusMessage(null)
+        setErrorMessage(t('oauth.stateMismatch'))
+        cleanAndReplace()
+        return
+      }
+
+      try {
+        await exchangeOAuth({
+          provider: storedState.provider,
+          body: {
+            code,
+            redirect_uri: storedState.redirectUri,
+            code_verifier: storedState.codeVerifier,
+            state: stateParam ?? storedState.state
+          }
+        })
+
+        if (cancelled) return
+
+        clearOAuthState(GOOGLE_PROVIDER)
+        setStatusMessage(null)
+        setErrorMessage(null)
+        setResendFeedback(null)
+        setUnverifiedEmail(null)
+
+        const cleanPath = buildCleanOAuthPath(params)
+        router.replace(cleanPath, { scroll: false })
+
+        const redirectFromState = extractRedirectFromUri(
+          storedState.redirectUri
+        )
+        completeLogin(redirectFromState)
+      } catch (error) {
+        if (cancelled) return
+
+        clearOAuthState(GOOGLE_PROVIDER)
+        setStatusMessage(null)
+
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            setErrorMessage(t('oauth.unavailable'))
+          } else if (error.status === 400) {
+            setErrorMessage(t('oauth.exchangeFailed'))
+          } else {
+            setErrorMessage(t('errors.generic'))
+          }
+        } else {
+          setErrorMessage(t('errors.generic'))
+        }
+
+        const cleanPath = buildCleanOAuthPath(params)
+        router.replace(cleanPath, { scroll: false })
+      }
+    }
+
+    runExchange()
+
+    return () => {
+      cancelled = true
+    }
+  }, [exchangeOAuth, router, serializedSearchParams, t, completeLogin])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -78,9 +229,9 @@ export function LoginForm({
     try {
       await loginMutation.mutateAsync({ email, password })
       setUnverifiedEmail(null)
-      setStatusMessage(t('loginSuccess'))
+      setStatusMessage(null)
       form.reset()
-      router.refresh()
+      completeLogin()
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 400) {
@@ -100,6 +251,55 @@ export function LoginForm({
       }
       setErrorMessage(t('errors.generic'))
       setUnverifiedEmail(null)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    if (typeof window === 'undefined') return
+
+    setErrorMessage(null)
+    setStatusMessage(null)
+    setResendFeedback(null)
+    setUnverifiedEmail(null)
+
+    const redirectUrl = new URL('/login', window.location.origin)
+    if (redirectParam) {
+      redirectUrl.searchParams.set('redirect', redirectParam)
+    }
+    const redirectUri = redirectUrl.toString()
+
+    try {
+      setStatusMessage(t('oauth.starting'))
+      const response = await authorizeOAuth({
+        provider: GOOGLE_PROVIDER,
+        body: {
+          redirect_uri: redirectUri,
+          use_pkce: true
+        }
+      })
+
+      clearOAuthState(GOOGLE_PROVIDER)
+      persistOAuthState(GOOGLE_PROVIDER, {
+        provider: GOOGLE_PROVIDER,
+        redirectUri,
+        state: response.state,
+        codeVerifier: response.code_verifier,
+        createdAt: Date.now()
+      })
+
+      window.location.assign(response.authorization_url)
+    } catch (error) {
+      setStatusMessage(null)
+
+      if (error instanceof ApiError) {
+        if (error.status === 404) {
+          setErrorMessage(t('oauth.unavailable'))
+        } else {
+          setErrorMessage(t('oauth.initFailed'))
+        }
+      } else {
+        setErrorMessage(t('errors.generic'))
+      }
     }
   }
 
@@ -200,13 +400,27 @@ export function LoginForm({
                   </svg>
                   <span className="sr-only">{t('loginWithApple')}</span>
                 </Button>
-                <Button variant="outline" type="button" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                      fill="currentColor"
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isOAuthPending}
+                  aria-busy={isOAuthPending}
+                >
+                  {isOAuthPending ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
                     />
-                  </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                      <path
+                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  )}
                   <span className="sr-only">{t('loginWithGoogle')}</span>
                 </Button>
                 <Button variant="outline" type="button" className="w-full">

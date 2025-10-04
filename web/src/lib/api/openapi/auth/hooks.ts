@@ -10,12 +10,18 @@ import type { ClientRequestOptions } from '../common'
 import {
   AuthSessionResponseDTO,
   LoginRequestDTO,
+  OAuthAuthorizationResponseDTO,
   UserResponseDTO,
   VerifyEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
 import { authKeys } from './query-keys'
 import { authQueries } from './queries'
-import { authMutations, invalidateAuthUser } from './mutations'
+import {
+  AuthorizeOAuthVariables,
+  ExchangeOAuthVariables,
+  authMutations,
+  invalidateAuthUser
+} from './mutations'
 
 type CurrentUserQueryOptions = {
   clientOptions?: ClientRequestOptions
@@ -40,6 +46,30 @@ type LogoutMutationOptions = {
   clientOptions?: ClientRequestOptions
 } & Omit<
   UseMutationOptions<void, ApiError, void, unknown>,
+  'mutationFn' | 'mutationKey'
+>
+
+type AuthorizeOAuthMutationOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseMutationOptions<
+    OAuthAuthorizationResponseDTO,
+    ApiError,
+    AuthorizeOAuthVariables,
+    unknown
+  >,
+  'mutationFn' | 'mutationKey'
+>
+
+type ExchangeOAuthMutationOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseMutationOptions<
+    AuthSessionResponseDTO,
+    ApiError,
+    ExchangeOAuthVariables,
+    unknown
+  >,
   'mutationFn' | 'mutationKey'
 >
 
@@ -90,6 +120,33 @@ export function useLogoutMutation(options?: LogoutMutationOptions) {
   const { clientOptions, onSuccess, ...mutationOptions } = options ?? {}
   return useMutation({
     ...authMutations.logout({ clientOptions }),
+    onSuccess: async (data, variables, context, mutation) => {
+      await invalidateAuthUser(queryClient)
+      if (onSuccess) {
+        await onSuccess(data, variables, context, mutation)
+      }
+    },
+    ...mutationOptions
+  })
+}
+
+export function useAuthorizeOAuthMutation(
+  options?: AuthorizeOAuthMutationOptions
+) {
+  const { clientOptions, ...mutationOptions } = options ?? {}
+  return useMutation({
+    ...authMutations.authorizeOAuth({ clientOptions }),
+    ...mutationOptions
+  })
+}
+
+export function useExchangeOAuthMutation(
+  options?: ExchangeOAuthMutationOptions
+) {
+  const queryClient = useQueryClient()
+  const { clientOptions, onSuccess, ...mutationOptions } = options ?? {}
+  return useMutation({
+    ...authMutations.exchangeOAuth({ clientOptions }),
     onSuccess: async (data, variables, context, mutation) => {
       await invalidateAuthUser(queryClient)
       if (onSuccess) {

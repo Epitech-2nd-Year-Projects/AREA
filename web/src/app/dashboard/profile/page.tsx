@@ -1,5 +1,4 @@
 'use client'
-
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -53,9 +52,15 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    if (user) {
-      setProfileForm({ email: user.email, imageUrl: user.imageUrl ?? '' })
-    }
+    if (!user) return
+
+    setProfileForm((prev) => {
+      const next = { email: user.email, imageUrl: user.imageUrl ?? '' }
+      if (prev.email === next.email && prev.imageUrl === next.imageUrl) {
+        return prev
+      }
+      return next
+    })
   }, [user])
 
   useEffect(() => {

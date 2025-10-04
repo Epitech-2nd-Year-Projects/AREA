@@ -23,3 +23,26 @@ export type AuthSessionResponseDTO = {
 export type UserResponseDTO = {
   user: UserDTO
 }
+
+export type OAuthAuthorizationRequestDTO = {
+  redirect_uri?: string
+  scopes?: string[]
+  state?: string
+  prompt?: string
+  use_pkce?: boolean
+}
+
+export type OAuthAuthorizationResponseDTO = {
+  authorization_url: string
+  state?: string
+  code_verifier?: string
+  code_challenge?: string
+  code_challenge_method?: 'plain' | 'S256'
+}
+
+export type OAuthExchangeRequestDTO = {
+  code: string
+  redirect_uri?: string
+  code_verifier?: string
+  state?: string
+}

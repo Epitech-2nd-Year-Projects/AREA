@@ -1,11 +1,29 @@
 import type { ClientRequestOptions } from '../common'
-import { loginClient, logoutClient, verifyEmailClient } from './client'
+import {
+  authorizeOAuthClient,
+  exchangeOAuthClient,
+  loginClient,
+  logoutClient,
+  verifyEmailClient
+} from './client'
 import { authMutationKeys, authKeys } from './query-keys'
 import type {
   LoginRequestDTO,
+  OAuthAuthorizationRequestDTO,
+  OAuthExchangeRequestDTO,
   VerifyEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
 import type { QueryClient } from '@tanstack/react-query'
+
+export type AuthorizeOAuthVariables = {
+  provider: string
+  body?: OAuthAuthorizationRequestDTO
+}
+
+export type ExchangeOAuthVariables = {
+  provider: string
+  body: OAuthExchangeRequestDTO
+}
 
 export const authMutations = {
   login: (options?: { clientOptions?: ClientRequestOptions }) => ({
@@ -21,6 +39,24 @@ export const authMutations = {
   logout: (options?: { clientOptions?: ClientRequestOptions }) => ({
     mutationKey: authMutationKeys.logout(),
     mutationFn: () => logoutClient(options?.clientOptions)
+  }),
+  authorizeOAuth: (options?: { clientOptions?: ClientRequestOptions }) => ({
+    mutationKey: authMutationKeys.authorizeOAuth(),
+    mutationFn: (variables: AuthorizeOAuthVariables) =>
+      authorizeOAuthClient(
+        variables.provider,
+        variables.body,
+        options?.clientOptions
+      )
+  }),
+  exchangeOAuth: (options?: { clientOptions?: ClientRequestOptions }) => ({
+    mutationKey: authMutationKeys.exchangeOAuth(),
+    mutationFn: (variables: ExchangeOAuthVariables) =>
+      exchangeOAuthClient(
+        variables.provider,
+        variables.body,
+        options?.clientOptions
+      )
   })
 }
 
