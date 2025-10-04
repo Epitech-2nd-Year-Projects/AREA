@@ -2,7 +2,7 @@
 import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { Area } from '@/lib/api/contracts/areas'
-import { buildMockAreaHistory, type MockAreaRun } from '@/data/mocks'
+import { buildMockAreaHistory, type MockAreaRun } from '@/lib/api/mock'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

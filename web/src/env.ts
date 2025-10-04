@@ -14,7 +14,6 @@ const envSchema = z.object({
     .string()
     .trim()
     .min(1, 'NEXT_PUBLIC_API_URL is required')
-    .refine((value) => value !== '/', 'NEXT_PUBLIC_API_URL cannot be just "/"')
     .refine(
       (value) => HTTP_URL_REGEX.test(value) || value.startsWith('/'),
       'NEXT_PUBLIC_API_URL must be an absolute http(s) URL or start with "\/"'
@@ -43,14 +42,16 @@ const envSchema = z.object({
       } catch {
         return false
       }
-    }, 'CORS_ALLOWED_ORIGIN must be a valid http(s) origin')
+    }, 'CORS_ALLOWED_ORIGIN must be a valid http(s) origin'),
+  NEXT_PUBLIC_API_MODE: z.enum(['live', 'mock']).default('mock')
 })
 
 const parsed = envSchema.safeParse({
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_PROXY_TARGET: process.env.API_PROXY_TARGET,
-  CORS_ALLOWED_ORIGIN: process.env.CORS_ALLOWED_ORIGIN
+  CORS_ALLOWED_ORIGIN: process.env.CORS_ALLOWED_ORIGIN,
+  NEXT_PUBLIC_API_MODE: process.env.NEXT_PUBLIC_API_MODE
 })
 
 if (!parsed.success) {
@@ -71,14 +72,17 @@ const isRelativeBase = !HTTP_URL_REGEX.test(baseUrl)
 const basePath = isRelativeBase ? baseUrl : new URL(baseUrl).pathname
 const proxyTarget = envData.API_PROXY_TARGET ?? null
 const corsAllowedOrigin = envData.CORS_ALLOWED_ORIGIN ?? null
+const apiMode = envData.NEXT_PUBLIC_API_MODE
 
-if (isRelativeBase && !proxyTarget) {
+const isBrowser = typeof window !== 'undefined'
+
+if (!isBrowser && isRelativeBase && !proxyTarget) {
   throw new Error(
     'API_PROXY_TARGET is required when NEXT_PUBLIC_API_URL is a relative path'
   )
 }
 
-if (isRelativeBase && proxyTarget) {
+if (!isBrowser && isRelativeBase && proxyTarget) {
   const proxyPath = new URL(proxyTarget).pathname || '/'
   if (proxyPath !== basePath) {
     throw new Error(
@@ -89,18 +93,32 @@ if (isRelativeBase && proxyTarget) {
 
 const buildUrl = (path: string) => {
   if (!path) throw new Error('Path is required when building an API URL')
-  return `${baseUrl}${ensureLeadingSlash(path)}`
+
+  const normalized = ensureLeadingSlash(path)
+  const withoutBasePath =
+    basePath !== '/' && normalized.startsWith(basePath)
+      ? normalized.slice(basePath.length) || '/'
+      : normalized
+
+  const base = baseUrl === '/' ? '' : baseUrl
+  if (withoutBasePath === '/') {
+    return base || '/'
+  }
+
+  return `${base}${withoutBasePath}`
 }
 
 process.env.NEXT_PUBLIC_API_URL = baseUrl
 if (proxyTarget) process.env.API_PROXY_TARGET = proxyTarget
 if (corsAllowedOrigin) process.env.CORS_ALLOWED_ORIGIN = corsAllowedOrigin
+process.env.NEXT_PUBLIC_API_MODE = apiMode
 
 export const env = {
   NODE_ENV: envData.NODE_ENV ?? 'development',
   NEXT_PUBLIC_API_URL: baseUrl,
   API_PROXY_TARGET: proxyTarget,
-  CORS_ALLOWED_ORIGIN: corsAllowedOrigin
+  CORS_ALLOWED_ORIGIN: corsAllowedOrigin,
+  NEXT_PUBLIC_API_MODE: apiMode
 } as const
 
 export const apiConfig = {

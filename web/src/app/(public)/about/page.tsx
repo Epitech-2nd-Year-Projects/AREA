@@ -1,6 +1,7 @@
+'use client'
+import { Loader2, Play, Repeat } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-
-import { mockAbout } from '@/data/mocks'
+import { useAboutQuery, mapAboutResponse } from '@/lib/api/openapi/about'
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   Accordion,
   AccordionContent,
@@ -16,11 +16,30 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Play, Repeat } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 export default function AboutPage() {
   const t = useTranslations('AboutPage')
-  const about = mockAbout
+  const { data, isLoading, isError } = useAboutQuery()
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex max-w-5xl items-center justify-center py-24">
+        <Loader2 className="mr-2 h-6 w-6 animate-spin" aria-hidden />
+        <span className="text-muted-foreground text-sm">{t('loading')}</span>
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-2xl py-24 text-center">
+        <p className="text-destructive text-sm">{t('error')}</p>
+      </div>
+    )
+  }
+
+  const about = mapAboutResponse(data)
 
   const formattedServerTime = new Intl.DateTimeFormat('en-US', {
     dateStyle: 'full',
@@ -88,9 +107,11 @@ export default function AboutPage() {
                             <p className="text-base font-semibold leading-none">
                               {service.displayName}
                             </p>
-                            <p className="text-muted-foreground text-sm leading-relaxed">
-                              {service.description}
-                            </p>
+                            {service.description ? (
+                              <p className="text-muted-foreground text-sm leading-relaxed">
+                                {service.description}
+                              </p>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary">

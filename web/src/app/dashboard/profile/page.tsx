@@ -1,8 +1,6 @@
 'use client'
-
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,21 +14,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ServiceCardList } from '@/components/services/service-card-list'
-import { mockServices, mockAuthenticatedUser } from '@/data/mocks'
-import { UserRole } from '@/lib/api/contracts/users'
 import { useTranslations } from 'next-intl'
-
-type FormStatus = {
-  type: 'success' | 'error'
-  message: string
-} | null
-
-const DEFAULT_AVATAR_URL = mockAuthenticatedUser.imageUrl ?? ''
-
-const getProfileInitialState = () => ({
-  email: mockAuthenticatedUser.email,
-  imageUrl: DEFAULT_AVATAR_URL
-})
+import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
+import { mapUserDTOToUser, useCurrentUserQuery } from '@/lib/api/openapi/auth'
+import { Loader2 } from 'lucide-react'
+import { UserRole } from '@/lib/api/contracts/users'
 
 const getPasswordInitialState = () => ({
   currentPassword: '',
@@ -38,33 +26,46 @@ const getPasswordInitialState = () => ({
   confirmPassword: ''
 })
 
+type FormStatus = {
+  type: 'success' | 'error'
+  message: string
+} | null
+
 function getAvatarFallback(email: string) {
   return email ? email.slice(0, 2).toUpperCase() : '??'
 }
 
 export default function ProfilePage() {
   const t = useTranslations('ProfilePage')
-  const [profileForm, setProfileForm] = useState(getProfileInitialState)
+  const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
+  const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
+
+  const user = userData?.user ? mapUserDTOToUser(userData.user) : null
+  const services = aboutData ? extractServices(aboutData) : []
+  const connectedServices = user?.connectedServices ?? []
+
+  const [profileForm, setProfileForm] = useState({ email: '', imageUrl: '' })
   const [passwordForm, setPasswordForm] = useState(getPasswordInitialState)
   const [profileStatus, setProfileStatus] = useState<FormStatus>(null)
   const [passwordStatus, setPasswordStatus] = useState<FormStatus>(null)
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const roleLabel =
-    mockAuthenticatedUser.role === UserRole.Admin
-      ? t('roleAdmin')
-      : t('roleUser')
+  useEffect(() => {
+    if (!user) return
+
+    setProfileForm((prev) => {
+      const next = { email: user.email, imageUrl: user.imageUrl ?? '' }
+      if (prev.email === next.email && prev.imageUrl === next.imageUrl) {
+        return prev
+      }
+      return next
+    })
+  }, [user])
 
   useEffect(() => {
-    if (!profileForm.imageUrl) {
-      return
-    }
-
-    if (!profileForm.imageUrl.startsWith('blob:')) {
-      return
-    }
-
+    if (!profileForm.imageUrl) return
+    if (!profileForm.imageUrl.startsWith('blob:')) return
     return () => {
       URL.revokeObjectURL(profileForm.imageUrl)
     }
@@ -78,19 +79,12 @@ export default function ProfilePage() {
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-
-    if (!file) {
-      return
-    }
+    if (!file) return
 
     const objectUrl = URL.createObjectURL(file)
     setAvatarFileName(file.name)
     setProfileStatus(null)
-    setProfileForm((prev) => ({
-      ...prev,
-      imageUrl: objectUrl
-    }))
-
+    setProfileForm((prev) => ({ ...prev, imageUrl: objectUrl }))
     event.target.value = ''
   }
 
@@ -101,14 +95,8 @@ export default function ProfilePage() {
   const handleAvatarReset = () => {
     setAvatarFileName(null)
     setProfileStatus(null)
-    setProfileForm((prev) => ({
-      ...prev,
-      imageUrl: DEFAULT_AVATAR_URL
-    }))
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setProfileForm((prev) => ({ ...prev, imageUrl: user?.imageUrl ?? '' }))
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -132,6 +120,20 @@ export default function ProfilePage() {
     setPasswordStatus({ type: 'success', message: t('passwordUpdated') })
     setPasswordForm(getPasswordInitialState())
   }
+
+  const isLoading = isUserLoading || isAboutLoading
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+        <p className="text-muted-foreground text-sm">{t('loading')}</p>
+      </div>
+    )
+  }
+
+  const roleLabel =
+    user.role === UserRole.Admin ? t('roleAdmin') : t('roleUser')
 
   return (
     <div className="space-y-6">
@@ -158,204 +160,203 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-start gap-4">
                     <Avatar className="size-24 rounded-lg">
                       <AvatarImage src={profileForm.imageUrl} alt="" />
-                      <AvatarFallback className="rounded-lg text-base font-medium">
+                      <AvatarFallback className="rounded-lg">
                         {getAvatarFallback(profileForm.email)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarFileChange}
-                      />
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex gap-2">
                         <Button
                           type="button"
-                          variant="outline"
+                          size="sm"
                           onClick={handleAvatarSelectClick}
-                          className="cursor-pointer"
                         >
                           {t('avatarUploadButton')}
                         </Button>
-                        {profileForm.imageUrl !== DEFAULT_AVATAR_URL ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={handleAvatarReset}
-                            className="cursor-pointer"
-                          >
-                            {t('avatarResetButton')}
-                          </Button>
-                        ) : null}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleAvatarReset}
+                        >
+                          {t('avatarResetButton')}
+                        </Button>
                       </div>
-                      <p className="text-muted-foreground text-xs">
-                        {t('avatarHelper')}
-                        {avatarFileName
-                          ? ` ${t('avatarFileSelected', { fileName: avatarFileName })}`
-                          : ''}
-                      </p>
+                      {avatarFileName ? (
+                        <p className="text-muted-foreground text-xs">
+                          {avatarFileName}
+                        </p>
+                      ) : null}
+                      <input
+                        ref={fileInputRef}
+                        accept="image/*"
+                        type="file"
+                        className="hidden"
+                        onChange={handleAvatarFileChange}
+                      />
                     </div>
                   </div>
                 </div>
-
                 <div className="grid gap-2">
                   <Label htmlFor="email">{t('emailLabel')}</Label>
                   <Input
                     id="email"
                     type="email"
                     value={profileForm.email}
-                    onChange={(event) => {
+                    onChange={(event) =>
                       setProfileForm((prev) => ({
                         ...prev,
                         email: event.target.value
                       }))
-                      setProfileStatus(null)
-                    }}
-                    required
+                    }
                   />
                 </div>
               </div>
-
-              {profileStatus ? (
-                <p
-                  className={`text-sm ${
-                    profileStatus.type === 'success'
-                      ? 'text-emerald-600'
-                      : 'text-destructive'
-                  }`}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{roleLabel}</Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit">{t('saveProfileButton')}</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setProfileForm({
+                      email: user.email,
+                      imageUrl: user.imageUrl ?? ''
+                    })
+                    setProfileStatus(null)
+                    setAvatarFileName(null)
+                  }}
                 >
-                  {profileStatus.message}
-                </p>
-              ) : null}
-
-              <div className="flex justify-end">
-                <Button type="submit" className="cursor-pointer">
-                  {t('saveChanges')}
+                  {t('cancelProfileButton')}
                 </Button>
               </div>
             </form>
-
-            <form onSubmit={handlePasswordSubmit} className="space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">{t('passwordTitle')}</h2>
-                <p className="text-muted-foreground text-sm">
-                  {t('passwordDescription')}
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="currentPassword">
-                    {t('currentPasswordLabel')}
-                  </Label>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={(event) => {
-                      setPasswordForm((prev) => ({
-                        ...prev,
-                        currentPassword: event.target.value
-                      }))
-                      setPasswordStatus(null)
-                    }}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="newPassword">{t('newPasswordLabel')}</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(event) => {
-                      setPasswordForm((prev) => ({
-                        ...prev,
-                        newPassword: event.target.value
-                      }))
-                      setPasswordStatus(null)
-                    }}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="confirmPassword">
-                    {t('confirmPasswordLabel')}
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(event) => {
-                      setPasswordForm((prev) => ({
-                        ...prev,
-                        confirmPassword: event.target.value
-                      }))
-                      setPasswordStatus(null)
-                    }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {passwordStatus ? (
-                <p
-                  className={`text-sm ${
-                    passwordStatus.type === 'success'
-                      ? 'text-emerald-600'
-                      : 'text-destructive'
-                  }`}
-                >
-                  {passwordStatus.message}
-                </p>
-              ) : null}
-
-              <div className="flex justify-end">
-                <Button type="submit" className="cursor-pointer">
-                  {t('updatePassword')}
-                </Button>
-              </div>
-            </form>
+            {profileStatus ? (
+              <p
+                className={
+                  profileStatus.type === 'error'
+                    ? 'text-destructive text-sm'
+                    : 'text-sm text-emerald-600'
+                }
+                role="status"
+              >
+                {profileStatus.message}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
+        <Card className="flex flex-col gap-6">
           <CardHeader>
-            <CardTitle>{t('accountDetailsTitle')}</CardTitle>
-            <CardDescription>{t('accountDetailsDescription')}</CardDescription>
+            <div>
+              <CardTitle>{t('passwordSectionTitle')}</CardTitle>
+              <CardDescription>
+                {t('passwordSectionDescription')}
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">{t('roleLabel')}</span>
-              <Badge variant="secondary" className="w-fit">
-                {roleLabel}
-              </Badge>
-            </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">
-                {t('connectedServicesTitle')}
-              </span>
-              {mockAuthenticatedUser.connectedServices.length ? (
-                <ServiceCardList
-                  services={mockServices.filter((service) =>
-                    mockAuthenticatedUser.connectedServices.includes(
-                      service.name
-                    )
-                  )}
-                  userLinkedServices={mockAuthenticatedUser.connectedServices}
-                  isUserAuthenticated
-                  isMinimal
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="currentPassword">
+                  {t('currentPasswordLabel')}
+                </Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      currentPassword: event.target.value
+                    }))
+                  }
                 />
-              ) : (
-                <span className="text-muted-foreground text-sm">
-                  {t('emptyServices')}
-                </span>
-              )}
-            </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="newPassword">{t('newPasswordLabel')}</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      newPassword: event.target.value
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">
+                  {t('confirmPasswordLabel')}
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: event.target.value
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit">{t('updatePasswordButton')}</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setPasswordForm(getPasswordInitialState())
+                    setPasswordStatus(null)
+                  }}
+                >
+                  {t('cancelPasswordButton')}
+                </Button>
+              </div>
+            </form>
+            {passwordStatus ? (
+              <p
+                className={
+                  passwordStatus.type === 'error'
+                    ? 'text-destructive text-sm'
+                    : 'text-sm text-emerald-600'
+                }
+                role="status"
+              >
+                {passwordStatus.message}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </div>
+
+      <Card className="flex flex-col gap-6">
+        <CardHeader>
+          <div>
+            <CardTitle>{t('connectedServicesTitle')}</CardTitle>
+            <CardDescription>
+              {t('connectedServicesDescription')}
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {services.length ? (
+            <ServiceCardList
+              services={services}
+              userLinkedServices={connectedServices}
+              isUserAuthenticated
+              isMinimal
+            />
+          ) : (
+            <p className="text-muted-foreground text-sm">{t('noServices')}</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
