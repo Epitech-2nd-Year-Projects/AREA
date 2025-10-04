@@ -107,7 +107,6 @@ apis:
           activeTextColor: '#22B8CF'
           activeBgColor: '#10243B'
           caretColor: '#22B8CF'
-          separatorLine: false
           width: '300px'
           groupItems:
             textTransform: uppercase
