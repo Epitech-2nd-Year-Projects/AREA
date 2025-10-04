@@ -44,7 +44,7 @@ servers:
     description: Production
   - url: https://staging.area-server.app
     description: Staging
-  - url: http://127.0.0.1:8080
+  - url: http://localhost:8080
     description: Local development
 externalDocs:
   description: Design guidelines and integration handbook
