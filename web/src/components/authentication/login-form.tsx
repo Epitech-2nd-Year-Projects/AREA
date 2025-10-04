@@ -1,9 +1,10 @@
 'use client'
-import { FormEvent, useEffect, useState, useTransition } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { mockLoginUser, mockResendVerificationEmail } from '@/data/mocks'
+import { useLoginMutation } from '@/lib/api/openapi/auth'
+import { ApiError } from '@/lib/api/http/errors'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -24,8 +25,8 @@ export function LoginForm({
   const serializedSearchParams = searchParams.toString()
   const t = useTranslations('LoginPage')
   const tAuth = useTranslations('AuthShared')
-  const [isPending, startTransition] = useTransition()
-  const [isResending, startResendTransition] = useTransition()
+  const loginMutation = useLoginMutation()
+  const isPending = loginMutation.isPending
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
@@ -43,12 +44,15 @@ export function LoginForm({
       setStatusMessage(t('emailNotVerified', { email: normalizedEmail }))
       setUnverifiedEmail(normalizedEmail)
       setErrorMessage(null)
-      setResendFeedback(null)
+      setResendFeedback({
+        message: tAuth('resendVerificationSuccess', { email: normalizedEmail }),
+        variant: 'success'
+      })
       router.replace('/login')
     }
-  }, [router, serializedSearchParams, t])
+  }, [router, serializedSearchParams, t, tAuth])
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const form = event.currentTarget
@@ -71,51 +75,32 @@ export function LoginForm({
       return
     }
 
-    startTransition(async () => {
-      const result = await mockLoginUser({ email, password })
-
-      if (result.status === 'error') {
-        const message =
-          result.code === 'INVALID_CREDENTIALS'
-            ? t('errors.invalidCredentials')
-            : t('errors.generic')
-        setErrorMessage(message)
-        setUnverifiedEmail(null)
-        return
-      }
-
-      if (result.status === 'unverified') {
-        setUnverifiedEmail(result.email)
-        setStatusMessage(t('emailNotVerified', { email: result.email }))
-        return
-      }
-
+    try {
+      await loginMutation.mutateAsync({ email, password })
       setUnverifiedEmail(null)
       setStatusMessage(t('loginSuccess'))
       form.reset()
-    })
-  }
-
-  const handleResend = () => {
-    if (!unverifiedEmail) return
-
-    setResendFeedback(null)
-    startResendTransition(async () => {
-      const result = await mockResendVerificationEmail(unverifiedEmail)
-
-      if (result.status === 'error') {
-        setResendFeedback({
-          message: tAuth('resendVerificationError'),
-          variant: 'error'
-        })
-        return
+      router.refresh()
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 400) {
+          setErrorMessage(t('errors.invalidCredentials'))
+          setUnverifiedEmail(null)
+          return
+        }
+        if (error.status === 403) {
+          setUnverifiedEmail(email)
+          setStatusMessage(t('emailNotVerified', { email }))
+          setResendFeedback({
+            message: tAuth('resendVerificationSuccess', { email }),
+            variant: 'success'
+          })
+          return
+        }
       }
-
-      setResendFeedback({
-        message: tAuth('resendVerificationSuccess', { email: result.email }),
-        variant: 'success'
-      })
-    })
+      setErrorMessage(t('errors.generic'))
+      setUnverifiedEmail(null)
+    }
   }
 
   return (
@@ -146,31 +131,18 @@ export function LoginForm({
                       <p className="text-muted-foreground mt-1 text-sm">
                         {t('emailNotVerifiedInstructions')}
                       </p>
-                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleResend}
-                          disabled={isResending}
+                      {resendFeedback ? (
+                        <span
+                          className={cn(
+                            'mt-4 block text-sm',
+                            resendFeedback.variant === 'error'
+                              ? 'text-destructive'
+                              : 'text-muted-foreground'
+                          )}
                         >
-                          {isResending ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : null}
-                          {tAuth('resendVerification')}
-                        </Button>
-                        {resendFeedback ? (
-                          <span
-                            className={cn(
-                              'text-sm',
-                              resendFeedback.variant === 'error'
-                                ? 'text-destructive'
-                                : 'text-muted-foreground'
-                            )}
-                          >
-                            {resendFeedback.message}
-                          </span>
-                        ) : null}
-                      </div>
+                          {resendFeedback.message}
+                        </span>
+                      ) : null}
                     </>
                   ) : (
                     <p className="text-muted-foreground mt-1 text-sm">

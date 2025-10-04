@@ -8,7 +8,7 @@ import {
   TrashIcon
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { mockActions, mockReactions, mockServices } from '@/data/mocks'
+import { mockActions, mockReactions, mockServices } from '@/lib/api/mock'
 import { Area } from '@/lib/api/contracts/areas'
 import { Action } from '@/lib/api/contracts/actions'
 import { Reaction } from '@/lib/api/contracts/reactions'

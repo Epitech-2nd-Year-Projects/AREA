@@ -1,9 +1,10 @@
 'use client'
-import { FormEvent, useState, useTransition } from 'react'
+import { FormEvent, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { mockRegisterUser } from '@/data/mocks'
+import { useRegisterUserMutation } from '@/lib/api/openapi/users'
+import { ApiError } from '@/lib/api/http/errors'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,10 +17,11 @@ export function RegisterForm({
 }: React.ComponentProps<'div'>) {
   const router = useRouter()
   const t = useTranslations('RegisterPage')
-  const [isPending, startTransition] = useTransition()
+  const registerMutation = useRegisterUserMutation()
+  const isPending = registerMutation.isPending
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const form = event.currentTarget
@@ -41,23 +43,21 @@ export function RegisterForm({
       return
     }
 
-    startTransition(async () => {
-      const result = await mockRegisterUser({ email, password })
-
-      if (result.status === 'error') {
-        const message =
-          result.code === 'EMAIL_IN_USE'
-            ? t('errors.emailAlreadyUsed', { email })
-            : t('errors.generic')
-        setErrorMessage(message)
-        return
-      }
-
+    try {
+      await registerMutation.mutateAsync({ email, password })
       form.reset()
       router.push(
-        `/login?needsVerification=1&email=${encodeURIComponent(result.email)}`
+        `/login?needsVerification=1&email=${encodeURIComponent(email)}`
       )
-    })
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 409) {
+          setErrorMessage(t('errors.emailAlreadyUsed', { email }))
+          return
+        }
+      }
+      setErrorMessage(t('errors.generic'))
+    }
   }
 
   return (

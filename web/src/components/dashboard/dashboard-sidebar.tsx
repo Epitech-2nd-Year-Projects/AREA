@@ -3,7 +3,6 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +25,7 @@ import {
 import { UserRole } from '@/lib/api/contracts/users'
 import { useTranslations } from 'next-intl'
 import { UserDropdown } from './user-dropdown'
-import { mockAuthenticatedUser } from '@/data/mocks'
+import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
 
 type NavItem = {
   internationalizedTitle: string
@@ -88,16 +87,16 @@ function canAccessGroup(userRole: UserRole, groupRoles?: UserRole[]) {
 export function DashboardSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const t = useTranslations('Sidebar')
   const pathname = usePathname()
-
-  // TODO: Check if user is logged in, redirect accordingly
-  const user = mockAuthenticatedUser
+  const { data, isLoading } = useCurrentUserQuery()
+  const user = data?.user ? mapUserDTOToUser(data.user) : null
+  const effectiveRole = user?.role ?? UserRole.User
 
   return (
     <Sidebar {...props}>
       <SidebarHeader></SidebarHeader>
       <SidebarContent>
         {navData.navMain
-          .filter((group) => canAccessGroup(user.role, group.allowedRoles))
+          .filter((group) => canAccessGroup(effectiveRole, group.allowedRoles))
           .map((group) => (
             <SidebarGroup key={group.internationalizedTitle}>
               <SidebarGroupLabel>
@@ -124,7 +123,7 @@ export function DashboardSidebar(props: React.ComponentProps<typeof Sidebar>) {
           ))}
       </SidebarContent>
       <SidebarFooter>
-        <UserDropdown user={user} />
+        {user && !isLoading ? <UserDropdown user={user} /> : null}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

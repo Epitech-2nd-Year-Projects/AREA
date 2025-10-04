@@ -43,14 +43,16 @@ const envSchema = z.object({
       } catch {
         return false
       }
-    }, 'CORS_ALLOWED_ORIGIN must be a valid http(s) origin')
+    }, 'CORS_ALLOWED_ORIGIN must be a valid http(s) origin'),
+  NEXT_PUBLIC_API_MODE: z.enum(['live', 'mock']).default('mock')
 })
 
 const parsed = envSchema.safeParse({
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_PROXY_TARGET: process.env.API_PROXY_TARGET,
-  CORS_ALLOWED_ORIGIN: process.env.CORS_ALLOWED_ORIGIN
+  CORS_ALLOWED_ORIGIN: process.env.CORS_ALLOWED_ORIGIN,
+  NEXT_PUBLIC_API_MODE: process.env.NEXT_PUBLIC_API_MODE
 })
 
 if (!parsed.success) {
@@ -71,6 +73,7 @@ const isRelativeBase = !HTTP_URL_REGEX.test(baseUrl)
 const basePath = isRelativeBase ? baseUrl : new URL(baseUrl).pathname
 const proxyTarget = envData.API_PROXY_TARGET ?? null
 const corsAllowedOrigin = envData.CORS_ALLOWED_ORIGIN ?? null
+const apiMode = envData.NEXT_PUBLIC_API_MODE
 
 if (isRelativeBase && !proxyTarget) {
   throw new Error(
@@ -95,12 +98,14 @@ const buildUrl = (path: string) => {
 process.env.NEXT_PUBLIC_API_URL = baseUrl
 if (proxyTarget) process.env.API_PROXY_TARGET = proxyTarget
 if (corsAllowedOrigin) process.env.CORS_ALLOWED_ORIGIN = corsAllowedOrigin
+process.env.NEXT_PUBLIC_API_MODE = apiMode
 
 export const env = {
   NODE_ENV: envData.NODE_ENV ?? 'development',
   NEXT_PUBLIC_API_URL: baseUrl,
   API_PROXY_TARGET: proxyTarget,
-  CORS_ALLOWED_ORIGIN: corsAllowedOrigin
+  CORS_ALLOWED_ORIGIN: corsAllowedOrigin,
+  NEXT_PUBLIC_API_MODE: apiMode
 } as const
 
 export const apiConfig = {

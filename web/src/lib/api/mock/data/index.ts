@@ -608,7 +608,7 @@ export const mockResendVerificationEmail = async (
   }
 }
 
-export const mockMarkUserEmailVerified = (email: string) => {
+export const mockMarkUserEmailVerified = (email: string): User | undefined => {
   const normalizedEmail = email.trim().toLowerCase()
   const user = mockUsers.find(
     (candidate) => candidate.email.toLowerCase() === normalizedEmail
@@ -616,5 +616,8 @@ export const mockMarkUserEmailVerified = (email: string) => {
 
   if (user) {
     user.emailVerified = true
+    return user
   }
+
+  return undefined
 }

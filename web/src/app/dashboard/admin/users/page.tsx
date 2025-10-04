@@ -1,11 +1,21 @@
 import { User } from '@/lib/api/contracts/users'
 import { columns } from './columns'
 import { DataTable } from './data-table'
-import { mockUsers } from '@/data/mocks'
 import { getTranslations } from 'next-intl/server'
+import { mapUserDTOToUser } from '@/lib/api/openapi/auth'
+import { currentUserServer } from '@/lib/api/openapi/auth/server'
+import { ApiError } from '@/lib/api/http/errors'
 
 async function getData(): Promise<User[]> {
-  return mockUsers
+  try {
+    const response = await currentUserServer()
+    return [mapUserDTOToUser(response.user)]
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return []
+    }
+    throw error
+  }
 }
 
 export default async function AdminUsersPage() {

@@ -2,13 +2,15 @@
 import { AreaCardList } from '@/components/areas/area-card-list'
 import CreateAreaModal from '@/components/areas/create-area-modal'
 import { Input } from '@/components/ui/input'
-import { mockUserLinkedAreas } from '@/data/mocks'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import type { Area } from '@/lib/api/contracts/areas'
+
+const EMPTY_AREAS: Area[] = []
 
 export default function LinksPage() {
   const t = useTranslations('LinksPage')
-  const userLinkedAreas = mockUserLinkedAreas
+  const userLinkedAreas = EMPTY_AREAS
   const [searchValue, setSearchValue] = useState('')
 
   const filteredAreas = useMemo(() => {
