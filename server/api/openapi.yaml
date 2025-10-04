@@ -2,15 +2,100 @@ openapi: 3.0.3
 info:
   title: AREA Server API
   version: 0.1.0
+  description: |-
+    The AREA Server API powers the automation platform that links actions and reactions across
+    partner services. Use it to onboard users, issue secure sessions, and orchestrate OAuth-based
+    integrations.
+
+    ### Highlights
+    - Account lifecycle endpoints for registration, verification, and session management.
+    - OAuth helpers to initiate and complete third-party connector authorisations.
+    - Metadata routes that expose the current backend build, feature flags, and compatibility notes.
+
+    ### Getting started
+    1. Create a user via `POST /v1/users` and complete the verification journey.
+    2. Authenticate with either password credentials or OAuth connectors to obtain an `area_session` cookie.
+    3. Call authenticated endpoints such as `GET /v1/auth/me` with the session cookie attached as a standard cookie header.
+
+    Refer to the environment selector in the sidebar to toggle between production, staging, and local URLs.
+    
+    ### Rate limits & reliability
+    - Default rate limit: **120 requests per minute** per authenticated session.
+    - Burst tolerance: short spikes up to 300 requests per minute are accepted for 30 seconds.
+    - All endpoints are reachable over HTTPS only; staging and local URLs are for testing purposes.
+
+    ### Support & SLA
+    - Incident response via the on-call rotation is available 24/7 through the status portal.
+    - For non-urgent questions, open a ticket from the dashboard or email support@area-server.app.
+    - Premium plans include dedicated Slack channels and twice-yearly architecture reviews.
+  termsOfService: https://area-server.app/legal/terms
+  contact:
+    name: AREA Platform Support
+    email: support@area-server.app
+    url: https://area-server.app/support
+  license:
+    name: Proprietary
+    url: https://area-server.app/legal/terms
+  x-logo:
+    url: https://area-server.app/assets/brand/area-logo-dark.svg
+    altText: AREA mark
 servers:
+  - url: https://api.area-server.app
+    description: Production
+  - url: https://staging.area-server.app
+    description: Staging
   - url: http://localhost:8080
+    description: Local development
+externalDocs:
+  description: Design guidelines and integration handbook
+  url: https://area-server.app/developers
+tags:
+  - name: metadata
+    x-displayName: Platform metadata
+    description: Inspect server capabilities, build information, and enabled features.
+  - name: auth
+    x-displayName: Authentication
+    description: Manage user identities, sessions, and third-party authorisations.
+x-tagGroups:
+  - name: Platform Overview
+    tags:
+      - metadata
+  - name: Identity & Access
+    tags:
+      - auth
+security:
+  - sessionAuth: []
 paths:
   /about.json:
     get:
       summary: Describe server capabilities
+      description: >-
+        Retrieve build metadata that helps clients display the current backend version, commit
+        fingerprint, and aligned client bundle information. The endpoint is public and can be used
+        for health checks or support diagnostics.
       operationId: getAbout
       tags:
         - metadata
+      security: []
+      x-codeSamples:
+        - lang: curl
+          label: Quick check with curl
+          source: |
+            curl -s https://api.area-server.app/about.json
+        - lang: javascript
+          label: Fetch (browser)
+          source: |
+            fetch('https://api.area-server.app/about.json')
+              .then((res) => res.json())
+              .then((body) => console.log(body));
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            response = requests.get('https://api.area-server.app/about.json', timeout=10)
+            response.raise_for_status()
+            print(response.json())
       responses:
         '200':
           description: About payload
@@ -18,18 +103,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AboutResponse'
+        '404':
+          description: Server metadata unavailable
   /v1/users:
     post:
       summary: Register a new user
+      description: |-
+        Begins the email-first account creation workflow. Upon success the backend sends a
+        verification message and returns a tracker ID so clients can surface progress updates.
       operationId: registerUser
       tags:
         - auth
+      security: []
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/users \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"alex.martin@example.com","password":"Passw0rd!23"}'
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            await fetch('https://api.area-server.app/v1/users', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: 'alex.martin@example.com',
+                password: 'Passw0rd!23',
+              }),
+            });
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            payload = {
+                "email": "alex.martin@example.com",
+                "password": "Passw0rd!23",
+            }
+            response = requests.post(
+                'https://api.area-server.app/v1/users', json=payload, timeout=10
+            )
+            response.raise_for_status()
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RegisterUserRequest'
+            examples:
+              standard:
+                summary: Email-first registration
+                value:
+                  email: alex.martin@example.com
+                  password: Passw0rd!23
       responses:
         '202':
           description: Registration accepted, verification email sent
@@ -37,6 +165,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterUserResponse'
+              examples:
+                accepted:
+                  summary: Registration acknowledged
+                  value:
+                    userId: usr_01H9ZQF8E4XKC5V7QMMC1782X9
         '400':
           description: Invalid input
         '409':
@@ -44,15 +177,52 @@ paths:
   /v1/auth/verify:
     post:
       summary: Verify email address and create a session
+      description: |-
+        Confirms the registration token from the verification email. Upon success the API issues
+        an authenticated session and returns its metadata for client storage.
       operationId: verifyEmail
       tags:
         - auth
+      security: []
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/auth/verify \
+              -H 'Content-Type: application/json' \
+              -d '{"token":"01H9ZQF8E4XKC5V7QMMC1782X9"}' \
+              -c cookies.txt
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            await fetch('https://api.area-server.app/v1/auth/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ token: '01H9ZQF8E4XKC5V7QMMC1782X9' }),
+            });
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            payload = {"token": "01H9ZQF8E4XKC5V7QMMC1782X9"}
+            session = requests.Session()
+            response = session.post(
+                'https://api.area-server.app/v1/auth/verify', json=payload, timeout=10
+            )
+            response.raise_for_status()
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VerifyEmailRequest'
+            examples:
+              verification:
+                summary: Verify a new registration
+                value:
+                  token: 01H9ZQF8E4XKC5V7QMMC1782X9
       responses:
         '200':
           description: Email verified and session issued
@@ -65,6 +235,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSessionResponse'
+              examples:
+                session:
+                  summary: Session metadata
+                  value:
+                    tokenType: session
+                    expiresAt: 2024-04-18T11:32:00Z
         '400':
           description: Invalid token
         '410':
@@ -72,15 +248,59 @@ paths:
   /v1/auth/login:
     post:
       summary: Authenticate using email and password
+      description: |-
+        Issues a session for existing users through credential authentication. The response mirrors
+        the session cookie lifespan so clients can schedule silent renewals.
       operationId: login
       tags:
         - auth
+      security: []
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"alex.martin@example.com","password":"Passw0rd!23"}' \
+              -c cookies.txt
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            await fetch('https://api.area-server.app/v1/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                email: 'alex.martin@example.com',
+                password: 'Passw0rd!23',
+              }),
+            });
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            payload = {
+                "email": "alex.martin@example.com",
+                "password": "Passw0rd!23",
+            }
+            session = requests.Session()
+            response = session.post(
+                'https://api.area-server.app/v1/auth/login', json=payload, timeout=10
+            )
+            response.raise_for_status()
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+            examples:
+              credentials:
+                summary: Login with password
+                value:
+                  email: alex.martin@example.com
+                  password: Passw0rd!23
       responses:
         '200':
           description: Authentication succeeded
@@ -93,6 +313,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSessionResponse'
+              examples:
+                session:
+                  summary: Session metadata
+                  value:
+                    tokenType: session
+                    expiresAt: 2024-04-18T11:32:00Z
         '400':
           description: Invalid credentials
         '403':
@@ -100,18 +326,69 @@ paths:
   /v1/auth/logout:
     post:
       summary: Revoke the current session
+      description: |-
+        Invalidates the caller's active `area_session` cookie. Clients should call this when users
+        explicitly sign out to ensure downstream triggers stop executing.
       operationId: logout
       tags:
         - auth
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/auth/logout \
+              -b cookies.txt
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            await fetch('https://api.area-server.app/v1/auth/logout', {
+              method: 'POST',
+              credentials: 'include',
+            });
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            session = requests.Session()
+            session.get('https://api.area-server.app/about.json', timeout=10)  # prime cookies
+            response = session.post('https://api.area-server.app/v1/auth/logout', timeout=10)
+            response.raise_for_status()
       responses:
         '204':
           description: Logged out
+        '401':
+          description: Session missing or expired
   /v1/auth/me:
     get:
       summary: Retrieve the authenticated user profile
+      description: |-
+        Returns the canonical user profile associated with the supplied `area_session` cookie.
+        Useful for bootstrapping client state after reloads.
       operationId: getCurrentUser
       tags:
         - auth
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl https://api.area-server.app/v1/auth/me -b cookies.txt
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            const response = await fetch('https://api.area-server.app/v1/auth/me', {
+              credentials: 'include',
+            });
+            const currentUser = await response.json();
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            session = requests.Session()
+            response = session.get('https://api.area-server.app/v1/auth/me', timeout=10)
+            response.raise_for_status()
+            print(response.json())
       responses:
         '200':
           description: Current user
@@ -119,26 +396,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+              examples:
+                profile:
+                  summary: Authenticated user
+                  value:
+                    id: usr_01H9ZQF8E4XKC5V7QMMC1782X9
+                    email: alex.martin@example.com
         '401':
           description: Session missing or expired
   /v1/oauth/{provider}/authorize:
     post:
       summary: Initiate OAuth authorization
+      description: |-
+        Creates a provider-specific authorisation URL and state token. Invoke this endpoint before
+        redirecting users to complete OAuth consent flows.
       operationId: authorizeOAuth
       tags:
         - auth
       parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/OAuthProvider'
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/oauth/google/authorize \
+              -H 'Content-Type: application/json' \
+              -d '{"redirectUri":"https://app.area-server.app/oauth/complete"}'
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            const response = await fetch('https://api.area-server.app/v1/oauth/google/authorize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                redirectUri: 'https://app.area-server.app/oauth/complete',
+              }),
+            });
+            const { authorizationUrl } = await response.json();
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            payload = {
+                "redirectUri": "https://app.area-server.app/oauth/complete",
+            }
+            response = requests.post(
+                'https://api.area-server.app/v1/oauth/google/authorize',
+                json=payload,
+                timeout=10,
+            )
+            response.raise_for_status()
       requestBody:
         required: false
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/OAuthAuthorizationRequest'
+            examples:
+              override-redirect:
+                summary: Customise the redirect URI
+                value:
+                  redirectUri: https://app.area-server.app/oauth/complete
       responses:
         '200':
           description: Authorization parameters
@@ -146,6 +466,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthAuthorizationResponse'
+              examples:
+                jump-url:
+                  summary: Consent URL to open in browser
+                  value:
+                    authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth?client_id=...
         '400':
           description: Invalid request
         '404':
@@ -155,21 +480,55 @@ paths:
   /v1/oauth/{provider}/exchange:
     post:
       summary: Exchange authorization code for session
+      description: |-
+        Completes the OAuth handshake by trading the provider-issued code for an AREA session. The
+        backend validates the state token implicitly through the `area_session` cookie.
       operationId: exchangeOAuth
       tags:
         - auth
       parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/OAuthProvider'
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST https://api.area-server.app/v1/oauth/google/exchange \
+              -H 'Content-Type: application/json' \
+              -d '{"code":"4/0AbCDefGhIjKlMnOpQrStUvWxYz"}' \
+              -b cookies.txt -c cookies.txt
+        - lang: javascript
+          label: JavaScript (fetch)
+          source: |
+            await fetch('https://api.area-server.app/v1/oauth/google/exchange', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ code: '4/0AbCDefGhIjKlMnOpQrStUvWxYz' }),
+            });
+        - lang: python
+          label: Python (requests)
+          source: |
+            import requests
+
+            payload = {"code": "4/0AbCDefGhIjKlMnOpQrStUvWxYz"}
+            session = requests.Session()
+            response = session.post(
+                'https://api.area-server.app/v1/oauth/google/exchange',
+                json=payload,
+                timeout=10,
+            )
+            response.raise_for_status()
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/OAuthExchangeRequest'
+            examples:
+              standard:
+                summary: Exchange the provider code
+                value:
+                  code: 4/0AbCDefGhIjKlMnOpQrStUvWxYz
       responses:
         '200':
           description: Authentication succeeded
@@ -182,6 +541,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSessionResponse'
+              examples:
+                session:
+                  summary: Session metadata
+                  value:
+                    tokenType: session
+                    expiresAt: 2024-04-18T11:32:00Z
         '400':
           description: Invalid payload
         '404':
@@ -191,166 +556,171 @@ paths:
         '502':
           description: Provider exchange failed
 components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: area_session
+      description: Session cookie issued after authentication.
   schemas:
     AboutResponse:
       type: object
+      description: Aggregated platform metadata combining frontend and backend build information.
       required: [client, server]
       properties:
         client:
           $ref: '#/components/schemas/AboutClient'
         server:
           $ref: '#/components/schemas/AboutServer'
+      example:
+        client:
+          version: 1.0.0
+        server:
+          version: 0.1.3
+          commit: a1b2c3d4
     AboutClient:
       type: object
-      required: [host]
+      description: Current client bundle fingerprint exposed to public consumers.
+      required: [version]
       properties:
-        host:
+        version:
           type: string
-          description: IP address of the client issuing the request
+          description: Semantic version of the distributed web/mobile clients.
+          example: 1.0.0
     AboutServer:
       type: object
-      required: [current_time, services]
+      description: Backend release information.
+      required: [version, commit]
       properties:
-        current_time:
-          type: integer
-          format: int64
-          description: Unix epoch timestamp
-        services:
-          type: array
-          description: Services supported by the server
-          items:
-            $ref: '#/components/schemas/Service'
-    Service:
-      type: object
-      required: [name, actions, reactions]
-      properties:
-        name:
+        version:
           type: string
-        actions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Component'
-        reactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Component'
-    Component:
-      type: object
-      required: [name, description]
-      properties:
-        name:
+          description: Semantic version of the backend deployment.
+          example: 0.1.0
+        commit:
           type: string
-        description:
-          type: string
+          description: Git commit hash deployed to the environment.
+          example: a1b2c3d4
     RegisterUserRequest:
       type: object
+      description: Payload used to enrol a new AREA account prior to email verification.
       required: [email, password]
       properties:
         email:
           type: string
           format: email
+          description: Primary email address that receives activation and security alerts.
+          example: alex.martin@example.com
         password:
           type: string
+          format: password
           minLength: 8
+          description: Strong password that satisfies backend policy (min. 8 chars, letters + numbers).
+          example: Passw0rd!23
+      example:
+        email: alex.martin@example.com
+        password: Passw0rd!23
     RegisterUserResponse:
       type: object
-      required: [expires_at]
+      description: Confirmation payload indicating the asynchronous verification workflow started.
+      required: [userId]
       properties:
-        expires_at:
+        userId:
           type: string
-          format: date-time
+          description: Unique identifier assigned to the provisioned user.
+          example: usr_01H9ZQF8E4XKC5V7QMMC1782X9
     VerifyEmailRequest:
       type: object
+      description: Token issued in the verification email used to activate the account.
       required: [token]
       properties:
         token:
           type: string
+          description: Single-use verification token issued as part of registration.
+          example: 01H9ZQF8E4XKC5V7QMMC1782X9
+      example:
+        token: 01H9ZQF8E4XKC5V7QMMC1782X9
+    AuthSessionResponse:
+      type: object
+      description: Session descriptor mirroring the cookie issued by the backend.
+      required: [tokenType, expiresAt]
+      properties:
+        tokenType:
+          type: string
+          example: session
+          description: Grants semantics of the issued token; currently `session`.
+        expiresAt:
+          type: string
+          format: date-time
+          description: Expiration timestamp (UTC) aligning with the `area_session` cookie expiry.
+      example:
+        tokenType: session
+        expiresAt: 2024-04-18T11:32:00Z
     LoginRequest:
       type: object
+      description: Credential-based authentication payload.
       required: [email, password]
       properties:
         email:
           type: string
           format: email
+          description: Registered user email.
+          example: alex.martin@example.com
         password:
           type: string
-          minLength: 8
+          format: password
+          description: Plaintext password that satisfies the backend policy.
+          example: Passw0rd!23
+      example:
+        email: alex.martin@example.com
+        password: Passw0rd!23
+    UserResponse:
+      type: object
+      description: Public representation of the authenticated user.
+      required: [id, email]
+      properties:
+        id:
+          type: string
+          description: Stable unique identifier of the user.
+          example: usr_01H9ZQF8E4XKC5V7QMMC1782X9
+        email:
+          type: string
+          format: email
+          description: Primary email address associated with the account.
+          example: alex.martin@example.com
     OAuthAuthorizationRequest:
       type: object
+      description: Optional parameters forwarded to the configured OAuth provider.
       properties:
-        redirect_uri:
+        redirectUri:
           type: string
           format: uri
-        scopes:
-          type: array
-          items:
-            type: string
-        state:
-          type: string
-        prompt:
-          type: string
-        use_pkce:
-          type: boolean
-          default: true
+          description: Explicit redirect URI to override the default callback registered with the provider.
+          example: https://app.area-server.app/oauth/complete
     OAuthAuthorizationResponse:
       type: object
-      required: [authorization_url]
+      description: Provider authorisation metadata.
+      required: [authorizationUrl]
       properties:
-        authorization_url:
+        authorizationUrl:
           type: string
           format: uri
-        state:
-          type: string
-        code_verifier:
-          type: string
-        code_challenge:
-          type: string
-        code_challenge_method:
-          type: string
-          enum: [plain, S256]
+          description: URL that the client must open to continue authorisation with the provider.
+          example: https://accounts.google.com/o/oauth2/v2/auth?client_id=...
     OAuthExchangeRequest:
       type: object
+      description: Payload received after the provider redirect to complete the exchange.
       required: [code]
       properties:
         code:
           type: string
-        redirect_uri:
-          type: string
-          format: uri
-        code_verifier:
-          type: string
-        state:
-          type: string
-    AuthSessionResponse:
-      type: object
-      required: [user]
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-    UserResponse:
-      type: object
-      required: [user]
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-    User:
-      type: object
-      required: [id, email, status, created_at, updated_at]
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-        status:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        last_login_at:
-          type: string
-          format: date-time
-          nullable: true
+          description: One-time authorisation code issued by the provider.
+          example: 4/0AbCDefGhIjKlMnOpQrStUvWxYz
+  parameters:
+    OAuthProvider:
+      name: provider
+      in: path
+      required: true
+      description: Slug corresponding to a configured OAuth provider (for example `google`, `github`).
+      schema:
+        type: string
+      example: google
