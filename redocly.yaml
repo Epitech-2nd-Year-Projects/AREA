@@ -11,6 +11,14 @@ apis:
       hideDownloadButtons: false
       jsonSamplesExpandLevel: 3
       generatedSamplesMaxDepth: 5
+      schemaExpansionLevel: 2
+      requiredPropsFirst: true
+      showConsole: true
+      showObjectSchemaExamples: true
+      showSecuritySchemeType: true
+      showRightPanelToggle: true
+      searchAutoExpand: true
+      samplesTabsMaxCount: 6
       codeSamples:
         skipOptionalParameters: true
         languages:
@@ -23,6 +31,18 @@ apis:
       downloadUrls:
         - title: OpenAPI (YAML)
           url: ./server/api/openapi.yaml
+      sidebarLinks:
+        beforeInfo:
+          - label: Service status
+            link: https://status.area-server.app
+            target: _blank
+          - label: Onboarding checklist
+            link: https://area-server.app/resources/area-api-onboarding.pdf
+            target: _blank
+        end:
+          - label: Postman collection
+            link: https://area-server.app/resources/area.postman_collection.json
+            target: _blank
       theme:
         colors:
           primary:
@@ -31,14 +51,103 @@ apis:
             dark: '#084C61'
           accent:
             main: '#748FFC'
+            light: '#A5B4FC'
+            dark: '#3B5BDB'
+          secondary:
+            main: '#1C7ED6'
+            light: '#4DABF7'
+            contrastText: '#F8F9FA'
           success:
             main: '#51CF66'
           warning:
             main: '#FCC419'
           error:
             main: '#FF6B6B'
+          border:
+            light: '#E2E8F0'
+            dark: '#94A3B8'
+          text:
+            primary: '#0F172A'
+            secondary: '#475569'
+            light: '#94A3B8'
+          http:
+            get: '#2B8A3E'
+            post: '#1864AB'
+            put: '#7048E8'
+            delete: '#E03131'
+            patch: '#F08C00'
+            options: '#364FC7'
+            head: '#099268'
+            link: '#0B7285'
+            basic: '#4C6EF5'
+          responses:
+            success:
+              backgroundColor: '#EBFBEE'
+              borderColor: '#51CF66'
+              color: '#2B8A3E'
+            error:
+              backgroundColor: '#FFF5F5'
+              borderColor: '#FF6B6B'
+              color: '#C92A2A'
+            info:
+              backgroundColor: '#E7F5FF'
+              borderColor: '#1C7ED6'
+              color: '#1864AB'
+            redirect:
+              backgroundColor: '#FFF9DB'
+              borderColor: '#FCC419'
+              color: '#B08900'
+        codeBlock:
+          backgroundColor: '#0F172A'
+          textColor: '#E2E8F0'
+        codeSample:
+          backgroundColor: '#0B1626'
+        sidebar:
+          backgroundColor: '#06111F'
+          textColor: '#E2E8F0'
+          activeTextColor: '#22B8CF'
+          activeBgColor: '#10243B'
+          caretColor: '#22B8CF'
+          separatorLine: false
+          width: '300px'
+          groupItems:
+            textTransform: uppercase
+            fontWeight: '600'
+        rightPanel:
+          backgroundColor: '#F8FAFC'
+          textColor: '#1F2937'
+          panelBackgroundColor: '#FFFFFF'
+          panelControlsBackgroundColor: '#E2E8F0'
+          width: '38%'
+        logo:
+          maxHeight: '48px'
+          maxWidth: '172px'
+          gutter: '0.75rem'
         typography:
           fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+          headings:
+            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+            fontWeight: '600'
+          links:
+            color: '#1C7ED6'
+            hover: '#364FC7'
+            textDecoration: none
+            hoverTextDecoration: underline
+          code:
+            fontFamily: 'JetBrains Mono, SFMono-Regular, Menlo, monospace'
+            fontSize: '0.95rem'
+        schema:
+          caretColor: '#0B7285'
+          linesColor: '#CBD5F5'
+          nestingSpacing: '1rem'
+          typeTitleColor: '#0F172A'
+          typeNameColor: '#3B5BDB'
+        shape:
+          borderRadius: '12px'
+        spacing:
+          unit: 12
+          sectionVertical: 48
+          sectionHorizontal: 40
       hideInfoMetadata: false
       maxDisplayedEnumValues: 15
       schemaDefinitionsTagName: Schemas
