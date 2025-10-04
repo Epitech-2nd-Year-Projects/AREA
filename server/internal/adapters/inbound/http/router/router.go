@@ -91,3 +91,19 @@ func (h compositeHandler) GetCurrentUser(c *gin.Context) {
 	}
 	h.auth.GetCurrentUser(c)
 }
+
+func (h compositeHandler) AuthorizeOAuth(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.AuthorizeOAuth(c, provider)
+}
+
+func (h compositeHandler) ExchangeOAuth(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ExchangeOAuth(c, provider)
+}

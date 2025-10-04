@@ -121,6 +121,75 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '401':
           description: Session missing or expired
+  /v1/oauth/{provider}/authorize:
+    post:
+      summary: Initiate OAuth authorization
+      operationId: authorizeOAuth
+      tags:
+        - auth
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthAuthorizationRequest'
+      responses:
+        '200':
+          description: Authorization parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAuthorizationResponse'
+        '400':
+          description: Invalid request
+        '404':
+          description: Provider not configured
+        '501':
+          description: OAuth not configured
+  /v1/oauth/{provider}/exchange:
+    post:
+      summary: Exchange authorization code for session
+      operationId: exchangeOAuth
+      tags:
+        - auth
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthExchangeRequest'
+      responses:
+        '200':
+          description: Authentication succeeded
+          headers:
+            Set-Cookie:
+              description: Authentication session cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provider not configured
+        '501':
+          description: OAuth not configured
+        '502':
+          description: Provider exchange failed
 components:
   schemas:
     AboutResponse:
@@ -206,6 +275,52 @@ components:
         password:
           type: string
           minLength: 8
+    OAuthAuthorizationRequest:
+      type: object
+      properties:
+        redirect_uri:
+          type: string
+          format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+        state:
+          type: string
+        prompt:
+          type: string
+        use_pkce:
+          type: boolean
+          default: true
+    OAuthAuthorizationResponse:
+      type: object
+      required: [authorization_url]
+      properties:
+        authorization_url:
+          type: string
+          format: uri
+        state:
+          type: string
+        code_verifier:
+          type: string
+        code_challenge:
+          type: string
+        code_challenge_method:
+          type: string
+          enum: [plain, S256]
+    OAuthExchangeRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+        redirect_uri:
+          type: string
+          format: uri
+        code_verifier:
+          type: string
+        state:
+          type: string
     AuthSessionResponse:
       type: object
       required: [user]

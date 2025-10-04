@@ -18,8 +18,15 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+// Defines values for OAuthAuthorizationResponseCodeChallengeMethod.
+const (
+	Plain OAuthAuthorizationResponseCodeChallengeMethod = "plain"
+	S256  OAuthAuthorizationResponseCodeChallengeMethod = "S256"
 )
 
 // AboutClient defines model for AboutClient.
@@ -58,6 +65,35 @@ type Component struct {
 type LoginRequest struct {
 	Email    openapi_types.Email `json:"email"`
 	Password string              `json:"password"`
+}
+
+// OAuthAuthorizationRequest defines model for OAuthAuthorizationRequest.
+type OAuthAuthorizationRequest struct {
+	Prompt      *string   `json:"prompt,omitempty"`
+	RedirectUri *string   `json:"redirect_uri,omitempty"`
+	Scopes      *[]string `json:"scopes,omitempty"`
+	State       *string   `json:"state,omitempty"`
+	UsePkce     *bool     `json:"use_pkce,omitempty"`
+}
+
+// OAuthAuthorizationResponse defines model for OAuthAuthorizationResponse.
+type OAuthAuthorizationResponse struct {
+	AuthorizationUrl    string                                         `json:"authorization_url"`
+	CodeChallenge       *string                                        `json:"code_challenge,omitempty"`
+	CodeChallengeMethod *OAuthAuthorizationResponseCodeChallengeMethod `json:"code_challenge_method,omitempty"`
+	CodeVerifier        *string                                        `json:"code_verifier,omitempty"`
+	State               *string                                        `json:"state,omitempty"`
+}
+
+// OAuthAuthorizationResponseCodeChallengeMethod defines model for OAuthAuthorizationResponse.CodeChallengeMethod.
+type OAuthAuthorizationResponseCodeChallengeMethod string
+
+// OAuthExchangeRequest defines model for OAuthExchangeRequest.
+type OAuthExchangeRequest struct {
+	Code         string  `json:"code"`
+	CodeVerifier *string `json:"code_verifier,omitempty"`
+	RedirectUri  *string `json:"redirect_uri,omitempty"`
+	State        *string `json:"state,omitempty"`
 }
 
 // RegisterUserRequest defines model for RegisterUserRequest.
@@ -104,6 +140,12 @@ type LoginJSONRequestBody = LoginRequest
 // VerifyEmailJSONRequestBody defines body for VerifyEmail for application/json ContentType.
 type VerifyEmailJSONRequestBody = VerifyEmailRequest
 
+// AuthorizeOAuthJSONRequestBody defines body for AuthorizeOAuth for application/json ContentType.
+type AuthorizeOAuthJSONRequestBody = OAuthAuthorizationRequest
+
+// ExchangeOAuthJSONRequestBody defines body for ExchangeOAuth for application/json ContentType.
+type ExchangeOAuthJSONRequestBody = OAuthExchangeRequest
+
 // RegisterUserJSONRequestBody defines body for RegisterUser for application/json ContentType.
 type RegisterUserJSONRequestBody = RegisterUserRequest
 
@@ -124,6 +166,12 @@ type ServerInterface interface {
 	// Verify email address and create a session
 	// (POST /v1/auth/verify)
 	VerifyEmail(c *gin.Context)
+	// Initiate OAuth authorization
+	// (POST /v1/oauth/{provider}/authorize)
+	AuthorizeOAuth(c *gin.Context, provider string)
+	// Exchange authorization code for session
+	// (POST /v1/oauth/{provider}/exchange)
+	ExchangeOAuth(c *gin.Context, provider string)
 	// Register a new user
 	// (POST /v1/users)
 	RegisterUser(c *gin.Context)
@@ -203,6 +251,54 @@ func (siw *ServerInterfaceWrapper) VerifyEmail(c *gin.Context) {
 	siw.Handler.VerifyEmail(c)
 }
 
+// AuthorizeOAuth operation middleware
+func (siw *ServerInterfaceWrapper) AuthorizeOAuth(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.AuthorizeOAuth(c, provider)
+}
+
+// ExchangeOAuth operation middleware
+func (siw *ServerInterfaceWrapper) ExchangeOAuth(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ExchangeOAuth(c, provider)
+}
+
 // RegisterUser operation middleware
 func (siw *ServerInterfaceWrapper) RegisterUser(c *gin.Context) {
 
@@ -248,6 +344,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/auth/logout", wrapper.Logout)
 	router.GET(options.BaseURL+"/v1/auth/me", wrapper.GetCurrentUser)
 	router.POST(options.BaseURL+"/v1/auth/verify", wrapper.VerifyEmail)
+	router.POST(options.BaseURL+"/v1/oauth/:provider/authorize", wrapper.AuthorizeOAuth)
+	router.POST(options.BaseURL+"/v1/oauth/:provider/exchange", wrapper.ExchangeOAuth)
 	router.POST(options.BaseURL+"/v1/users", wrapper.RegisterUser)
 }
 
@@ -388,6 +486,106 @@ func (response VerifyEmail410Response) VisitVerifyEmailResponse(w http.ResponseW
 	return nil
 }
 
+type AuthorizeOAuthRequestObject struct {
+	Provider string `json:"provider"`
+	Body     *AuthorizeOAuthJSONRequestBody
+}
+
+type AuthorizeOAuthResponseObject interface {
+	VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+}
+
+type AuthorizeOAuth200JSONResponse OAuthAuthorizationResponse
+
+func (response AuthorizeOAuth200JSONResponse) VisitAuthorizeOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AuthorizeOAuth400Response struct {
+}
+
+func (response AuthorizeOAuth400Response) VisitAuthorizeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type AuthorizeOAuth404Response struct {
+}
+
+func (response AuthorizeOAuth404Response) VisitAuthorizeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
+type AuthorizeOAuth501Response struct {
+}
+
+func (response AuthorizeOAuth501Response) VisitAuthorizeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(501)
+	return nil
+}
+
+type ExchangeOAuthRequestObject struct {
+	Provider string `json:"provider"`
+	Body     *ExchangeOAuthJSONRequestBody
+}
+
+type ExchangeOAuthResponseObject interface {
+	VisitExchangeOAuthResponse(w http.ResponseWriter) error
+}
+
+type ExchangeOAuth200ResponseHeaders struct {
+	SetCookie string
+}
+
+type ExchangeOAuth200JSONResponse struct {
+	Body    AuthSessionResponse
+	Headers ExchangeOAuth200ResponseHeaders
+}
+
+func (response ExchangeOAuth200JSONResponse) VisitExchangeOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Set-Cookie", fmt.Sprint(response.Headers.SetCookie))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExchangeOAuth400Response struct {
+}
+
+func (response ExchangeOAuth400Response) VisitExchangeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type ExchangeOAuth404Response struct {
+}
+
+func (response ExchangeOAuth404Response) VisitExchangeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
+type ExchangeOAuth501Response struct {
+}
+
+func (response ExchangeOAuth501Response) VisitExchangeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(501)
+	return nil
+}
+
+type ExchangeOAuth502Response struct {
+}
+
+func (response ExchangeOAuth502Response) VisitExchangeOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(502)
+	return nil
+}
+
 type RegisterUserRequestObject struct {
 	Body *RegisterUserJSONRequestBody
 }
@@ -438,6 +636,12 @@ type StrictServerInterface interface {
 	// Verify email address and create a session
 	// (POST /v1/auth/verify)
 	VerifyEmail(ctx context.Context, request VerifyEmailRequestObject) (VerifyEmailResponseObject, error)
+	// Initiate OAuth authorization
+	// (POST /v1/oauth/{provider}/authorize)
+	AuthorizeOAuth(ctx context.Context, request AuthorizeOAuthRequestObject) (AuthorizeOAuthResponseObject, error)
+	// Exchange authorization code for session
+	// (POST /v1/oauth/{provider}/exchange)
+	ExchangeOAuth(ctx context.Context, request ExchangeOAuthRequestObject) (ExchangeOAuthResponseObject, error)
 	// Register a new user
 	// (POST /v1/users)
 	RegisterUser(ctx context.Context, request RegisterUserRequestObject) (RegisterUserResponseObject, error)
@@ -596,6 +800,76 @@ func (sh *strictHandler) VerifyEmail(ctx *gin.Context) {
 	}
 }
 
+// AuthorizeOAuth operation middleware
+func (sh *strictHandler) AuthorizeOAuth(ctx *gin.Context, provider string) {
+	var request AuthorizeOAuthRequestObject
+
+	request.Provider = provider
+
+	var body AuthorizeOAuthJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.AuthorizeOAuth(ctx, request.(AuthorizeOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AuthorizeOAuth")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(AuthorizeOAuthResponseObject); ok {
+		if err := validResponse.VisitAuthorizeOAuthResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExchangeOAuth operation middleware
+func (sh *strictHandler) ExchangeOAuth(ctx *gin.Context, provider string) {
+	var request ExchangeOAuthRequestObject
+
+	request.Provider = provider
+
+	var body ExchangeOAuthJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ExchangeOAuth(ctx, request.(ExchangeOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExchangeOAuth")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(ExchangeOAuthResponseObject); ok {
+		if err := validResponse.VisitExchangeOAuthResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RegisterUser operation middleware
 func (sh *strictHandler) RegisterUser(ctx *gin.Context) {
 	var request RegisterUserRequestObject
@@ -632,25 +906,31 @@ func (sh *strictHandler) RegisterUser(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/+xZXW/buBL9KwTvfVRjJ/1Ar99yc4uLAAW2SLb7UgQGTY4tNhLJJUduvYH/+4KkpOiD",
+	"sh2gXnSBfSiQRKOZM2fODIfqE+W6NFqBQkcXT9TxHEoWfrxe6QpvCgkK/a/GagMWJYSHuXbhrwIct9Kg",
+	"1Iou6O0nwoSw4BzRa4I5EB7eJ9K5SqpN+JOF3ytwSDOKOwN0QR1aqTZ0v8+ofyYtCLr4EkM8tFZ69RU4",
+	"0n0Wgd2BM1o5GEPjLeR/W1jTBf3X7DnHWZ3grJvdPqMO7BbsSS/dR9Mh3Dps62oS+X0baoC7shYULlGW",
+	"MKb2s5LfCRjNc+INHLLS0IyutS0Z0gWVCt+9eeZUKoSNRxnxSB5j9H3e10+Iq4zRFkGQ1S7UqM4hoxKh",
+	"dMdoqf34YHV4Zi3bjSnqZtgBlqSqwvwenJNaTZe6csdr9tklihVeTIW9aRyMg/W4exqKN6OKxbodVnWw",
+	"ynrOUjg+6o1Ud3WnjKBAyWThf2jLH/+SjVEZ5tw3bYW3LqX6CGqDOV28P9Z9jcP2/RTKX3yV/D9t5R8M",
+	"Q60mIBurS4NJ4iwIaYHjsrKyl5T/PZGS49pEp606RzZ9HWbUIUNIWlYOluaR1y23ZlWBdIG2gtbJSusC",
+	"mAoUnUTBlFxZ12xZ2eKUbLkWsOQ5KwpQm3QKfZNlCZjrUHBQVemLaQomFc3o/dXbd51CDjxswcq1jB01",
+	"Jn2CwIFsxilO6ubDd54ztYFJyXhQ0/keRPtiSZ2WXUCUSugONtIhWD9sfvqu7YOdEit8N9KCWzLsQRYM",
+	"4VU9wI9geXaQQtEcGuMu4V47/f4+NOCfR3ai7yeGskf6A+OkZ3wToBssxcRnl1wHLDAE8QL+s2eFjZ5I",
+	"0W+DSoqUg4I5XBb+7DkUV1VFwVYFDOZkv52q9GCujHhhWgNyA/BG53WgrMtWL8YU33/lTvGbn1S7Dx7y",
+	"5GxA/Qjq+ACKZuMg3k6qtQ4eJPrS0Ou7D9ckLpvk+tMtzegWrIub3/zi8mLusWkDihlJF/T1xfzidRgd",
+	"mAdIM+a31YuvLu47GwiwPegw3G8FXdD/A4adNmg8MhrevZrP4wRXWO9SzJhC8vDmrHEZ6Txp6W7rFVLt",
+	"r7HBgBi2KzQTgTJXlSWzO7qg/wuWq2ajJZwZtpKFDLxnFNnGeV5LQCYYMvrgX59tL2f+IJuFTgjFqq87",
+	"/ezDkkZjhcDhf7XY/bCsewvgvq8D33X7czKe2L1TvFeYg8I6BnEV5wACfH/mwATYAOwe8NWN1o8ycakZ",
+	"eogxCY/mWQfusC08mjcx5cEVVG1ZIQXhFoR3zQpHg+3rRHjOdaWQ1Mw6EneKiGYgpA5UIJXzl9kwhAhT",
+	"grTH7bOivH7GavKtckhOyVZ6M0b+UW82IIg378O8g61+hHj1jrethtXD2OIpOdXjN9FVGHtn1F1vMCcE",
+	"V8MgYdKGol6mLrVRRKV0oUrakriJiBFVaCVsI1msU14RAhBj9VoWcJi3oJjddE07s/9MgyJxuvyc4yJA",
+	"rFsMROibpuGlc9VPMjfiCeutLhNWv/qnjZ68tFhhgYmdV8xQX7EwzZSoP4v5rOOuQtjRztRBYk/G6q0U",
+	"YPez5nYF04JrrqIQ7ljhPLesBAysfnmi/jwLZzxtlmPa+KdD0Rwi8uE8ap7+orCvVX0mER+4x08cfa0h",
+	"6VB8TF7Nx89glxjsn+paEKWRcK3WclOF0ZXRt6lpF2CPjHs6vFUSpRdctO3d0E+XHtS39WnlNff5v7Hw",
+	"hp8k/tm7Xjw/2zX8rAL3xlcHnDdqJWsmi1FHNGXu9wLhWgBZa3t0Lvv1wE03Qvf7ypkO/dT3ppPEenUm",
+	"CNNqjXaRHsI4B4Mgst6qXZ+Rrv62clBfUpmqtvrP2CruGM2hbGuIidUvPiCMKPgW98lxsdv/FooDLHyv",
+	"pTmiWcxmheasyLXDxfv5+zndP+z/DAAA//8ztNs9ShsAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
