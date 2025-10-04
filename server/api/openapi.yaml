@@ -190,6 +190,41 @@ paths:
           description: OAuth not configured
         '502':
           description: Provider exchange failed
+  /v1/areas:
+    get:
+      summary: List automations owned by the current user
+      operationId: listAreas
+      tags:
+        - areas
+      responses:
+        '200':
+          description: Collection of areas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAreasResponse'
+    post:
+      summary: Create a new automation for the current user
+      operationId: createArea
+      tags:
+        - areas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAreaRequest'
+      responses:
+        '201':
+          description: Automation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Authentication required
 components:
   schemas:
     AboutResponse:
@@ -354,3 +389,42 @@ components:
           type: string
           format: date-time
           nullable: true
+    CreateAreaRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 512
+    Area:
+      type: object
+      required: [id, name, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ListAreasResponse:
+      type: object
+      required: [areas]
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Area'
