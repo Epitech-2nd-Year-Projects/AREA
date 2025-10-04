@@ -1,0 +1,51 @@
+apis:
+  area-server@v1:
+    root: ./server/api/openapi.yaml
+    output: ./server/docs/reference/area-server.html
+    extends:
+      - recommended
+    rules:
+      operation-operationId-unique: error
+    openapi:
+      layout: three-panel
+      hideDownloadButtons: false
+      jsonSamplesExpandLevel: 3
+      generatedSamplesMaxDepth: 5
+      codeSamples:
+        skipOptionalParameters: true
+        languages:
+          - lang: curl
+            label: cURL
+          - lang: JavaScript
+            label: JavaScript (fetch)
+          - lang: Python
+            label: Python (requests)
+      downloadUrls:
+        - title: OpenAPI (YAML)
+          url: ./server/api/openapi.yaml
+      theme:
+        colors:
+          primary:
+            main: '#0B7285'
+            light: '#22B8CF'
+            dark: '#084C61'
+          accent:
+            main: '#748FFC'
+          success:
+            main: '#51CF66'
+          warning:
+            main: '#FCC419'
+          error:
+            main: '#FF6B6B'
+        typography:
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      hideInfoMetadata: false
+      maxDisplayedEnumValues: 15
+      schemaDefinitionsTagName: Schemas
+
+metadata:
+  project: area-server
+  docs:
+    label: AREA Server API Reference
+    description: API reference documentation for the AREA automation server backend.
+    owner: AREA Team

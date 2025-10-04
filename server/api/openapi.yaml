@@ -2,8 +2,18 @@ openapi: 3.0.3
 info:
   title: AREA Server API
   version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://area-server.app/legal/terms
 servers:
-  - url: http://localhost:8080
+  - url: https://api.area-server.app
+    description: Production
+  - url: https://staging.area-server.app
+    description: Staging
+  - url: http://127.0.0.1:8080
+    description: Local development
+security:
+  - sessionAuth: []
 paths:
   /about.json:
     get:
@@ -11,6 +21,7 @@ paths:
       operationId: getAbout
       tags:
         - metadata
+      security: []
       responses:
         '200':
           description: About payload
@@ -18,12 +29,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AboutResponse'
+        '404':
+          description: Server metadata unavailable
   /v1/users:
     post:
       summary: Register a new user
       operationId: registerUser
       tags:
         - auth
+      security: []
       requestBody:
         required: true
         content:
@@ -47,6 +61,7 @@ paths:
       operationId: verifyEmail
       tags:
         - auth
+      security: []
       requestBody:
         required: true
         content:
@@ -75,6 +90,7 @@ paths:
       operationId: login
       tags:
         - auth
+      security: []
       requestBody:
         required: true
         content:
@@ -106,6 +122,8 @@ paths:
       responses:
         '204':
           description: Logged out
+        '401':
+          description: Session missing or expired
   /v1/auth/me:
     get:
       summary: Retrieve the authenticated user profile
@@ -191,6 +209,12 @@ paths:
         '502':
           description: Provider exchange failed
 components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: area_session
+      description: Session cookie issued after authentication.
   schemas:
     AboutResponse:
       type: object
@@ -202,46 +226,21 @@ components:
           $ref: '#/components/schemas/AboutServer'
     AboutClient:
       type: object
-      required: [host]
+      required: [version]
       properties:
-        host:
+        version:
           type: string
-          description: IP address of the client issuing the request
+          example: 1.0.0
     AboutServer:
       type: object
-      required: [current_time, services]
+      required: [version, commit]
       properties:
-        current_time:
-          type: integer
-          format: int64
-          description: Unix epoch timestamp
-        services:
-          type: array
-          description: Services supported by the server
-          items:
-            $ref: '#/components/schemas/Service'
-    Service:
-      type: object
-      required: [name, actions, reactions]
-      properties:
-        name:
+        version:
           type: string
-        actions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Component'
-        reactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Component'
-    Component:
-      type: object
-      required: [name, description]
-      properties:
-        name:
+          example: 0.1.0
+        commit:
           type: string
-        description:
-          type: string
+          example: a1b2c3d4
     RegisterUserRequest:
       type: object
       required: [email, password]
@@ -251,20 +250,30 @@ components:
           format: email
         password:
           type: string
+          format: password
           minLength: 8
     RegisterUserResponse:
       type: object
-      required: [expires_at]
+      required: [userId]
       properties:
-        expires_at:
+        userId:
           type: string
-          format: date-time
     VerifyEmailRequest:
       type: object
       required: [token]
       properties:
         token:
           type: string
+    AuthSessionResponse:
+      type: object
+      required: [tokenType, expiresAt]
+      properties:
+        tokenType:
+          type: string
+          example: session
+        expiresAt:
+          type: string
+          format: date-time
     LoginRequest:
       type: object
       required: [email, password]
@@ -274,83 +283,32 @@ components:
           format: email
         password:
           type: string
-          minLength: 8
+          format: password
+    UserResponse:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
     OAuthAuthorizationRequest:
       type: object
       properties:
-        redirect_uri:
+        redirectUri:
           type: string
           format: uri
-        scopes:
-          type: array
-          items:
-            type: string
-        state:
-          type: string
-        prompt:
-          type: string
-        use_pkce:
-          type: boolean
-          default: true
     OAuthAuthorizationResponse:
       type: object
-      required: [authorization_url]
+      required: [authorizationUrl]
       properties:
-        authorization_url:
+        authorizationUrl:
           type: string
           format: uri
-        state:
-          type: string
-        code_verifier:
-          type: string
-        code_challenge:
-          type: string
-        code_challenge_method:
-          type: string
-          enum: [plain, S256]
     OAuthExchangeRequest:
       type: object
       required: [code]
       properties:
         code:
           type: string
-        redirect_uri:
-          type: string
-          format: uri
-        code_verifier:
-          type: string
-        state:
-          type: string
-    AuthSessionResponse:
-      type: object
-      required: [user]
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-    UserResponse:
-      type: object
-      required: [user]
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-    User:
-      type: object
-      required: [id, email, status, created_at, updated_at]
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-        status:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        last_login_at:
-          type: string
-          format: date-time
-          nullable: true
