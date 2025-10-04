@@ -50,6 +50,16 @@ type AboutServer struct {
 	Services []Service `json:"services"`
 }
 
+// Area defines model for Area.
+type Area struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	Description *string            `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	Status      string             `json:"status"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
 // AuthSessionResponse defines model for AuthSessionResponse.
 type AuthSessionResponse struct {
 	User User `json:"user"`
@@ -59,6 +69,17 @@ type AuthSessionResponse struct {
 type Component struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
+}
+
+// CreateAreaRequest defines model for CreateAreaRequest.
+type CreateAreaRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+}
+
+// ListAreasResponse defines model for ListAreasResponse.
+type ListAreasResponse struct {
+	Areas []Area `json:"areas"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -134,6 +155,9 @@ type VerifyEmailRequest struct {
 	Token string `json:"token"`
 }
 
+// CreateAreaJSONRequestBody defines body for CreateArea for application/json ContentType.
+type CreateAreaJSONRequestBody = CreateAreaRequest
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
@@ -154,6 +178,12 @@ type ServerInterface interface {
 	// Describe server capabilities
 	// (GET /about.json)
 	GetAbout(c *gin.Context)
+	// List automations owned by the current user
+	// (GET /v1/areas)
+	ListAreas(c *gin.Context)
+	// Create a new automation for the current user
+	// (POST /v1/areas)
+	CreateArea(c *gin.Context)
 	// Authenticate using email and password
 	// (POST /v1/auth/login)
 	Login(c *gin.Context)
@@ -197,6 +227,32 @@ func (siw *ServerInterfaceWrapper) GetAbout(c *gin.Context) {
 	}
 
 	siw.Handler.GetAbout(c)
+}
+
+// ListAreas operation middleware
+func (siw *ServerInterfaceWrapper) ListAreas(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListAreas(c)
+}
+
+// CreateArea operation middleware
+func (siw *ServerInterfaceWrapper) CreateArea(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateArea(c)
 }
 
 // Login operation middleware
@@ -340,6 +396,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/about.json", wrapper.GetAbout)
+	router.GET(options.BaseURL+"/v1/areas", wrapper.ListAreas)
+	router.POST(options.BaseURL+"/v1/areas", wrapper.CreateArea)
 	router.POST(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	router.POST(options.BaseURL+"/v1/auth/logout", wrapper.Logout)
 	router.GET(options.BaseURL+"/v1/auth/me", wrapper.GetCurrentUser)
@@ -363,6 +421,55 @@ func (response GetAbout200JSONResponse) VisitGetAboutResponse(w http.ResponseWri
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAreasRequestObject struct {
+}
+
+type ListAreasResponseObject interface {
+	VisitListAreasResponse(w http.ResponseWriter) error
+}
+
+type ListAreas200JSONResponse ListAreasResponse
+
+func (response ListAreas200JSONResponse) VisitListAreasResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAreaRequestObject struct {
+	Body *CreateAreaJSONRequestBody
+}
+
+type CreateAreaResponseObject interface {
+	VisitCreateAreaResponse(w http.ResponseWriter) error
+}
+
+type CreateArea201JSONResponse Area
+
+func (response CreateArea201JSONResponse) VisitCreateAreaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateArea400Response struct {
+}
+
+func (response CreateArea400Response) VisitCreateAreaResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type CreateArea401Response struct {
+}
+
+func (response CreateArea401Response) VisitCreateAreaResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
 }
 
 type LoginRequestObject struct {
@@ -624,6 +731,12 @@ type StrictServerInterface interface {
 	// Describe server capabilities
 	// (GET /about.json)
 	GetAbout(ctx context.Context, request GetAboutRequestObject) (GetAboutResponseObject, error)
+	// List automations owned by the current user
+	// (GET /v1/areas)
+	ListAreas(ctx context.Context, request ListAreasRequestObject) (ListAreasResponseObject, error)
+	// Create a new automation for the current user
+	// (POST /v1/areas)
+	CreateArea(ctx context.Context, request CreateAreaRequestObject) (CreateAreaResponseObject, error)
 	// Authenticate using email and password
 	// (POST /v1/auth/login)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
@@ -677,6 +790,64 @@ func (sh *strictHandler) GetAbout(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetAboutResponseObject); ok {
 		if err := validResponse.VisitGetAboutResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAreas operation middleware
+func (sh *strictHandler) ListAreas(ctx *gin.Context) {
+	var request ListAreasRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAreas(ctx, request.(ListAreasRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAreas")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(ListAreasResponseObject); ok {
+		if err := validResponse.VisitListAreasResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateArea operation middleware
+func (sh *strictHandler) CreateArea(ctx *gin.Context) {
+	var request CreateAreaRequestObject
+
+	var body CreateAreaJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateArea(ctx, request.(CreateAreaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateArea")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(CreateAreaResponseObject); ok {
+		if err := validResponse.VisitCreateAreaResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {
@@ -906,31 +1077,34 @@ func (sh *strictHandler) RegisterUser(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xZXW/buBL9KwTvfVRjJ/1Ar99yc4uLAAW2SLb7UgQGTY4tNhLJJUduvYH/+4KkpOiD",
-	"sh2gXnSBfSiQRKOZM2fODIfqE+W6NFqBQkcXT9TxHEoWfrxe6QpvCgkK/a/GagMWJYSHuXbhrwIct9Kg",
-	"1Iou6O0nwoSw4BzRa4I5EB7eJ9K5SqpN+JOF3ytwSDOKOwN0QR1aqTZ0v8+ofyYtCLr4EkM8tFZ69RU4",
-	"0n0Wgd2BM1o5GEPjLeR/W1jTBf3X7DnHWZ3grJvdPqMO7BbsSS/dR9Mh3Dps62oS+X0baoC7shYULlGW",
-	"MKb2s5LfCRjNc+INHLLS0IyutS0Z0gWVCt+9eeZUKoSNRxnxSB5j9H3e10+Iq4zRFkGQ1S7UqM4hoxKh",
-	"dMdoqf34YHV4Zi3bjSnqZtgBlqSqwvwenJNaTZe6csdr9tklihVeTIW9aRyMg/W4exqKN6OKxbodVnWw",
-	"ynrOUjg+6o1Ud3WnjKBAyWThf2jLH/+SjVEZ5tw3bYW3LqX6CGqDOV28P9Z9jcP2/RTKX3yV/D9t5R8M",
-	"Q60mIBurS4NJ4iwIaYHjsrKyl5T/PZGS49pEp606RzZ9HWbUIUNIWlYOluaR1y23ZlWBdIG2gtbJSusC",
-	"mAoUnUTBlFxZ12xZ2eKUbLkWsOQ5KwpQm3QKfZNlCZjrUHBQVemLaQomFc3o/dXbd51CDjxswcq1jB01",
-	"Jn2CwIFsxilO6ubDd54ztYFJyXhQ0/keRPtiSZ2WXUCUSugONtIhWD9sfvqu7YOdEit8N9KCWzLsQRYM",
-	"4VU9wI9geXaQQtEcGuMu4V47/f4+NOCfR3ai7yeGskf6A+OkZ3wToBssxcRnl1wHLDAE8QL+s2eFjZ5I",
-	"0W+DSoqUg4I5XBb+7DkUV1VFwVYFDOZkv52q9GCujHhhWgNyA/BG53WgrMtWL8YU33/lTvGbn1S7Dx7y",
-	"5GxA/Qjq+ACKZuMg3k6qtQ4eJPrS0Ou7D9ckLpvk+tMtzegWrIub3/zi8mLusWkDihlJF/T1xfzidRgd",
-	"mAdIM+a31YuvLu47GwiwPegw3G8FXdD/A4adNmg8MhrevZrP4wRXWO9SzJhC8vDmrHEZ6Txp6W7rFVLt",
-	"r7HBgBi2KzQTgTJXlSWzO7qg/wuWq2ajJZwZtpKFDLxnFNnGeV5LQCYYMvrgX59tL2f+IJuFTgjFqq87",
-	"/ezDkkZjhcDhf7XY/bCsewvgvq8D33X7czKe2L1TvFeYg8I6BnEV5wACfH/mwATYAOwe8NWN1o8ycakZ",
-	"eogxCY/mWQfusC08mjcx5cEVVG1ZIQXhFoR3zQpHg+3rRHjOdaWQ1Mw6EneKiGYgpA5UIJXzl9kwhAhT",
-	"grTH7bOivH7GavKtckhOyVZ6M0b+UW82IIg378O8g61+hHj1jrethtXD2OIpOdXjN9FVGHtn1F1vMCcE",
-	"V8MgYdKGol6mLrVRRKV0oUrakriJiBFVaCVsI1msU14RAhBj9VoWcJi3oJjddE07s/9MgyJxuvyc4yJA",
-	"rFsMROibpuGlc9VPMjfiCeutLhNWv/qnjZ68tFhhgYmdV8xQX7EwzZSoP4v5rOOuQtjRztRBYk/G6q0U",
-	"YPez5nYF04JrrqIQ7ljhPLesBAysfnmi/jwLZzxtlmPa+KdD0Rwi8uE8ap7+orCvVX0mER+4x08cfa0h",
-	"6VB8TF7Nx89glxjsn+paEKWRcK3WclOF0ZXRt6lpF2CPjHs6vFUSpRdctO3d0E+XHtS39WnlNff5v7Hw",
-	"hp8k/tm7Xjw/2zX8rAL3xlcHnDdqJWsmi1FHNGXu9wLhWgBZa3t0Lvv1wE03Qvf7ypkO/dT3ppPEenUm",
-	"CNNqjXaRHsI4B4Mgst6qXZ+Rrv62clBfUpmqtvrP2CruGM2hbGuIidUvPiCMKPgW98lxsdv/FooDLHyv",
-	"pTmiWcxmheasyLXDxfv5+zndP+z/DAAA//8ztNs9ShsAAA==",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

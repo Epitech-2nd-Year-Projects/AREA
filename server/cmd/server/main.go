@@ -14,7 +14,9 @@ import (
 	loggerMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/logger"
 	sendgridMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/sendgrid"
 	oauthadapter "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/oauth"
+	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
+	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
@@ -84,6 +86,7 @@ func run() error {
 		loaders      []catalog.Loader
 		authHandler  *authapp.Handler
 		oauthService *authapp.OAuthService
+		areaHandler  *areaapp.Handler
 	)
 
 	dbCtx := context.Background()
@@ -130,6 +133,20 @@ func run() error {
 			HTTPOnly: cfg.Security.Sessions.HTTPOnly,
 			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
 		})
+
+		areaRepo := areapostgres.NewRepository(db)
+		areaHandler = areaapp.NewHandler(
+			areaapp.NewService(areaRepo, nil),
+			authService,
+			areaapp.CookieConfig{
+				Name:     cfg.Security.Sessions.CookieName,
+				Domain:   cfg.Security.Sessions.Domain,
+				Path:     cfg.Security.Sessions.Path,
+				Secure:   cfg.Security.Sessions.Secure,
+				HTTPOnly: cfg.Security.Sessions.HTTPOnly,
+				SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
+			},
+		)
 		sqlDB, err := db.DB()
 		if err != nil {
 			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
@@ -150,6 +167,7 @@ func run() error {
 	if err := router.Register(server.Engine(), router.Dependencies{
 		AboutLoader: catalog.NewChainLoader(loaders...),
 		AuthHandler: authHandler,
+		AreaHandler: areaHandler,
 	}); err != nil {
 		return fmt.Errorf("router.Register: %w", err)
 	}
