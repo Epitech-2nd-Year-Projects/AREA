@@ -1,6 +1,6 @@
 import { About } from '@/lib/api/contracts/about'
 import { Action } from '@/lib/api/contracts/actions'
-import { Area } from '@/lib/api/contracts/areas'
+import { Area, AreaComponent } from '@/lib/api/contracts/areas'
 import { Reaction } from '@/lib/api/contracts/reactions'
 import { Service } from '@/lib/api/contracts/services'
 import { User, UserRole } from '@/lib/api/contracts/users'
@@ -12,127 +12,127 @@ export const mockActions: Action[] = [
     id: '1',
     name: 'An issue is opened',
     description: 'An issue is opened in a repository',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '8',
     name: 'A pull request is created',
     description: 'A pull request is created in a repository',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '9',
     name: 'A commit is pushed',
     description: 'A commit is pushed to a branch',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '2',
     name: 'A message is sent',
     description: 'A message is sent in a channel',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '10',
     name: 'A user joins a server',
     description: 'A new user joins a Discord server',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '11',
     name: 'A reaction is added',
     description: 'A user reacts to a message',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '3',
     name: 'A file is uploaded',
     description: 'A file is uploaded',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '12',
     name: 'A file is deleted',
     description: 'A file is deleted',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '13',
     name: 'A folder is shared',
     description: 'A folder is shared with another user',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '4',
     name: 'A message is posted',
     description: 'A message is posted in a channel',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '14',
     name: 'A user is mentioned',
     description: 'A user is mentioned in a message',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '15',
     name: 'A file is shared',
     description: 'A file is shared in a channel',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '5',
     name: 'A game is played',
     description: 'A game is played',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '16',
     name: 'A match is won',
     description: 'A player wins a match',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '17',
     name: 'A rank is updated',
     description: 'A player’s rank changes',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '6',
     name: 'A page is created',
     description: 'A new page is created in a workspace',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '18',
     name: 'A page is updated',
     description: 'A page is updated in a workspace',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '19',
     name: 'A database entry is created',
     description: 'A new entry is created in a database',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '7',
     name: 'An email is received',
     description: 'An email is received in the inbox',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   },
   {
     id: '20',
     name: 'An email is starred',
     description: 'An email is marked with a star',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   },
   {
     id: '21',
     name: 'An email is sent',
     description: 'An email is sent from the account',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   }
 ]
 
@@ -141,127 +141,127 @@ export const mockReactions: Reaction[] = [
     id: '1',
     name: 'Assign a label',
     description: 'Assign a label to an issue',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '22',
     name: 'Create a comment',
     description: 'Create a comment on an issue or pull request',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '23',
     name: 'Close an issue',
     description: 'Close an open issue',
-    service_name: 'github'
+    serviceName: 'github'
   },
   {
     id: '2',
     name: 'Send a message',
     description: 'Send a message in a channel',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '24',
     name: 'Kick a user',
     description: 'Remove a user from the server',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '25',
     name: 'Add a role',
     description: 'Assign a role to a user',
-    service_name: 'discord'
+    serviceName: 'discord'
   },
   {
     id: '3',
     name: 'Upload a file',
     description: 'Upload a file',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '26',
     name: 'Move a file',
     description: 'Move a file to another folder',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '27',
     name: 'Rename a file',
     description: 'Rename a file in storage',
-    service_name: 'onedrive'
+    serviceName: 'onedrive'
   },
   {
     id: '4',
     name: 'Post a message',
     description: 'Post a message in a channel',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '28',
     name: 'Send a direct message',
     description: 'Send a private message to a user',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '29',
     name: 'Add a reaction',
     description: 'Add a reaction to a message',
-    service_name: 'slack'
+    serviceName: 'slack'
   },
   {
     id: '5',
     name: 'Play a game',
     description: 'Play a game',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '30',
     name: 'Notify match result',
     description: 'Send notification with match result',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '31',
     name: 'Reward points',
     description: 'Reward points to a player',
-    service_name: 'riot'
+    serviceName: 'riot'
   },
   {
     id: '6',
     name: 'Create a database entry',
     description: 'Add a new entry to a database',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '32',
     name: 'Update a page',
     description: 'Update the content of a page',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '33',
     name: 'Archive a page',
     description: 'Archive an existing page',
-    service_name: 'notion'
+    serviceName: 'notion'
   },
   {
     id: '7',
     name: 'Send an email',
     description: 'Send an email to a recipient',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   },
   {
     id: '34',
     name: 'Forward an email',
     description: 'Forward an email to another recipient',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   },
   {
     id: '35',
     name: 'Mark as read',
     description: 'Mark an email as read',
-    service_name: 'gmail'
+    serviceName: 'gmail'
   }
 ]
 
@@ -319,41 +319,88 @@ export const mockServices: Service[] = [
   }
 ]
 
+const serviceDisplayNameByName = mockServices.reduce<Record<string, string>>(
+  (acc, service) => {
+    acc[service.name] = service.displayName
+    return acc
+  },
+  {}
+)
+
+function createMockAreaComponent(
+  component: Action | Reaction,
+  suffix: string
+): AreaComponent {
+  return {
+    id: component.id,
+    configId: `cfg-${component.id}-${suffix}`,
+    name: component.name,
+    description: component.description,
+    serviceName: component.serviceName,
+    serviceDisplayName:
+      serviceDisplayNameByName[component.serviceName] ?? component.serviceName,
+    params: {}
+  }
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000)
+}
+
+function hoursAgo(hours: number): Date {
+  return new Date(Date.now() - hours * 3_600_000)
+}
+
 export const mockUserLinkedAreas: Area[] = [
   {
     id: '1',
     name: 'Issue to Discord',
     description:
       'When an issue is opened in a repository, send a message in a channel',
+    status: 'enabled',
     enabled: true,
-    action: mockActions[0],
-    reactions: [mockReactions[1]]
+    createdAt: daysAgo(28),
+    updatedAt: hoursAgo(6),
+    action: createMockAreaComponent(mockActions[0], 'action'),
+    reactions: [createMockAreaComponent(mockReactions[1], 'reaction-1')]
   },
   {
     id: '2',
     name: 'Message to Discord',
     description:
       'When a message is sent in a channel, send a message in a channel',
+    status: 'enabled',
     enabled: true,
-    action: mockActions[1],
-    reactions: [mockReactions[1]]
+    createdAt: daysAgo(21),
+    updatedAt: hoursAgo(12),
+    action: createMockAreaComponent(mockActions[1], 'action'),
+    reactions: [createMockAreaComponent(mockReactions[1], 'reaction-1')]
   },
   {
     id: '3',
     name: 'File to Discord',
     description: 'When a file is uploaded, send a message in a channel',
+    status: 'disabled',
     enabled: false,
-    action: mockActions[2],
-    reactions: [mockReactions[1]]
+    createdAt: daysAgo(35),
+    updatedAt: daysAgo(4),
+    action: createMockAreaComponent(mockActions[2], 'action'),
+    reactions: [createMockAreaComponent(mockReactions[1], 'reaction-1')]
   },
   {
     id: '4',
     name: 'File to Discord & Slack',
     description:
       'When a file is uploaded, send a message in a channel and post a message in a channel',
+    status: 'enabled',
     enabled: true,
-    action: mockActions[2],
-    reactions: [mockReactions[1], mockReactions[3]]
+    createdAt: daysAgo(14),
+    updatedAt: hoursAgo(2),
+    action: createMockAreaComponent(mockActions[2], 'action'),
+    reactions: [
+      createMockAreaComponent(mockReactions[1], 'reaction-1'),
+      createMockAreaComponent(mockReactions[3], 'reaction-2')
+    ]
   }
 ]
 

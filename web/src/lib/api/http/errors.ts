@@ -26,7 +26,7 @@ export function isApiError(error: unknown): error is ApiError {
 export async function parseAndThrowApiError(
   response: Response
 ): Promise<never> {
-  let code = 'unknown_error'
+  let code = 'unknownError'
   let message = response.statusText ?? 'Request failed'
   let details = null
 

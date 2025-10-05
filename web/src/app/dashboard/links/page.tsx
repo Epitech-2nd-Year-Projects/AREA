@@ -4,16 +4,15 @@ import CreateAreaModal from '@/components/areas/create-area-modal'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import type { Area } from '@/lib/api/contracts/areas'
-
-const EMPTY_AREAS: Area[] = []
+import { useAreasQuery } from '@/lib/api/openapi/areas'
 
 export default function LinksPage() {
   const t = useTranslations('LinksPage')
-  const userLinkedAreas = EMPTY_AREAS
+  const { data: areas, isLoading, isError, error } = useAreasQuery()
   const [searchValue, setSearchValue] = useState('')
 
   const filteredAreas = useMemo(() => {
+    const userLinkedAreas = areas ?? []
     const normalizedQuery = searchValue.trim().toLowerCase()
 
     if (!normalizedQuery) {
@@ -23,9 +22,9 @@ export default function LinksPage() {
     return userLinkedAreas.filter((area) => {
       const areaName = area.name.toLowerCase()
       const areaDescription = area.description.toLowerCase()
-      const actionServiceName = area.action.service_name.toLowerCase()
+      const actionServiceName = area.action.serviceName.toLowerCase()
       const reactionServiceNames = area.reactions.map((reaction) =>
-        reaction.service_name.toLowerCase()
+        reaction.serviceName.toLowerCase()
       )
 
       return [
@@ -35,7 +34,21 @@ export default function LinksPage() {
         ...reactionServiceNames
       ].some((value) => value.includes(normalizedQuery))
     })
-  }, [searchValue, userLinkedAreas])
+  }, [areas, searchValue])
+
+  const showEmptyState =
+    !isLoading &&
+    !isError &&
+    filteredAreas.length === 0 &&
+    searchValue.trim().length === 0
+  const showNoMatches =
+    !isLoading &&
+    !isError &&
+    filteredAreas.length === 0 &&
+    searchValue.trim().length > 0
+  const errorMessage = isError
+    ? (error?.message ?? t('errorLoadingAreas'))
+    : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,7 +61,19 @@ export default function LinksPage() {
           onChange={(event) => setSearchValue(event.target.value)}
         />
       </div>
-      <AreaCardList areas={filteredAreas} />
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">{t('loadingAreas')}</p>
+      ) : errorMessage ? (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage}
+        </p>
+      ) : showEmptyState ? (
+        <p className="text-sm text-muted-foreground">{t('emptyState')}</p>
+      ) : showNoMatches ? (
+        <p className="text-sm text-muted-foreground">{t('noMatches')}</p>
+      ) : (
+        <AreaCardList areas={filteredAreas} />
+      )}
     </div>
   )
 }

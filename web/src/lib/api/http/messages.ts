@@ -9,7 +9,7 @@ export function userMessageFromError(e: unknown): string {
   }
 
   switch (e.code) {
-    case 'not_found':
+    case 'notFound':
       return 'The requested resource was not found.'
     default:
       return e.message || 'Unexpected error occurred.'

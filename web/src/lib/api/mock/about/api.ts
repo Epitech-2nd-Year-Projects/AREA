@@ -15,7 +15,7 @@ export async function getAboutMock(): Promise<AboutResponseDTO> {
   return {
     client: { host: mockAbout.client.host },
     server: {
-      current_time: Math.floor(mockAbout.server.currentTime / 1000),
+      currentTime: Math.floor(mockAbout.server.currentTime / 1000),
       services
     }
   }

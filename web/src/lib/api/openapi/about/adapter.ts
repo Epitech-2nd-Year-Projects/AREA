@@ -24,7 +24,7 @@ function mapComponentToAction(
     id: component.name,
     name: component.name,
     description: component.description,
-    service_name: serviceName
+    serviceName
   }
 }
 
@@ -36,7 +36,7 @@ function mapComponentToReaction(
     id: component.name,
     name: component.name,
     description: component.description,
-    service_name: serviceName
+    serviceName
   }
 }
 
@@ -60,7 +60,7 @@ export function mapAboutResponse(response: AboutResponseDTO): About {
       host: response.client.host
     },
     server: {
-      currentTime: response.server.current_time * 1000,
+      currentTime: response.server.currentTime * 1000,
       services: response.server.services.map(mapService)
     }
   }

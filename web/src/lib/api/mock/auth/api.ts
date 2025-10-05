@@ -24,8 +24,8 @@ export async function loginMock(
   if (result.status === 'error') {
     const code =
       result.code === 'INVALID_CREDENTIALS'
-        ? 'invalid_credentials'
-        : 'unknown_error'
+        ? 'invalidCredentials'
+        : 'unknownError'
     throw new ApiError(400, code, result.message)
   }
 
@@ -36,7 +36,7 @@ export async function loginMock(
     )
     throw new ApiError(
       403,
-      'account_requires_verification',
+      'accountRequiresVerification',
       'Account requires verification'
     )
   }
@@ -55,7 +55,7 @@ export async function verifyEmailMock(
   const user = mockMarkUserEmailVerified(email)
 
   if (!user) {
-    throw new ApiError(400, 'invalid_token', 'Invalid token')
+    throw new ApiError(400, 'invalidToken', 'Invalid token')
   }
 
   markActiveUser(user)

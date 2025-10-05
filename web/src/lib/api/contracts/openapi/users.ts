@@ -4,5 +4,5 @@ export type RegisterUserRequestDTO = {
 }
 
 export type RegisterUserResponseDTO = {
-  expires_at: string
+  expiresAt: string
 }

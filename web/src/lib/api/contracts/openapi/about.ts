@@ -14,7 +14,7 @@ export type ServiceDTO = {
 }
 
 export type AboutServerDTO = {
-  current_time: number
+  currentTime: number
   services: ServiceDTO[]
 }
 

@@ -1,7 +1,5 @@
 'server-only'
-
 import { apiConfig } from '@/env'
-import { cookies } from 'next/headers'
 import { parseAndThrowApiError } from './errors'
 
 type FetchOptions = {
@@ -12,16 +10,14 @@ type FetchOptions = {
     | { revalidate?: number; tags?: string[] }
     | { revalidate?: false; tags?: string[] }
   cache?: RequestCache
+  cookieHeader?: string
 }
 
 export async function apiFetchServer<T>(
   path: string,
   opts: FetchOptions = {}
 ): Promise<T> {
-  const cookieHeader = (await cookies())
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join('; ')
+  const cookieHeader = await resolveCookieHeader(opts.cookieHeader)
 
   const url = apiConfig.buildUrl(path)
 
@@ -30,7 +26,7 @@ export async function apiFetchServer<T>(
     headers: {
       Accept: 'application/json',
       ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
-      cookie: cookieHeader
+      ...(cookieHeader ? { cookie: cookieHeader } : {})
     },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
     cache: opts.cache,
@@ -42,4 +38,24 @@ export async function apiFetchServer<T>(
   }
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+async function resolveCookieHeader(explicitHeader?: string): Promise<string> {
+  if (explicitHeader) return explicitHeader
+  if (typeof window !== 'undefined') return ''
+
+  try {
+    const { cookies } = (await import(
+      'next/headers'
+    )) as typeof import('next/headers')
+    const cookieStore = await cookies()
+
+    return cookieStore
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join('; ')
+  } catch (e) {
+    console.error(e)
+    return ''
+  }
 }
