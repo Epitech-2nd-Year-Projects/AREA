@@ -16,6 +16,7 @@ import (
 	oauthadapter "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/oauth"
 	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
+	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
@@ -135,8 +136,9 @@ func run() error {
 		})
 
 		areaRepo := areapostgres.NewRepository(db)
+		componentRepo := componentpostgres.NewRepository(db)
 		areaHandler = areaapp.NewHandler(
-			areaapp.NewService(areaRepo, nil),
+			areaapp.NewService(areaRepo, componentRepo, nil),
 			authService,
 			areaapp.CookieConfig{
 				Name:     cfg.Security.Sessions.CookieName,
