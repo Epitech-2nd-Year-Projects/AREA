@@ -8,6 +8,7 @@ import (
 	"time"
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
 )
@@ -20,10 +21,22 @@ func TestService_CreateAndList(t *testing.T) {
 	ctx := context.Background()
 	clock := stubClock{now: time.Unix(1720000000, 0).UTC()}
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
-	svc := NewService(repo, clock)
+	componentID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		componentID: {
+			ID:         componentID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+		},
+	}}
+	svc := NewService(repo, components, clock)
 
 	userID := uuid.New()
-	area, err := svc.Create(ctx, userID, "Morning digest", "Send me a digest every morning")
+	area, err := svc.Create(ctx, userID, "Morning digest", "Send me a digest every morning", ActionInput{
+		ComponentID: componentID,
+		Params:      map[string]any{"channel": "mail"},
+	})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -40,6 +53,13 @@ func TestService_CreateAndList(t *testing.T) {
 		t.Fatalf("created at mismatch")
 	}
 
+	if area.Action == nil {
+		t.Fatalf("expected action to be set")
+	}
+	if area.Action.Config.Component == nil {
+		t.Fatalf("expected action component metadata to be attached")
+	}
+
 	areas, err := svc.List(ctx, userID)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
@@ -50,12 +70,24 @@ func TestService_CreateAndList(t *testing.T) {
 	if areas[0].ID != area.ID {
 		t.Fatalf("listed area does not match created area")
 	}
+	if areas[0].Action == nil || areas[0].Action.Config.Component == nil {
+		t.Fatalf("expected action component enrichment on list")
+	}
 }
 
 func TestService_CreateValidation(t *testing.T) {
 	ctx := context.Background()
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
-	svc := NewService(repo, stubClock{now: time.Now()})
+	componentID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		componentID: {
+			ID:         componentID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+		},
+	}}
+	svc := NewService(repo, components, stubClock{now: time.Now()})
 
 	tests := []struct {
 		name        string
@@ -69,7 +101,7 @@ func TestService_CreateValidation(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.expectedErr.Error(), func(t *testing.T) {
-			_, err := svc.Create(ctx, uuid.New(), tc.name, tc.description)
+			_, err := svc.Create(ctx, uuid.New(), tc.name, tc.description, ActionInput{ComponentID: componentID})
 			if err == nil {
 				t.Fatalf("expected error %v, got nil", tc.expectedErr)
 			}
@@ -80,17 +112,51 @@ func TestService_CreateValidation(t *testing.T) {
 	}
 }
 
+func TestService_CreateActionValidation(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{}}
+	svc := NewService(repo, components, stubClock{now: time.Now()})
+
+	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{})
+	if !errors.Is(err, ErrActionComponentRequired) {
+		t.Fatalf("expected ErrActionComponentRequired got %v", err)
+	}
+
+	reactionID := uuid.New()
+	components.items[reactionID] = componentdomain.Component{ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true}
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: reactionID})
+	if !errors.Is(err, ErrActionComponentInvalid) {
+		t.Fatalf("expected ErrActionComponentInvalid got %v", err)
+	}
+
+	actionID := uuid.New()
+	components.items[actionID] = componentdomain.Component{ID: actionID, Kind: componentdomain.KindAction, Enabled: false}
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID})
+	if !errors.Is(err, ErrActionComponentDisabled) {
+		t.Fatalf("expected ErrActionComponentDisabled got %v", err)
+	}
+}
+
 type memoryAreaRepo struct {
 	items map[uuid.UUID]areadomain.Area
 }
 
-func (m *memoryAreaRepo) Create(ctx context.Context, area areadomain.Area) (areadomain.Area, error) {
+func (m *memoryAreaRepo) Create(ctx context.Context, area areadomain.Area, link areadomain.Link) (areadomain.Area, error) {
 	if m.items == nil {
 		m.items = map[uuid.UUID]areadomain.Area{}
 	}
 	if area.ID == uuid.Nil {
 		area.ID = uuid.New()
 	}
+	if link.ID == uuid.Nil {
+		link.ID = uuid.New()
+	}
+	link.AreaID = area.ID
+	link.Config.ID = uuid.New()
+	link.CreatedAt = area.CreatedAt
+	link.UpdatedAt = area.UpdatedAt
+	area.Action = &link
 	m.items[area.ID] = area
 	return area, nil
 }
@@ -111,4 +177,26 @@ func (m *memoryAreaRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]ar
 		}
 	}
 	return areas, nil
+}
+
+type memoryComponentRepo struct {
+	items map[uuid.UUID]componentdomain.Component
+}
+
+func (m *memoryComponentRepo) FindByID(ctx context.Context, id uuid.UUID) (componentdomain.Component, error) {
+	component, ok := m.items[id]
+	if !ok {
+		return componentdomain.Component{}, outbound.ErrNotFound
+	}
+	return component, nil
+}
+
+func (m *memoryComponentRepo) FindByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]componentdomain.Component, error) {
+	result := make(map[uuid.UUID]componentdomain.Component, len(ids))
+	for _, id := range ids {
+		if component, ok := m.items[id]; ok {
+			result[id] = component
+		}
+	}
+	return result, nil
 }

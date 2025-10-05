@@ -63,8 +63,8 @@ func TestHandler(t *testing.T) {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
 
-	if resp.Client.Host != "10.0.0.1" {
-		t.Fatalf("expected client host 10.0.0.1 got %s", resp.Client.Host)
+	if resp.Client.Host == nil || *resp.Client.Host != "10.0.0.1" {
+		t.Fatalf("expected client host 10.0.0.1 got %v", resp.Client.Host)
 	}
 	if resp.Server.CurrentTime != 1700000000 {
 		t.Fatalf("unexpected current time %d", resp.Server.CurrentTime)

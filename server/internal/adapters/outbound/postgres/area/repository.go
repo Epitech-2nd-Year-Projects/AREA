@@ -24,10 +24,23 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 // Create inserts a new area row and returns the stored aggregate
-func (r Repository) Create(ctx context.Context, area areadomain.Area) (areadomain.Area, error) {
+func (r Repository) Create(ctx context.Context, area areadomain.Area, action areadomain.Link) (areadomain.Area, error) {
 	if r.db == nil {
 		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: nil db handle")
 	}
+	if !action.IsAction() {
+		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: expected action link")
+	}
+
+	tx := r.db.WithContext(ctx).Begin()
+	if err := tx.Error; err != nil {
+		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: begin tx: %w", err)
+	}
+	rollback := func(err error) (areadomain.Area, error) {
+		_ = tx.Rollback()
+		return areadomain.Area{}, err
+	}
+
 	model := areaFromDomain(area)
 	if model.ID == uuid.Nil {
 		model.ID = uuid.New()
@@ -38,13 +51,65 @@ func (r Repository) Create(ctx context.Context, area areadomain.Area) (areadomai
 	if model.UpdatedAt.IsZero() {
 		model.UpdatedAt = model.CreatedAt
 	}
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+
+	if err := tx.Create(&model).Error; err != nil {
 		if isUniqueViolation(err) {
-			return areadomain.Area{}, outbound.ErrConflict
+			return rollback(outbound.ErrConflict)
 		}
-		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: %w", err)
+		return rollback(fmt.Errorf("postgres.area.Repository.Create: create area: %w", err))
 	}
-	return model.toDomain(), nil
+
+	configModel, err := configFromDomain(action.Config)
+	if err != nil {
+		return rollback(fmt.Errorf("postgres.area.Repository.Create: encode config: %w", err))
+	}
+	if configModel.UserID == uuid.Nil {
+		configModel.UserID = model.UserID
+	}
+	if !configModel.CreatedAt.IsZero() {
+		configModel.CreatedAt = configModel.CreatedAt.UTC()
+	}
+	if !configModel.UpdatedAt.IsZero() {
+		configModel.UpdatedAt = configModel.UpdatedAt.UTC()
+	}
+
+	if err := tx.Create(&configModel).Error; err != nil {
+		return rollback(fmt.Errorf("postgres.area.Repository.Create: create config: %w", err))
+	}
+
+	linkModel := linkFromDomain(action)
+	if linkModel.ID == uuid.Nil {
+		linkModel.ID = uuid.New()
+	}
+	linkModel.AreaID = model.ID
+	linkModel.ComponentConfigID = configModel.ID
+	if linkModel.Position == 0 {
+		linkModel.Position = 1
+	}
+	if linkModel.CreatedAt.IsZero() {
+		linkModel.CreatedAt = model.CreatedAt
+	}
+	if linkModel.UpdatedAt.IsZero() {
+		linkModel.UpdatedAt = model.UpdatedAt
+	}
+
+	if err := tx.Create(&linkModel).Error; err != nil {
+		return rollback(fmt.Errorf("postgres.area.Repository.Create: create link: %w", err))
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: commit: %w", err)
+	}
+
+	// hydrate response
+	linkModel.ComponentConfig = configModel
+	stored := model.toDomain()
+	linkModel.AreaID = stored.ID
+	actionDomain, err := linkModel.toDomain()
+	if err == nil {
+		stored.Action = &actionDomain
+	}
+	return stored, nil
 }
 
 // FindByID retrieves an area by its identifier
@@ -53,7 +118,10 @@ func (r Repository) FindByID(ctx context.Context, id uuid.UUID) (areadomain.Area
 		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.FindByID: nil db handle")
 	}
 	var model areaModel
-	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Preload("Links", "role = ?", string(areadomain.LinkRoleAction)).
+		Preload("Links.ComponentConfig").
+		First(&model, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return areadomain.Area{}, outbound.ErrNotFound
 		}
@@ -69,6 +137,8 @@ func (r Repository) ListByUser(ctx context.Context, userID uuid.UUID) ([]areadom
 	}
 	var models []areaModel
 	if err := r.db.WithContext(ctx).
+		Preload("Links", "role = ?", string(areadomain.LinkRoleAction)).
+		Preload("Links.ComponentConfig").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&models).Error; err != nil {

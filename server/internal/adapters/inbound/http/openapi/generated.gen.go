@@ -23,137 +23,285 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for OAuthAuthorizationResponseCodeChallengeMethod.
 const (
-	Plain OAuthAuthorizationResponseCodeChallengeMethod = "plain"
-	S256  OAuthAuthorizationResponseCodeChallengeMethod = "S256"
+	SessionAuthScopes = "sessionAuth.Scopes"
 )
 
-// AboutClient defines model for AboutClient.
+// Defines values for ComponentSummaryKind.
+const (
+	Action   ComponentSummaryKind = "action"
+	Reaction ComponentSummaryKind = "reaction"
+)
+
+// AboutClient Current client bundle fingerprint exposed to public consumers.
 type AboutClient struct {
-	// Host IP address of the client issuing the request
-	Host string `json:"host"`
+	// Host IP address of the client performing the request.
+	Host *string `json:"host,omitempty"`
+
+	// Version Semantic version of the distributed web/mobile clients.
+	Version string `json:"version"`
 }
 
-// AboutResponse defines model for AboutResponse.
+// AboutResponse Aggregated platform metadata combining frontend and backend build information.
 type AboutResponse struct {
+	// Client Current client bundle fingerprint exposed to public consumers.
 	Client AboutClient `json:"client"`
+
+	// Server Backend release information.
 	Server AboutServer `json:"server"`
 }
 
-// AboutServer defines model for AboutServer.
+// AboutServer Backend release information.
 type AboutServer struct {
-	// CurrentTime Unix epoch timestamp
+	// Commit Git commit hash deployed to the environment.
+	Commit string `json:"commit"`
+
+	// CurrentTime Current server time expressed as an Epoch Unix timestamp.
 	CurrentTime int64 `json:"current_time"`
 
-	// Services Services supported by the server
+	// Services Catalog of services exposed by the backend.
 	Services []Service `json:"services"`
+
+	// Version Semantic version of the backend deployment.
+	Version string `json:"version"`
 }
 
-// Area defines model for Area.
+// Area Automation linking an action to one or more reactions for a user.
 type Area struct {
-	CreatedAt   time.Time          `json:"created_at"`
-	Description *string            `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
-	Status      string             `json:"status"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	// Action Action binding stored for an AREA automation.
+	Action *AreaAction `json:"action,omitempty"`
+
+	// CreatedAt Timestamp (UTC) when the automation was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Optional summary supplied by the user.
+	Description *string `json:"description"`
+
+	// Id Unique identifier of the automation.
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Display name chosen by the user.
+	Name string `json:"name"`
+
+	// Status Lifecycle status (`enabled`, `disabled`, or `archived`).
+	Status string `json:"status"`
+
+	// UpdatedAt Timestamp (UTC) of the last update.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// AuthSessionResponse defines model for AuthSessionResponse.
+// AreaAction Action binding stored for an AREA automation.
+type AreaAction struct {
+	// Component Minimal catalog metadata required by clients to render a component reference.
+	Component ComponentSummary `json:"component"`
+
+	// ComponentId Identifier of the catalog component associated with the configuration.
+	ComponentId openapi_types.UUID `json:"component_id"`
+
+	// ConfigId Identifier of the user component configuration backing the action.
+	ConfigId openapi_types.UUID `json:"config_id"`
+
+	// Name Optional nickname saved alongside the configuration.
+	Name *string `json:"name"`
+
+	// Params Persisted configuration parameters supplied when creating the AREA.
+	Params *map[string]interface{} `json:"params,omitempty"`
+}
+
+// AuthSessionResponse Session descriptor mirroring the cookie issued by the backend.
 type AuthSessionResponse struct {
+	// ExpiresAt Expiration timestamp (UTC) aligning with the `area_session` cookie expiry.
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	// TokenType Grants semantics of the issued token; currently `session`.
+	TokenType *string `json:"tokenType,omitempty"`
+
+	// User Detailed user payload returned by authenticated endpoints.
 	User User `json:"user"`
 }
 
-// Component defines model for Component.
+// Component Action or reaction component exposed by a service.
 type Component struct {
+	// Description Human-readable description of the component behaviour.
 	Description string `json:"description"`
-	Name        string `json:"name"`
+
+	// Name Component identifier.
+	Name string `json:"name"`
 }
 
-// CreateAreaRequest defines model for CreateAreaRequest.
+// ComponentSummary Minimal catalog metadata required by clients to render a component reference.
+type ComponentSummary struct {
+	Description *string              `json:"description"`
+	DisplayName string               `json:"display_name"`
+	Id          openapi_types.UUID   `json:"id"`
+	Kind        ComponentSummaryKind `json:"kind"`
+	Name        string               `json:"name"`
+
+	// Provider Lightweight representation of a service provider exposing components.
+	Provider ServiceProviderSummary `json:"provider"`
+}
+
+// ComponentSummaryKind defines model for ComponentSummary.Kind.
+type ComponentSummaryKind string
+
+// CreateAreaAction Configuration of the action component that triggers the automation.
+type CreateAreaAction struct {
+	// ComponentId Identifier of the action component selected from the catalog.
+	ComponentId openapi_types.UUID `json:"component_id"`
+
+	// Name Optional nickname to show in clients when displaying the component configuration.
+	Name *string `json:"name,omitempty"`
+
+	// Params Free-form JSON parameters persisted in the user component configuration.
+	Params *map[string]interface{} `json:"params,omitempty"`
+}
+
+// CreateAreaRequest Payload used to create a new automation owned by the authenticated user.
 type CreateAreaRequest struct {
+	// Action Configuration of the action component that triggers the automation.
+	Action CreateAreaAction `json:"action"`
+
+	// Description Optional summary to distinguish this automation.
 	Description *string `json:"description,omitempty"`
-	Name        string  `json:"name"`
+
+	// Name Human readable name displayed across clients.
+	Name string `json:"name"`
 }
 
-// ListAreasResponse defines model for ListAreasResponse.
+// ListAreasResponse Collection wrapper for automations returned to the client.
 type ListAreasResponse struct {
 	Areas []Area `json:"areas"`
 }
 
-// LoginRequest defines model for LoginRequest.
+// LoginRequest Credential-based authentication payload.
 type LoginRequest struct {
-	Email    openapi_types.Email `json:"email"`
-	Password string              `json:"password"`
+	// Email Registered user email.
+	Email openapi_types.Email `json:"email"`
+
+	// Password Plaintext password that satisfies the backend policy.
+	Password string `json:"password"`
 }
 
-// OAuthAuthorizationRequest defines model for OAuthAuthorizationRequest.
+// OAuthAuthorizationRequest Optional parameters forwarded to the configured OAuth provider.
 type OAuthAuthorizationRequest struct {
-	Prompt      *string   `json:"prompt,omitempty"`
-	RedirectUri *string   `json:"redirect_uri,omitempty"`
-	Scopes      *[]string `json:"scopes,omitempty"`
-	State       *string   `json:"state,omitempty"`
-	UsePkce     *bool     `json:"use_pkce,omitempty"`
+	// Prompt Provider-specific prompt parameter allowing the user experience to be tweaked.
+	Prompt *string `json:"prompt,omitempty"`
+
+	// RedirectUri Explicit redirect URI to override the default callback registered with the provider.
+	RedirectUri *string `json:"redirectUri,omitempty"`
+
+	// Scopes Additional scopes to request from the provider.
+	Scopes *[]string `json:"scopes,omitempty"`
+
+	// State Opaque value used to maintain state between the request and callback.
+	State *string `json:"state,omitempty"`
+
+	// UsePkce Flag indicating whether PKCE should be enforced.
+	UsePkce *bool `json:"usePkce,omitempty"`
 }
 
-// OAuthAuthorizationResponse defines model for OAuthAuthorizationResponse.
+// OAuthAuthorizationResponse Provider authorisation metadata.
 type OAuthAuthorizationResponse struct {
-	AuthorizationUrl    string                                         `json:"authorization_url"`
-	CodeChallenge       *string                                        `json:"code_challenge,omitempty"`
-	CodeChallengeMethod *OAuthAuthorizationResponseCodeChallengeMethod `json:"code_challenge_method,omitempty"`
-	CodeVerifier        *string                                        `json:"code_verifier,omitempty"`
-	State               *string                                        `json:"state,omitempty"`
+	// AuthorizationUrl URL that the client must open to continue authorisation with the provider.
+	AuthorizationUrl string `json:"authorizationUrl"`
+
+	// CodeChallenge PKCE code challenge derived from the verifier.
+	CodeChallenge *string `json:"codeChallenge,omitempty"`
+
+	// CodeChallengeMethod Method used to compute the PKCE code challenge.
+	CodeChallengeMethod *string `json:"codeChallengeMethod,omitempty"`
+
+	// CodeVerifier PKCE code verifier to persist until the exchange completes.
+	CodeVerifier *string `json:"codeVerifier,omitempty"`
+
+	// State State echoed by the provider after authorisation.
+	State *string `json:"state,omitempty"`
 }
 
-// OAuthAuthorizationResponseCodeChallengeMethod defines model for OAuthAuthorizationResponse.CodeChallengeMethod.
-type OAuthAuthorizationResponseCodeChallengeMethod string
-
-// OAuthExchangeRequest defines model for OAuthExchangeRequest.
+// OAuthExchangeRequest Payload received after the provider redirect to complete the exchange.
 type OAuthExchangeRequest struct {
-	Code         string  `json:"code"`
+	// Code One-time authorisation code issued by the provider.
+	Code string `json:"code"`
+
+	// CodeVerifier PKCE code verifier required when the provider enforces PKCE.
 	CodeVerifier *string `json:"code_verifier,omitempty"`
-	RedirectUri  *string `json:"redirect_uri,omitempty"`
-	State        *string `json:"state,omitempty"`
+
+	// RedirectUri Redirect URI supplied during the authorisation flow.
+	RedirectUri *string `json:"redirect_uri,omitempty"`
+
+	// State Provider-issued state parameter used to prevent CSRF.
+	State *string `json:"state,omitempty"`
 }
 
-// RegisterUserRequest defines model for RegisterUserRequest.
+// RegisterUserRequest Payload used to enrol a new AREA account prior to email verification.
 type RegisterUserRequest struct {
-	Email    openapi_types.Email `json:"email"`
-	Password string              `json:"password"`
+	// Email Primary email address that receives activation and security alerts.
+	Email openapi_types.Email `json:"email"`
+
+	// Password Strong password that satisfies backend policy (min. 8 chars, letters + numbers).
+	Password string `json:"password"`
 }
 
-// RegisterUserResponse defines model for RegisterUserResponse.
+// RegisterUserResponse Confirmation payload indicating the asynchronous verification workflow started.
 type RegisterUserResponse struct {
+	// ExpiresAt Expiration timestamp of the verification token.
 	ExpiresAt time.Time `json:"expires_at"`
+
+	// UserId Unique identifier assigned to the provisioned user.
+	UserId string `json:"userId"`
 }
 
-// Service defines model for Service.
+// Service Service published in the automation catalog.
 type Service struct {
-	Actions   []Component `json:"actions"`
+	Actions []Component `json:"actions"`
+
+	// Name Identifier of the service.
 	Name      string      `json:"name"`
 	Reactions []Component `json:"reactions"`
 }
 
-// User defines model for User.
-type User struct {
-	CreatedAt   time.Time          `json:"created_at"`
-	Email       string             `json:"email"`
+// ServiceProviderSummary Lightweight representation of a service provider exposing components.
+type ServiceProviderSummary struct {
+	DisplayName string             `json:"display_name"`
 	Id          openapi_types.UUID `json:"id"`
-	LastLoginAt *time.Time         `json:"last_login_at"`
-	Status      string             `json:"status"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	Name        string             `json:"name"`
 }
 
-// UserResponse defines model for UserResponse.
+// User Detailed user payload returned by authenticated endpoints.
+type User struct {
+	// CreatedAt Account creation timestamp in UTC.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Email Primary email associated with the account.
+	Email openapi_types.Email `json:"email"`
+
+	// Id Unique identifier assigned to the user.
+	Id openapi_types.UUID `json:"id"`
+
+	// LastLoginAt Timestamp of the most recent successful login.
+	LastLoginAt *time.Time `json:"last_login_at"`
+
+	// Status Lifecycle status (`pending`, `active`, etc.).
+	Status string `json:"status"`
+
+	// UpdatedAt Timestamp of the latest account update in UTC.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// UserResponse Public representation of the authenticated user.
 type UserResponse struct {
+	// User Detailed user payload returned by authenticated endpoints.
 	User User `json:"user"`
 }
 
-// VerifyEmailRequest defines model for VerifyEmailRequest.
+// VerifyEmailRequest Token issued in the verification email used to activate the account.
 type VerifyEmailRequest struct {
+	// Token Single-use verification token issued as part of registration.
 	Token string `json:"token"`
 }
+
+// OAuthProvider defines model for OAuthProvider.
+type OAuthProvider = string
 
 // CreateAreaJSONRequestBody defines body for CreateArea for application/json ContentType.
 type CreateAreaJSONRequestBody = CreateAreaRequest
@@ -198,10 +346,10 @@ type ServerInterface interface {
 	VerifyEmail(c *gin.Context)
 	// Initiate OAuth authorization
 	// (POST /v1/oauth/{provider}/authorize)
-	AuthorizeOAuth(c *gin.Context, provider string)
+	AuthorizeOAuth(c *gin.Context, provider OAuthProvider)
 	// Exchange authorization code for session
 	// (POST /v1/oauth/{provider}/exchange)
-	ExchangeOAuth(c *gin.Context, provider string)
+	ExchangeOAuth(c *gin.Context, provider OAuthProvider)
 	// Register a new user
 	// (POST /v1/users)
 	RegisterUser(c *gin.Context)
@@ -232,6 +380,8 @@ func (siw *ServerInterfaceWrapper) GetAbout(c *gin.Context) {
 // ListAreas operation middleware
 func (siw *ServerInterfaceWrapper) ListAreas(c *gin.Context) {
 
+	c.Set(SessionAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -244,6 +394,8 @@ func (siw *ServerInterfaceWrapper) ListAreas(c *gin.Context) {
 
 // CreateArea operation middleware
 func (siw *ServerInterfaceWrapper) CreateArea(c *gin.Context) {
+
+	c.Set(SessionAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -271,6 +423,8 @@ func (siw *ServerInterfaceWrapper) Login(c *gin.Context) {
 // Logout operation middleware
 func (siw *ServerInterfaceWrapper) Logout(c *gin.Context) {
 
+	c.Set(SessionAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -283,6 +437,8 @@ func (siw *ServerInterfaceWrapper) Logout(c *gin.Context) {
 
 // GetCurrentUser operation middleware
 func (siw *ServerInterfaceWrapper) GetCurrentUser(c *gin.Context) {
+
+	c.Set(SessionAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -313,13 +469,15 @@ func (siw *ServerInterfaceWrapper) AuthorizeOAuth(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "provider" -------------
-	var provider string
+	var provider OAuthProvider
 
 	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
 		return
 	}
+
+	c.Set(SessionAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -337,13 +495,15 @@ func (siw *ServerInterfaceWrapper) ExchangeOAuth(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "provider" -------------
-	var provider string
+	var provider OAuthProvider
 
 	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
 		return
 	}
+
+	c.Set(SessionAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -421,6 +581,14 @@ func (response GetAbout200JSONResponse) VisitGetAboutResponse(w http.ResponseWri
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAbout404Response struct {
+}
+
+func (response GetAbout404Response) VisitGetAboutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
 }
 
 type ListAreasRequestObject struct {
@@ -528,6 +696,14 @@ func (response Logout204Response) VisitLogoutResponse(w http.ResponseWriter) err
 	return nil
 }
 
+type Logout401Response struct {
+}
+
+func (response Logout401Response) VisitLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
 type GetCurrentUserRequestObject struct {
 }
 
@@ -594,7 +770,7 @@ func (response VerifyEmail410Response) VisitVerifyEmailResponse(w http.ResponseW
 }
 
 type AuthorizeOAuthRequestObject struct {
-	Provider string `json:"provider"`
+	Provider OAuthProvider `json:"provider"`
 	Body     *AuthorizeOAuthJSONRequestBody
 }
 
@@ -636,7 +812,7 @@ func (response AuthorizeOAuth501Response) VisitAuthorizeOAuthResponse(w http.Res
 }
 
 type ExchangeOAuthRequestObject struct {
-	Provider string `json:"provider"`
+	Provider OAuthProvider `json:"provider"`
 	Body     *ExchangeOAuthJSONRequestBody
 }
 
@@ -972,7 +1148,7 @@ func (sh *strictHandler) VerifyEmail(ctx *gin.Context) {
 }
 
 // AuthorizeOAuth operation middleware
-func (sh *strictHandler) AuthorizeOAuth(ctx *gin.Context, provider string) {
+func (sh *strictHandler) AuthorizeOAuth(ctx *gin.Context, provider OAuthProvider) {
 	var request AuthorizeOAuthRequestObject
 
 	request.Provider = provider
@@ -1007,7 +1183,7 @@ func (sh *strictHandler) AuthorizeOAuth(ctx *gin.Context, provider string) {
 }
 
 // ExchangeOAuth operation middleware
-func (sh *strictHandler) ExchangeOAuth(ctx *gin.Context, provider string) {
+func (sh *strictHandler) ExchangeOAuth(ctx *gin.Context, provider OAuthProvider) {
 	var request ExchangeOAuthRequestObject
 
 	request.Provider = provider
@@ -1077,34 +1253,113 @@ func (sh *strictHandler) RegisterUser(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"bgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

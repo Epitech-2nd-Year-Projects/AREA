@@ -622,10 +622,14 @@ components:
           type: string
           description: Semantic version of the distributed web/mobile clients.
           example: 1.0.0
+        host:
+          type: string
+          description: IP address of the client performing the request.
+          example: 10.0.0.1
     AboutServer:
       type: object
       description: Backend release information.
-      required: [version, commit]
+      required: [version, commit, current_time, services]
       properties:
         version:
           type: string
@@ -635,6 +639,44 @@ components:
           type: string
           description: Git commit hash deployed to the environment.
           example: a1b2c3d4
+        current_time:
+          type: integer
+          format: int64
+          description: Current server time expressed as an Epoch Unix timestamp.
+          example: 1712764470
+        services:
+          type: array
+          description: Catalog of services exposed by the backend.
+          items:
+            $ref: '#/components/schemas/Service'
+    Service:
+      type: object
+      description: Service published in the automation catalog.
+      required: [name, actions, reactions]
+      properties:
+        name:
+          type: string
+          description: Identifier of the service.
+          example: github
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+    Component:
+      type: object
+      description: Action or reaction component exposed by a service.
+      required: [name, description]
+      properties:
+        name:
+          type: string
+          description: Component identifier.
+        description:
+          type: string
+          description: Human-readable description of the component behaviour.
     RegisterUserRequest:
       type: object
       description: Payload used to enrol a new AREA account prior to email verification.
@@ -657,12 +699,17 @@ components:
     RegisterUserResponse:
       type: object
       description: Confirmation payload indicating the asynchronous verification workflow started.
-      required: [userId]
+      required: [userId, expires_at]
       properties:
         userId:
           type: string
           description: Unique identifier assigned to the provisioned user.
           example: usr_01H9ZQF8E4XKC5V7QMMC1782X9
+        expires_at:
+          type: string
+          format: date-time
+          description: Expiration timestamp of the verification token.
+          example: 2024-04-18T11:32:00Z
     VerifyEmailRequest:
       type: object
       description: Token issued in the verification email used to activate the account.
@@ -677,7 +724,7 @@ components:
     AuthSessionResponse:
       type: object
       description: Session descriptor mirroring the cookie issued by the backend.
-      required: [tokenType, expiresAt]
+      required: [user]
       properties:
         tokenType:
           type: string
@@ -687,9 +734,17 @@ components:
           type: string
           format: date-time
           description: Expiration timestamp (UTC) aligning with the `area_session` cookie expiry.
+        user:
+          $ref: '#/components/schemas/User'
       example:
         tokenType: session
         expiresAt: 2024-04-18T11:32:00Z
+        user:
+          id: usr_01H9ZQF8E4XKC5V7QMMC1782X9
+          email: alex.martin@example.com
+          status: active
+          created_at: 2024-04-01T10:00:00Z
+          updated_at: 2024-04-01T10:00:00Z
     LoginRequest:
       type: object
       description: Credential-based authentication payload.
@@ -711,17 +766,10 @@ components:
     UserResponse:
       type: object
       description: Public representation of the authenticated user.
-      required: [id, email]
+      required: [user]
       properties:
-        id:
-          type: string
-          description: Stable unique identifier of the user.
-          example: usr_01H9ZQF8E4XKC5V7QMMC1782X9
-        email:
-          type: string
-          format: email
-          description: Primary email address associated with the account.
-          example: alex.martin@example.com
+        user:
+          $ref: '#/components/schemas/User'
     User:
       type: object
       description: Detailed user payload returned by authenticated endpoints.
@@ -760,6 +808,20 @@ components:
           format: uri
           description: Explicit redirect URI to override the default callback registered with the provider.
           example: https://app.area-server.app/oauth/complete
+        state:
+          type: string
+          description: Opaque value used to maintain state between the request and callback.
+        prompt:
+          type: string
+          description: Provider-specific prompt parameter allowing the user experience to be tweaked.
+        usePkce:
+          type: boolean
+          description: Flag indicating whether PKCE should be enforced.
+        scopes:
+          type: array
+          description: Additional scopes to request from the provider.
+          items:
+            type: string
     OAuthAuthorizationResponse:
       type: object
       description: Provider authorisation metadata.
@@ -770,6 +832,18 @@ components:
           format: uri
           description: URL that the client must open to continue authorisation with the provider.
           example: https://accounts.google.com/o/oauth2/v2/auth?client_id=...
+        state:
+          type: string
+          description: State echoed by the provider after authorisation.
+        codeVerifier:
+          type: string
+          description: PKCE code verifier to persist until the exchange completes.
+        codeChallenge:
+          type: string
+          description: PKCE code challenge derived from the verifier.
+        codeChallengeMethod:
+          type: string
+          description: Method used to compute the PKCE code challenge.
     OAuthExchangeRequest:
       type: object
       description: Payload received after the provider redirect to complete the exchange.
@@ -792,7 +866,7 @@ components:
     CreateAreaRequest:
       type: object
       description: Payload used to create a new automation owned by the authenticated user.
-      required: [name]
+      required: [name, action]
       properties:
         name:
           type: string
@@ -803,6 +877,25 @@ components:
           type: string
           maxLength: 512
           description: Optional summary to distinguish this automation.
+        action:
+          $ref: '#/components/schemas/CreateAreaAction'
+    CreateAreaAction:
+      type: object
+      description: Configuration of the action component that triggers the automation.
+      required: [component_id]
+      properties:
+        component_id:
+          type: string
+          format: uuid
+          description: Identifier of the action component selected from the catalog.
+        name:
+          type: string
+          maxLength: 128
+          description: Optional nickname to show in clients when displaying the component configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Free-form JSON parameters persisted in the user component configuration.
     Area:
       type: object
       description: Automation linking an action to one or more reactions for a user.
@@ -830,6 +923,8 @@ components:
           type: string
           format: date-time
           description: Timestamp (UTC) of the last update.
+        action:
+          $ref: '#/components/schemas/AreaAction'
     ListAreasResponse:
       type: object
       description: Collection wrapper for automations returned to the client.
@@ -839,6 +934,61 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Area'
+    AreaAction:
+      type: object
+      description: Action binding stored for an AREA automation.
+      required: [config_id, component_id, component]
+      properties:
+        config_id:
+          type: string
+          format: uuid
+          description: Identifier of the user component configuration backing the action.
+        component_id:
+          type: string
+          format: uuid
+          description: Identifier of the catalog component associated with the configuration.
+        name:
+          type: string
+          nullable: true
+          description: Optional nickname saved alongside the configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Persisted configuration parameters supplied when creating the AREA.
+        component:
+          $ref: '#/components/schemas/ComponentSummary'
+    ComponentSummary:
+      type: object
+      description: Minimal catalog metadata required by clients to render a component reference.
+      required: [id, kind, name, display_name, provider]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [action, reaction]
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        provider:
+          $ref: '#/components/schemas/ServiceProviderSummary'
+    ServiceProviderSummary:
+      type: object
+      description: Lightweight representation of a service provider exposing components.
+      required: [id, name, display_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        display_name:
+          type: string
   parameters:
     OAuthProvider:
       name: provider
