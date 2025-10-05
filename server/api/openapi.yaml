@@ -600,7 +600,7 @@ components:
   schemas:
     AboutResponse:
       type: object
-      description: About payload mirroring the G-DEV-500 specification.
+      description: Aggregated platform metadata combining frontend and backend build information.
       required: [client, server]
       properties:
         client:
@@ -614,7 +614,7 @@ components:
         host:
           type: string
           description: IP address of the client performing the HTTP request.
-          example: 10.101.53.35
+          example: 10.0.0.1
     AboutServer:
       type: object
       required: [current_time, services]
