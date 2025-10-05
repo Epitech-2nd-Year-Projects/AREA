@@ -22,10 +22,17 @@ func TestService_CreateAndList(t *testing.T) {
 	clock := stubClock{now: time.Unix(1720000000, 0).UTC()}
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
 	componentID := uuid.New()
+	reactionID := uuid.New()
 	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
 		componentID: {
 			ID:         componentID,
 			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
 			Enabled:    true,
 			ProviderID: uuid.New(),
 		},
@@ -36,6 +43,11 @@ func TestService_CreateAndList(t *testing.T) {
 	area, err := svc.Create(ctx, userID, "Morning digest", "Send me a digest every morning", ActionInput{
 		ComponentID: componentID,
 		Params:      map[string]any{"channel": "mail"},
+	}, []ReactionInput{
+		{
+			ComponentID: reactionID,
+			Params:      map[string]any{"message": "Hello"},
+		},
 	})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
@@ -59,6 +71,12 @@ func TestService_CreateAndList(t *testing.T) {
 	if area.Action.Config.Component == nil {
 		t.Fatalf("expected action component metadata to be attached")
 	}
+	if len(area.Reactions) != 1 {
+		t.Fatalf("expected one reaction, got %d", len(area.Reactions))
+	}
+	if area.Reactions[0].Config.Component == nil {
+		t.Fatalf("expected reaction component metadata to be attached")
+	}
 
 	areas, err := svc.List(ctx, userID)
 	if err != nil {
@@ -73,16 +91,26 @@ func TestService_CreateAndList(t *testing.T) {
 	if areas[0].Action == nil || areas[0].Action.Config.Component == nil {
 		t.Fatalf("expected action component enrichment on list")
 	}
+	if len(areas[0].Reactions) != 1 || areas[0].Reactions[0].Config.Component == nil {
+		t.Fatalf("expected reaction component enrichment on list")
+	}
 }
 
 func TestService_CreateValidation(t *testing.T) {
 	ctx := context.Background()
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
 	componentID := uuid.New()
+	reactionID := uuid.New()
 	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
 		componentID: {
 			ID:         componentID,
 			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
 			Enabled:    true,
 			ProviderID: uuid.New(),
 		},
@@ -101,7 +129,7 @@ func TestService_CreateValidation(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.expectedErr.Error(), func(t *testing.T) {
-			_, err := svc.Create(ctx, uuid.New(), tc.name, tc.description, ActionInput{ComponentID: componentID})
+			_, err := svc.Create(ctx, uuid.New(), tc.name, tc.description, ActionInput{ComponentID: componentID}, []ReactionInput{{ComponentID: reactionID}})
 			if err == nil {
 				t.Fatalf("expected error %v, got nil", tc.expectedErr)
 			}
@@ -115,26 +143,69 @@ func TestService_CreateValidation(t *testing.T) {
 func TestService_CreateActionValidation(t *testing.T) {
 	ctx := context.Background()
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
-	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{}}
+	reactionComponentID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		reactionComponentID: {
+			ID:         reactionComponentID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+		},
+	}}
 	svc := NewService(repo, components, stubClock{now: time.Now()})
 
-	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{})
+	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentRequired) {
 		t.Fatalf("expected ErrActionComponentRequired got %v", err)
 	}
 
-	reactionID := uuid.New()
-	components.items[reactionID] = componentdomain.Component{ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true}
-	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: reactionID})
+	otherReactionID := uuid.New()
+	components.items[otherReactionID] = componentdomain.Component{ID: otherReactionID, Kind: componentdomain.KindReaction, Enabled: true}
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: otherReactionID}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentInvalid) {
 		t.Fatalf("expected ErrActionComponentInvalid got %v", err)
 	}
 
 	actionID := uuid.New()
 	components.items[actionID] = componentdomain.Component{ID: actionID, Kind: componentdomain.KindAction, Enabled: false}
-	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID})
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentDisabled) {
 		t.Fatalf("expected ErrActionComponentDisabled got %v", err)
+	}
+}
+
+func TestService_CreateReactionValidation(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{}}
+	actionID := uuid.New()
+	components.items[actionID] = componentdomain.Component{ID: actionID, Kind: componentdomain.KindAction, Enabled: true, ProviderID: uuid.New()}
+	reactionID := uuid.New()
+	components.items[reactionID] = componentdomain.Component{ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true, ProviderID: uuid.New()}
+	svc := NewService(repo, components, stubClock{now: time.Now()})
+
+	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, nil)
+	if !errors.Is(err, ErrReactionsRequired) {
+		t.Fatalf("expected ErrReactionsRequired got %v", err)
+	}
+
+	missingID := uuid.New()
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: missingID}})
+	if !errors.Is(err, ErrReactionComponentInvalid) {
+		t.Fatalf("expected ErrReactionComponentInvalid got %v", err)
+	}
+
+	components.items[missingID] = componentdomain.Component{ID: missingID, Kind: componentdomain.KindAction, Enabled: true, ProviderID: uuid.New()}
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: missingID}})
+	if !errors.Is(err, ErrReactionComponentInvalid) {
+		t.Fatalf("expected ErrReactionComponentInvalid got %v", err)
+	}
+
+	disabledID := uuid.New()
+	components.items[disabledID] = componentdomain.Component{ID: disabledID, Kind: componentdomain.KindReaction, Enabled: false, ProviderID: uuid.New()}
+	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: disabledID}})
+	if !errors.Is(err, ErrReactionComponentDisabled) {
+		t.Fatalf("expected ErrReactionComponentDisabled got %v", err)
 	}
 }
 
@@ -142,21 +213,36 @@ type memoryAreaRepo struct {
 	items map[uuid.UUID]areadomain.Area
 }
 
-func (m *memoryAreaRepo) Create(ctx context.Context, area areadomain.Area, link areadomain.Link) (areadomain.Area, error) {
+func (m *memoryAreaRepo) Create(ctx context.Context, area areadomain.Area, action areadomain.Link, reactions []areadomain.Link) (areadomain.Area, error) {
 	if m.items == nil {
 		m.items = map[uuid.UUID]areadomain.Area{}
 	}
 	if area.ID == uuid.Nil {
 		area.ID = uuid.New()
 	}
-	if link.ID == uuid.Nil {
-		link.ID = uuid.New()
+	if action.ID == uuid.Nil {
+		action.ID = uuid.New()
 	}
-	link.AreaID = area.ID
-	link.Config.ID = uuid.New()
-	link.CreatedAt = area.CreatedAt
-	link.UpdatedAt = area.UpdatedAt
-	area.Action = &link
+	action.AreaID = area.ID
+	if action.Config.ID == uuid.Nil {
+		action.Config.ID = uuid.New()
+	}
+	action.CreatedAt = area.CreatedAt
+	action.UpdatedAt = area.UpdatedAt
+	area.Action = &action
+	area.Reactions = make([]areadomain.Link, 0, len(reactions))
+	for _, reaction := range reactions {
+		if reaction.ID == uuid.Nil {
+			reaction.ID = uuid.New()
+		}
+		reaction.AreaID = area.ID
+		if reaction.Config.ID == uuid.Nil {
+			reaction.Config.ID = uuid.New()
+		}
+		reaction.CreatedAt = area.CreatedAt
+		reaction.UpdatedAt = area.UpdatedAt
+		area.Reactions = append(area.Reactions, reaction)
+	}
 	m.items[area.ID] = area
 	return area, nil
 }
