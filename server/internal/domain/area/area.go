@@ -28,6 +28,8 @@ type Area struct {
 	Status      Status
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Action      *Link
+	Reactions   []Link
 }
 
 // WithDescription returns a copy of the area with the provided description applied
