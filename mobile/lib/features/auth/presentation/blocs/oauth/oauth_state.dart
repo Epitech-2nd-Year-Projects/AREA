@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/oauth_provider.dart';
-import '../../../domain/entities/auth_session.dart';
-import '../../../domain/value_objects/oauth_redirect_url.dart';
+import '../../../domain/entities/user.dart'; // Changé pour User au lieu de AuthSession
 
 abstract class OAuthState extends Equatable {
   const OAuthState();
@@ -20,9 +19,33 @@ class OAuthStarting extends OAuthState {
   List<Object?> get props => [provider];
 }
 
+class OAuthWaitingForCallback extends OAuthState {
+  final OAuthProvider provider;
+  const OAuthWaitingForCallback(this.provider);
+
+  @override
+  List<Object?> get props => [provider];
+}
+
+class OAuthSuccess extends OAuthState {
+  final User user; // Changé pour User
+  const OAuthSuccess(this.user);
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class OAuthError extends OAuthState {
+  final String message;
+  const OAuthError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class OAuthRedirectReady extends OAuthState {
   final OAuthProvider provider;
-  final OAuthRedirectUrl redirectUrl;
+  final String redirectUrl;
 
   const OAuthRedirectReady(this.provider, this.redirectUrl);
 
@@ -38,20 +61,4 @@ class OAuthCallbackReceived extends OAuthState {
 
   @override
   List<Object?> get props => [provider, callbackCode];
-}
-
-class OAuthSuccess extends OAuthState {
-  final AuthSession session;
-  const OAuthSuccess(this.session);
-
-  @override
-  List<Object?> get props => [session];
-}
-
-class OAuthError extends OAuthState {
-  final String message;
-  const OAuthError(this.message);
-
-  @override
-  List<Object?> get props => [message];
 }
