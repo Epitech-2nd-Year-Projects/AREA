@@ -92,9 +92,15 @@ func (h *Handler) CreateArea(c *gin.Context) {
 		desc = strings.TrimSpace(*payload.Description)
 	}
 
-	actionInput := fromCreateAction(payload.Action)
+	if len(payload.Reactions) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one reaction is required"})
+		return
+	}
 
-	created, err := h.service.Create(c.Request.Context(), usr.ID, name, desc, actionInput)
+	actionInput := fromCreateAction(payload.Action)
+	reactionInputs := fromCreateReactions(payload.Reactions)
+
+	created, err := h.service.Create(c.Request.Context(), usr.ID, name, desc, actionInput, reactionInputs)
 	if err != nil {
 		h.handleServiceError(c, err)
 		return
@@ -138,8 +144,8 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrNameRequired), errors.Is(err, ErrNameTooLong), errors.Is(err, ErrDescriptionTooLong):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid area payload"})
-	case errors.Is(err, ErrActionComponentRequired), errors.Is(err, ErrActionComponentInvalid), errors.Is(err, ErrActionComponentDisabled):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action component"})
+	case errors.Is(err, ErrActionComponentRequired), errors.Is(err, ErrActionComponentInvalid), errors.Is(err, ErrActionComponentDisabled), errors.Is(err, ErrReactionsRequired), errors.Is(err, ErrReactionComponentInvalid), errors.Is(err, ErrReactionComponentDisabled):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component payload"})
 	case errors.Is(err, outbound.ErrConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": "area conflict"})
 	case errors.Is(err, outbound.ErrNotFound):
@@ -182,6 +188,7 @@ func toOpenAPIArea(area areadomain.Area) openapi.Area {
 		CreatedAt:   area.CreatedAt,
 		UpdatedAt:   area.UpdatedAt,
 		Action:      toOpenAPIAreaAction(area.Action),
+		Reactions:   toOpenAPIAreaReactions(area.Reactions),
 	}
 }
 
@@ -211,6 +218,37 @@ func toOpenAPIAreaAction(action *areadomain.Link) *openapi.AreaAction {
 		Params:      paramsPtr,
 	}
 	return &result
+}
+
+func toOpenAPIAreaReactions(reactions []areadomain.Link) []openapi.AreaReaction {
+	if len(reactions) == 0 {
+		return make([]openapi.AreaReaction, 0)
+	}
+	result := make([]openapi.AreaReaction, 0, len(reactions))
+	for _, reaction := range reactions {
+		params := map[string]interface{}{}
+		if reaction.Config.Params != nil {
+			params = cloneMap(reaction.Config.Params)
+		}
+		var paramsPtr *map[string]interface{}
+		if len(params) > 0 {
+			paramsPtr = &params
+		}
+		var namePtr *string
+		if trimmed := strings.TrimSpace(reaction.Config.Name); trimmed != "" {
+			name := trimmed
+			namePtr = &name
+		}
+		summary := toComponentSummary(reaction.Config.Component, reaction.Config.ComponentID)
+		result = append(result, openapi.AreaReaction{
+			ConfigId:    openapi_types.UUID(reaction.Config.ID),
+			ComponentId: openapi_types.UUID(reaction.Config.ComponentID),
+			Component:   summary,
+			Name:        namePtr,
+			Params:      paramsPtr,
+		})
+	}
+	return result
 }
 
 func toComponentSummary(component *componentdomain.Component, componentID uuid.UUID) openapi.ComponentSummary {
@@ -257,7 +295,26 @@ func fromCreateAction(action openapi.CreateAreaAction) ActionInput {
 	return input
 }
 
-func cloneMap(source map[string]interface{}) map[string]interface{} {
+func fromCreateReactions(reactions []openapi.CreateAreaReaction) []ReactionInput {
+	inputs := make([]ReactionInput, 0, len(reactions))
+	for _, reaction := range reactions {
+		params := map[string]any{}
+		if reaction.Params != nil {
+			params = cloneMap(*reaction.Params)
+		}
+		input := ReactionInput{
+			ComponentID: uuid.UUID(reaction.ComponentId),
+			Params:      params,
+		}
+		if reaction.Name != nil {
+			input.Name = strings.TrimSpace(*reaction.Name)
+		}
+		inputs = append(inputs, input)
+	}
+	return inputs
+}
+
+func cloneMap(source map[string]any) map[string]interface{} {
 	if len(source) == 0 {
 		return map[string]interface{}{}
 	}

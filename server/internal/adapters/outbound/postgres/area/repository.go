@@ -24,12 +24,17 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 // Create inserts a new area row and returns the stored aggregate
-func (r Repository) Create(ctx context.Context, area areadomain.Area, action areadomain.Link) (areadomain.Area, error) {
+func (r Repository) Create(ctx context.Context, area areadomain.Area, action areadomain.Link, reactions []areadomain.Link) (areadomain.Area, error) {
 	if r.db == nil {
 		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: nil db handle")
 	}
 	if !action.IsAction() {
 		return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: expected action link")
+	}
+	for _, reaction := range reactions {
+		if reaction.Role != areadomain.LinkRoleReaction {
+			return areadomain.Area{}, fmt.Errorf("postgres.area.Repository.Create: invalid reaction role")
+		}
 	}
 
 	tx := r.db.WithContext(ctx).Begin()
@@ -66,10 +71,17 @@ func (r Repository) Create(ctx context.Context, area areadomain.Area, action are
 	if configModel.UserID == uuid.Nil {
 		configModel.UserID = model.UserID
 	}
-	if !configModel.CreatedAt.IsZero() {
+	if configModel.ID == uuid.Nil {
+		configModel.ID = uuid.New()
+	}
+	if configModel.CreatedAt.IsZero() {
+		configModel.CreatedAt = model.CreatedAt
+	} else {
 		configModel.CreatedAt = configModel.CreatedAt.UTC()
 	}
-	if !configModel.UpdatedAt.IsZero() {
+	if configModel.UpdatedAt.IsZero() {
+		configModel.UpdatedAt = model.UpdatedAt
+	} else {
 		configModel.UpdatedAt = configModel.UpdatedAt.UTC()
 	}
 
@@ -88,13 +100,72 @@ func (r Repository) Create(ctx context.Context, area areadomain.Area, action are
 	}
 	if linkModel.CreatedAt.IsZero() {
 		linkModel.CreatedAt = model.CreatedAt
+	} else {
+		linkModel.CreatedAt = linkModel.CreatedAt.UTC()
 	}
 	if linkModel.UpdatedAt.IsZero() {
 		linkModel.UpdatedAt = model.UpdatedAt
+	} else {
+		linkModel.UpdatedAt = linkModel.UpdatedAt.UTC()
 	}
 
 	if err := tx.Create(&linkModel).Error; err != nil {
 		return rollback(fmt.Errorf("postgres.area.Repository.Create: create link: %w", err))
+	}
+
+	reactionModels := make([]areaLinkModel, 0, len(reactions))
+	for idx := range reactions {
+		reaction := reactions[idx]
+		configModel, err := configFromDomain(reaction.Config)
+		if err != nil {
+			return rollback(fmt.Errorf("postgres.area.Repository.Create: encode reaction config: %w", err))
+		}
+		if configModel.UserID == uuid.Nil {
+			configModel.UserID = model.UserID
+		}
+		if configModel.ID == uuid.Nil {
+			configModel.ID = uuid.New()
+		}
+		if configModel.CreatedAt.IsZero() {
+			configModel.CreatedAt = model.CreatedAt
+		} else {
+			configModel.CreatedAt = configModel.CreatedAt.UTC()
+		}
+		if configModel.UpdatedAt.IsZero() {
+			configModel.UpdatedAt = model.UpdatedAt
+		} else {
+			configModel.UpdatedAt = configModel.UpdatedAt.UTC()
+		}
+
+		if err := tx.Create(&configModel).Error; err != nil {
+			return rollback(fmt.Errorf("postgres.area.Repository.Create: create reaction config: %w", err))
+		}
+
+		linkModel := linkFromDomain(reaction)
+		if linkModel.ID == uuid.Nil {
+			linkModel.ID = uuid.New()
+		}
+		linkModel.AreaID = model.ID
+		linkModel.ComponentConfigID = configModel.ID
+		if linkModel.Position == 0 {
+			linkModel.Position = idx + 1
+		}
+		if linkModel.CreatedAt.IsZero() {
+			linkModel.CreatedAt = model.CreatedAt
+		} else {
+			linkModel.CreatedAt = linkModel.CreatedAt.UTC()
+		}
+		if linkModel.UpdatedAt.IsZero() {
+			linkModel.UpdatedAt = model.UpdatedAt
+		} else {
+			linkModel.UpdatedAt = linkModel.UpdatedAt.UTC()
+		}
+		linkModel.ComponentConfig = configModel
+
+		if err := tx.Create(&linkModel).Error; err != nil {
+			return rollback(fmt.Errorf("postgres.area.Repository.Create: create reaction link: %w", err))
+		}
+		reactionModels = append(reactionModels, linkModel)
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -109,6 +180,14 @@ func (r Repository) Create(ctx context.Context, area areadomain.Area, action are
 	if err == nil {
 		stored.Action = &actionDomain
 	}
+	for _, reactionModel := range reactionModels {
+		reactionModel.AreaID = stored.ID
+		reactionDomain, err := reactionModel.toDomain()
+		if err != nil {
+			continue
+		}
+		stored.Reactions = append(stored.Reactions, reactionDomain)
+	}
 	return stored, nil
 }
 
@@ -119,7 +198,9 @@ func (r Repository) FindByID(ctx context.Context, id uuid.UUID) (areadomain.Area
 	}
 	var model areaModel
 	if err := r.db.WithContext(ctx).
-		Preload("Links", "role = ?", string(areadomain.LinkRoleAction)).
+		Preload("Links", func(db *gorm.DB) *gorm.DB {
+			return db.Order("position ASC")
+		}).
 		Preload("Links.ComponentConfig").
 		First(&model, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -137,7 +218,9 @@ func (r Repository) ListByUser(ctx context.Context, userID uuid.UUID) ([]areadom
 	}
 	var models []areaModel
 	if err := r.db.WithContext(ctx).
-		Preload("Links", "role = ?", string(areadomain.LinkRoleAction)).
+		Preload("Links", func(db *gorm.DB) *gorm.DB {
+			return db.Order("position ASC")
+		}).
 		Preload("Links.ComponentConfig").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").

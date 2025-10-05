@@ -32,12 +32,15 @@ type Service struct {
 
 // Validation errors returned by the service
 var (
-	ErrNameRequired            = errors.New("area: name required")
-	ErrNameTooLong             = errors.New("area: name exceeds limit")
-	ErrDescriptionTooLong      = errors.New("area: description exceeds limit")
-	ErrActionComponentRequired = errors.New("area: action component required")
-	ErrActionComponentInvalid  = errors.New("area: action component invalid")
-	ErrActionComponentDisabled = errors.New("area: action component disabled")
+	ErrNameRequired              = errors.New("area: name required")
+	ErrNameTooLong               = errors.New("area: name exceeds limit")
+	ErrDescriptionTooLong        = errors.New("area: description exceeds limit")
+	ErrActionComponentRequired   = errors.New("area: action component required")
+	ErrActionComponentInvalid    = errors.New("area: action component invalid")
+	ErrActionComponentDisabled   = errors.New("area: action component disabled")
+	ErrReactionsRequired         = errors.New("area: at least one reaction required")
+	ErrReactionComponentInvalid  = errors.New("area: reaction component invalid")
+	ErrReactionComponentDisabled = errors.New("area: reaction component disabled")
 )
 
 const (
@@ -60,8 +63,15 @@ type ActionInput struct {
 	Params      map[string]any
 }
 
+// ReactionInput carries reaction configuration used when creating an AREA
+type ReactionInput struct {
+	ComponentID uuid.UUID
+	Name        string
+	Params      map[string]any
+}
+
 // Create registers a new automation owned by the given user
-func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, description string, action ActionInput) (areadomain.Area, error) {
+func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, description string, action ActionInput, reactions []ReactionInput) (areadomain.Area, error) {
 	if s.repo == nil {
 		return areadomain.Area{}, fmt.Errorf("area.Service.Create: repository unavailable")
 	}
@@ -100,6 +110,37 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 		return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrActionComponentDisabled)
 	}
 
+	if len(reactions) == 0 {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionsRequired)
+	}
+
+	reactionIDs := make([]uuid.UUID, 0, len(reactions))
+	for _, reaction := range reactions {
+		if reaction.ComponentID == uuid.Nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionComponentInvalid)
+		}
+		reactionIDs = append(reactionIDs, reaction.ComponentID)
+	}
+
+	reactionComponents, err := s.components.FindByIDs(ctx, reactionIDs)
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Create: components.FindByIDs: %w", err)
+	}
+	reactionModels := make([]componentdomain.Component, 0, len(reactions))
+	for _, input := range reactions {
+		component, ok := reactionComponents[input.ComponentID]
+		if !ok {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionComponentInvalid)
+		}
+		if component.Kind != componentdomain.KindReaction {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionComponentInvalid)
+		}
+		if !component.Enabled {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionComponentDisabled)
+		}
+		reactionModels = append(reactionModels, component)
+	}
+
 	params := action.Params
 	if params == nil {
 		params = map[string]any{}
@@ -124,20 +165,59 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 		Name:        strings.TrimSpace(action.Name),
 		Params:      params,
 		Active:      true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	link := areadomain.Link{
-		Role:     areadomain.LinkRoleAction,
-		Position: 1,
-		Config:   config,
+		Role:      areadomain.LinkRoleAction,
+		Position:  1,
+		Config:    config,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
-	stored, err := s.repo.Create(ctx, area, link)
+	reactionLinks := make([]areadomain.Link, 0, len(reactions))
+	for idx, input := range reactions {
+		params := input.Params
+		if params == nil {
+			params = map[string]any{}
+		}
+		component := reactionModels[idx]
+		reactionConfig := componentdomain.Config{
+			UserID:      userID,
+			ComponentID: component.ID,
+			Name:        strings.TrimSpace(input.Name),
+			Params:      params,
+			Active:      true,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+		reactionLink := areadomain.Link{
+			Role:      areadomain.LinkRoleReaction,
+			Position:  idx + 1,
+			Config:    reactionConfig,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		reactionLinks = append(reactionLinks, reactionLink)
+	}
+
+	stored, err := s.repo.Create(ctx, area, link, reactionLinks)
 	if err != nil {
 		return areadomain.Area{}, fmt.Errorf("area.Service.Create: repo.Create: %w", err)
 	}
 	if stored.Action != nil {
 		stored.Action.Config.Component = &component
+	}
+	for i := range stored.Reactions {
+		for _, reaction := range reactionModels {
+			if stored.Reactions[i].Config.ComponentID == reaction.ID {
+				reactionCopy := reaction
+				stored.Reactions[i].Config.Component = &reactionCopy
+				break
+			}
+		}
 	}
 	return stored, nil
 }
@@ -184,13 +264,14 @@ func (s *Service) populateComponents(ctx context.Context, areas []areadomain.Are
 	ids := make(map[uuid.UUID]struct{})
 	for _, area := range areas {
 		if area.Action != nil {
-			if area.Action.Config.Component != nil {
-				continue
+			if area.Action.Config.Component == nil && area.Action.Config.ComponentID != uuid.Nil {
+				ids[area.Action.Config.ComponentID] = struct{}{}
 			}
-			if area.Action.Config.ComponentID == uuid.Nil {
-				continue
+		}
+		for _, reaction := range area.Reactions {
+			if reaction.Config.Component == nil && reaction.Config.ComponentID != uuid.Nil {
+				ids[reaction.Config.ComponentID] = struct{}{}
 			}
-			ids[area.Action.Config.ComponentID] = struct{}{}
 		}
 	}
 	if len(ids) == 0 {
@@ -208,16 +289,21 @@ func (s *Service) populateComponents(ctx context.Context, areas []areadomain.Are
 	}
 
 	for i := range areas {
-		action := areas[i].Action
-		if action == nil {
-			continue
+		if action := areas[i].Action; action != nil && action.Config.Component == nil {
+			if component, ok := components[action.Config.ComponentID]; ok {
+				componentCopy := component
+				action.Config.Component = &componentCopy
+			}
 		}
-		if action.Config.Component != nil {
-			continue
-		}
-		component, ok := components[action.Config.ComponentID]
-		if ok {
-			action.Config.Component = &component
+		for j := range areas[i].Reactions {
+			reaction := &areas[i].Reactions[j]
+			if reaction.Config.Component != nil {
+				continue
+			}
+			if component, ok := components[reaction.Config.ComponentID]; ok {
+				componentCopy := component
+				reaction.Config.Component = &componentCopy
+			}
 		}
 	}
 	return areas, nil
