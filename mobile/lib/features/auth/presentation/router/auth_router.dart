@@ -9,6 +9,7 @@ import '../../../areas/domain/entities/area.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 import '../blocs/auth_bloc.dart';
 import '../pages/email_verification_page.dart';
 import '../pages/login_page.dart';
@@ -68,6 +69,13 @@ class AuthRouter {
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
+          routes: [
+            GoRoute(
+              name: 'settings',
+              path: 'settings',
+              builder: (context, state) => const SettingsPage(),
+            ),
+          ],
         ),
       ],
     ),
