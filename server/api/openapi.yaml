@@ -600,45 +600,25 @@ components:
   schemas:
     AboutResponse:
       type: object
-      description: Aggregated platform metadata combining frontend and backend build information.
+      description: About payload mirroring the G-DEV-500 specification.
       required: [client, server]
       properties:
         client:
           $ref: '#/components/schemas/AboutClient'
         server:
           $ref: '#/components/schemas/AboutServer'
-      example:
-        client:
-          version: 1.0.0
-        server:
-          version: 0.1.3
-          commit: a1b2c3d4
     AboutClient:
       type: object
-      description: Current client bundle fingerprint exposed to public consumers.
-      required: [version]
+      required: [host]
       properties:
-        version:
-          type: string
-          description: Semantic version of the distributed web/mobile clients.
-          example: 1.0.0
         host:
           type: string
-          description: IP address of the client performing the request.
-          example: 10.0.0.1
+          description: IP address of the client performing the HTTP request.
+          example: 10.101.53.35
     AboutServer:
       type: object
-      description: Backend release information.
-      required: [version, commit, current_time, services]
+      required: [current_time, services]
       properties:
-        version:
-          type: string
-          description: Semantic version of the backend deployment.
-          example: 0.1.0
-        commit:
-          type: string
-          description: Git commit hash deployed to the environment.
-          example: a1b2c3d4
         current_time:
           type: integer
           format: int64
@@ -646,37 +626,39 @@ components:
           example: 1712764470
         services:
           type: array
-          description: Catalog of services exposed by the backend.
+          description: List of services supported by the server.
           items:
-            $ref: '#/components/schemas/Service'
-    Service:
+            $ref: '#/components/schemas/AboutService'
+    AboutService:
       type: object
-      description: Service published in the automation catalog.
       required: [name, actions, reactions]
       properties:
         name:
           type: string
-          description: Identifier of the service.
-          example: github
+          description: Service identifier.
+          example: facebook
         actions:
           type: array
+          description: Action components provided by the service.
           items:
-            $ref: '#/components/schemas/Component'
+            $ref: '#/components/schemas/AboutComponent'
         reactions:
           type: array
+          description: Reaction components provided by the service.
           items:
-            $ref: '#/components/schemas/Component'
-    Component:
+            $ref: '#/components/schemas/AboutComponent'
+    AboutComponent:
       type: object
-      description: Action or reaction component exposed by a service.
       required: [name, description]
       properties:
         name:
           type: string
-          description: Component identifier.
+          description: Identifier of the component.
+          example: new_message_in_group
         description:
           type: string
-          description: Human-readable description of the component behaviour.
+          description: Human-readable description of the component.
+          example: A new message is posted in the group
     RegisterUserRequest:
       type: object
       description: Payload used to enrol a new AREA account prior to email verification.
