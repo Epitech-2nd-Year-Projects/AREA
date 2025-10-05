@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../services/domain/repositories/services_repository.dart';
@@ -189,6 +190,13 @@ class _ProfileView extends StatelessWidget {
                                         subtitle: const Text('Not available'),
                                         enabled: false,
                                         onTap: null,
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.settings),
+                                        title: const Text('Settings'),
+                                        onTap: () {
+                                          context.push('/profile/settings');
+                                        },
                                       ),
                                     ],
                                   ).toList(),
