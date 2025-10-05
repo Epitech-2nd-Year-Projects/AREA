@@ -30,7 +30,7 @@ export function ensureUserMeta(user: User) {
       createdAt: now(),
       updatedAt: now(),
       lastLoginAt: user.emailVerified ? now() : null,
-      status: user.emailVerified ? 'active' : 'pending_verification'
+      status: user.emailVerified ? 'active' : 'pendingVerification'
     }
     userMeta.set(user.email, meta)
   }
@@ -78,11 +78,11 @@ export function issueVerificationToken(email: string) {
 export function consumeVerificationToken(token: string) {
   const record = verificationTokens.get(token)
   if (!record) {
-    throw new ApiError(400, 'invalid_token', 'Invalid token')
+    throw new ApiError(400, 'invalidToken', 'Invalid token')
   }
   verificationTokens.delete(token)
   if (record.expiresAt < now()) {
-    throw new ApiError(410, 'token_expired', 'Token expired or already used')
+    throw new ApiError(410, 'tokenExpired', 'Token expired or already used')
   }
   return record.email
 }
@@ -93,9 +93,9 @@ export function toUserDTO(user: User): UserDTO {
     id: user.id,
     email: user.email,
     status: meta.status,
-    created_at: new Date(meta.createdAt).toISOString(),
-    updated_at: new Date(meta.updatedAt).toISOString(),
-    last_login_at: meta.lastLoginAt
+    createdAt: new Date(meta.createdAt).toISOString(),
+    updatedAt: new Date(meta.updatedAt).toISOString(),
+    lastLoginAt: meta.lastLoginAt
       ? new Date(meta.lastLoginAt).toISOString()
       : null
   }
@@ -103,7 +103,7 @@ export function toUserDTO(user: User): UserDTO {
 
 export function markPendingVerification(user: User) {
   const meta = ensureUserMeta(user)
-  meta.status = 'pending_verification'
+  meta.status = 'pendingVerification'
   meta.updatedAt = now()
 }
 
@@ -120,14 +120,14 @@ export function setCurrentSession(email: string | null) {
 
 export function assertSession(): User {
   if (!currentSessionEmail) {
-    throw new ApiError(401, 'not_authenticated', 'Session missing or expired')
+    throw new ApiError(401, 'notAuthenticated', 'Session missing or expired')
   }
   const user = mockUsers.find(
     (candidate) => candidate.email === currentSessionEmail
   )
   if (!user) {
     currentSessionEmail = null
-    throw new ApiError(401, 'not_authenticated', 'Session missing or expired')
+    throw new ApiError(401, 'notAuthenticated', 'Session missing or expired')
   }
   return user
 }

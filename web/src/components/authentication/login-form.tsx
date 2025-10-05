@@ -152,8 +152,8 @@ export function LoginForm({
           provider: storedState.provider,
           body: {
             code,
-            redirect_uri: storedState.redirectUri,
-            code_verifier: storedState.codeVerifier,
+            redirectUri: storedState.redirectUri,
+            codeVerifier: storedState.codeVerifier,
             state: stateParam ?? storedState.state
           }
         })
@@ -273,8 +273,8 @@ export function LoginForm({
       const response = await authorizeOAuth({
         provider: GOOGLE_PROVIDER,
         body: {
-          redirect_uri: redirectUri,
-          use_pkce: true
+          redirectUri,
+          usePkce: true
         }
       })
 
@@ -283,11 +283,11 @@ export function LoginForm({
         provider: GOOGLE_PROVIDER,
         redirectUri,
         state: response.state,
-        codeVerifier: response.code_verifier,
+        codeVerifier: response.codeVerifier,
         createdAt: Date.now()
       })
 
-      window.location.assign(response.authorization_url)
+      window.location.assign(response.authorizationUrl)
     } catch (error) {
       setStatusMessage(null)
 

@@ -11,9 +11,9 @@ export type UserDTO = {
   id: string
   email: string
   status: string
-  created_at: string
-  updated_at: string
-  last_login_at?: string | null
+  createdAt: string
+  updatedAt: string
+  lastLoginAt?: string | null
 }
 
 export type AuthSessionResponseDTO = {
@@ -25,24 +25,24 @@ export type UserResponseDTO = {
 }
 
 export type OAuthAuthorizationRequestDTO = {
-  redirect_uri?: string
+  redirectUri?: string
   scopes?: string[]
   state?: string
   prompt?: string
-  use_pkce?: boolean
+  usePkce?: boolean
 }
 
 export type OAuthAuthorizationResponseDTO = {
-  authorization_url: string
+  authorizationUrl: string
   state?: string
-  code_verifier?: string
-  code_challenge?: string
-  code_challenge_method?: 'plain' | 'S256'
+  codeVerifier?: string
+  codeChallenge?: string
+  codeChallengeMethod?: 'plain' | 'S256'
 }
 
 export type OAuthExchangeRequestDTO = {
   code: string
-  redirect_uri?: string
-  code_verifier?: string
+  redirectUri?: string
+  codeVerifier?: string
   state?: string
 }

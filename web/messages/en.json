@@ -157,7 +157,11 @@
     }
   },
   "LinksPage": {
-    "searchAreas": "Search areas..."
+    "searchAreas": "Search areas...",
+    "loadingAreas": "Loading your AREAs...",
+    "errorLoadingAreas": "We couldn't load your AREAs. Please try again.",
+    "emptyState": "You don't have any AREAs yet. Create one to get started.",
+    "noMatches": "No AREAs match that search. Try a different keyword."
   },
   "ProfilePage": {
     "pageTitle": "Profile",
@@ -212,7 +216,10 @@
     "areaDescriptionLabel": "AREA description",
     "areaDescriptionPlaceholder": "Describe what your AREA will do",
     "cancel": "Cancel",
-    "submit": "Create AREA"
+    "submit": "Create AREA",
+    "submitting": "Creating...",
+    "missingRequiredFields": "Select an action, choose at least one reaction, and enter an AREA name.",
+    "unknownError": "Something went wrong while creating the AREA. Please try again."
   },
   "EditAreaModal": {
     "title": "Edit AREA",

@@ -11,6 +11,9 @@ import { useTranslations } from 'next-intl'
 import { mockActions, mockReactions, mockServices } from '@/lib/api/mock'
 import { Action } from '@/lib/api/contracts/actions'
 import { Reaction } from '@/lib/api/contracts/reactions'
+import type { CreateAreaRequestDTO } from '@/lib/api/contracts/openapi/areas'
+import { useCreateAreaMutation } from '@/lib/api/openapi/areas'
+import { ApiError } from '@/lib/api/http/errors'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import {
@@ -42,7 +45,7 @@ import {
   createEmptyComponentConfig
 } from './component-config-sheet'
 
-type GroupedItems<T extends { service_name: string }> = {
+type GroupedItems<T extends { serviceName: string }> = {
   serviceName: string
   label: string
   items: T[]
@@ -92,15 +95,15 @@ const reactionsById = mockReactions.reduce<Record<string, Reaction>>(
   {}
 )
 
-function groupItemsByService<T extends { service_name: string }>(
+function groupItemsByService<T extends { serviceName: string }>(
   items: T[]
 ): GroupedItems<T>[] {
   const buckets = items.reduce<Record<string, T[]>>((acc, item) => {
-    if (!acc[item.service_name]) {
-      acc[item.service_name] = []
+    if (!acc[item.serviceName]) {
+      acc[item.serviceName] = []
     }
 
-    acc[item.service_name].push(item)
+    acc[item.serviceName].push(item)
 
     return acc
   }, {})
@@ -144,6 +147,30 @@ const createReactionField = (): ReactionField => ({
   config: null
 })
 
+function buildParamsFromConfig(
+  config: ComponentConfigState | null
+): Record<string, unknown> | undefined {
+  if (!config) {
+    return undefined
+  }
+
+  const params: Record<string, unknown> = {}
+  const secretsRef = config.secretsRef.trim()
+  if (secretsRef) {
+    params.secretsRef = secretsRef
+  }
+
+  for (const field of config.params) {
+    const key = field.key.trim()
+    if (!key) {
+      continue
+    }
+    params[key] = field.value
+  }
+
+  return Object.keys(params).length > 0 ? params : undefined
+}
+
 export default function CreateAreaModal() {
   const t = useTranslations('CreateAreaModal')
 
@@ -159,6 +186,9 @@ export default function CreateAreaModal() {
     useState<ConfigEditorTarget | null>(null)
   const [areaName, setAreaName] = useState('')
   const [areaDescription, setAreaDescription] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+
+  const createAreaMutation = useCreateAreaMutation()
 
   const selectedAction = actionId ? actionsById[actionId] : undefined
 
@@ -169,6 +199,7 @@ export default function CreateAreaModal() {
     setConfigEditorTarget(null)
     setAreaName('')
     setAreaDescription('')
+    setFormError(null)
   }
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
@@ -201,6 +232,9 @@ export default function CreateAreaModal() {
   }
 
   const handleReactionValueChange = (id: string, reactionId: string) => {
+    if (formError) {
+      setFormError(null)
+    }
     setReactionFields((previous) =>
       previous.map((field) => {
         if (field.id !== id) {
@@ -246,6 +280,9 @@ export default function CreateAreaModal() {
   }
 
   const handleActionValueChange = (nextActionId: string) => {
+    if (formError) {
+      setFormError(null)
+    }
     setActionId(nextActionId)
 
     if (!nextActionId) {
@@ -336,13 +373,66 @@ export default function CreateAreaModal() {
       ? (actionConfig ?? createEmptyComponentConfig())
       : (currentReactionField?.config ?? createEmptyComponentConfig())
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    // TODO: Wire up AREA creation once the backend endpoint is available.
-    resetForm()
-    setOpen(false)
+    const name = areaName.trim()
+    const description = areaDescription.trim()
+    const selectedReactions = reactionFields.filter((field) => field.reactionId)
+
+    if (!actionId || selectedReactions.length === 0 || !name) {
+      setFormError(t('missingRequiredFields'))
+      return
+    }
+
+    const payload: CreateAreaRequestDTO = {
+      name,
+      description: description || undefined,
+      action: (() => {
+        const params = buildParamsFromConfig(actionConfig)
+        const request: CreateAreaRequestDTO['action'] = {
+          componentId: actionId
+        }
+        if (params) {
+          request.params = params
+        }
+        return request
+      })(),
+      reactions: selectedReactions.map((field) => {
+        const params = buildParamsFromConfig(field.config)
+        const request: CreateAreaRequestDTO['action'] = {
+          componentId: field.reactionId
+        }
+        if (params) {
+          request.params = params
+        }
+        return request
+      })
+    }
+
+    setFormError(null)
+
+    try {
+      await createAreaMutation.mutateAsync(payload)
+      resetForm()
+      setOpen(false)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setFormError(error.message || t('unknownError'))
+      } else {
+        setFormError(t('unknownError'))
+      }
+    }
   }
+
+  const hasActionSelected = Boolean(actionId)
+  const hasAtLeastOneReaction = reactionFields.some((field) => field.reactionId)
+  const hasName = areaName.trim().length > 0
+  const canSubmit =
+    hasActionSelected &&
+    hasAtLeastOneReaction &&
+    hasName &&
+    !createAreaMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
@@ -438,7 +528,12 @@ export default function CreateAreaModal() {
                 id="area-name"
                 name="areaName"
                 value={areaName}
-                onChange={(event) => setAreaName(event.target.value)}
+                onChange={(event) => {
+                  if (formError) {
+                    setFormError(null)
+                  }
+                  setAreaName(event.target.value)
+                }}
                 placeholder={t('areaNamePlaceholder')}
               />
             </div>
@@ -451,12 +546,23 @@ export default function CreateAreaModal() {
                 id="area-description"
                 name="areaDescription"
                 value={areaDescription}
-                onChange={(event) => setAreaDescription(event.target.value)}
+                onChange={(event) => {
+                  if (formError) {
+                    setFormError(null)
+                  }
+                  setAreaDescription(event.target.value)
+                }}
                 placeholder={t('areaDescriptionPlaceholder')}
                 className={textareaClasses}
               />
             </div>
           </div>
+
+          {formError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {formError}
+            </p>
+          ) : null}
 
           <DialogFooter>
             <DialogClose asChild>
@@ -464,7 +570,13 @@ export default function CreateAreaModal() {
                 {t('cancel')}
               </Button>
             </DialogClose>
-            <Button type="submit">{t('submit')}</Button>
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              aria-disabled={!canSubmit}
+            >
+              {createAreaMutation.isPending ? t('submitting') : t('submit')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -532,7 +644,7 @@ function ActionCombobox({
                     <CommandItem
                       key={action.id}
                       value={action.id}
-                      keywords={getServiceKeywords(action.service_name)}
+                      keywords={getServiceKeywords(action.serviceName)}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue
@@ -621,7 +733,7 @@ function ReactionCombobox({
                     <CommandItem
                       key={reaction.id}
                       value={reaction.id}
-                      keywords={getServiceKeywords(reaction.service_name)}
+                      keywords={getServiceKeywords(reaction.serviceName)}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue

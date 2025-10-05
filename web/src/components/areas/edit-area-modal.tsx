@@ -42,7 +42,7 @@ import {
   createEmptyComponentConfig
 } from './component-config-sheet'
 
-type GroupedItems<T extends { service_name: string }> = {
+type GroupedItems<T extends { serviceName: string }> = {
   serviceName: string
   label: string
   items: T[]
@@ -92,15 +92,15 @@ const reactionsById = mockReactions.reduce<Record<string, Reaction>>(
   {}
 )
 
-function groupItemsByService<T extends { service_name: string }>(
+function groupItemsByService<T extends { serviceName: string }>(
   items: T[]
 ): GroupedItems<T>[] {
   const buckets = items.reduce<Record<string, T[]>>((acc, item) => {
-    if (!acc[item.service_name]) {
-      acc[item.service_name] = []
+    if (!acc[item.serviceName]) {
+      acc[item.serviceName] = []
     }
 
-    acc[item.service_name].push(item)
+    acc[item.serviceName].push(item)
 
     return acc
   }, {})
@@ -559,7 +559,7 @@ function ActionCombobox({
                     <CommandItem
                       key={action.id}
                       value={action.id}
-                      keywords={getServiceKeywords(action.service_name)}
+                      keywords={getServiceKeywords(action.serviceName)}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue
@@ -648,7 +648,7 @@ function ReactionCombobox({
                     <CommandItem
                       key={reaction.id}
                       value={reaction.id}
-                      keywords={getServiceKeywords(reaction.service_name)}
+                      keywords={getServiceKeywords(reaction.serviceName)}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue

@@ -13,20 +13,20 @@ export async function registerUserMock(
 
   if (result.status === 'error') {
     if (result.code === 'EMAIL_IN_USE') {
-      throw new ApiError(409, 'email_already_registered', result.message)
+      throw new ApiError(409, 'emailAlreadyRegistered', result.message)
     }
-    throw new ApiError(500, 'unknown_error', result.message)
+    throw new ApiError(500, 'unknownError', result.message)
   }
 
   const user = mockUsers.find((candidate) => candidate.email === result.email)
   if (!user) {
-    throw new ApiError(500, 'unknown_error', 'User registration failed')
+    throw new ApiError(500, 'unknownError', 'User registration failed')
   }
 
   markPendingVerification(user)
   const { expiresAt } = issueVerificationToken(user.email)
 
   return {
-    expires_at: new Date(expiresAt).toISOString()
+    expiresAt: new Date(expiresAt).toISOString()
   }
 }
