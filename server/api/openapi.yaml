@@ -555,6 +555,41 @@ paths:
           description: OAuth not configured
         '502':
           description: Provider exchange failed
+  /v1/areas:
+    get:
+      summary: List automations owned by the current user
+      operationId: listAreas
+      tags:
+        - areas
+      responses:
+        '200':
+          description: Collection of areas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAreasResponse'
+    post:
+      summary: Create a new automation for the current user
+      operationId: createArea
+      tags:
+        - areas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAreaRequest'
+      responses:
+        '201':
+          description: Automation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Authentication required
 components:
   securitySchemes:
     sessionAuth:
@@ -687,6 +722,35 @@ components:
           format: email
           description: Primary email address associated with the account.
           example: alex.martin@example.com
+    User:
+      type: object
+      description: Detailed user payload returned by authenticated endpoints.
+      required: [id, email, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier assigned to the user.
+        email:
+          type: string
+          format: email
+          description: Primary email associated with the account.
+        status:
+          type: string
+          description: Lifecycle status (`pending`, `active`, etc.).
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp in UTC.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of the latest account update in UTC.
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of the most recent successful login.
     OAuthAuthorizationRequest:
       type: object
       description: Optional parameters forwarded to the configured OAuth provider.
@@ -715,6 +779,66 @@ components:
           type: string
           description: One-time authorisation code issued by the provider.
           example: 4/0AbCDefGhIjKlMnOpQrStUvWxYz
+        redirect_uri:
+          type: string
+          format: uri
+          description: Redirect URI supplied during the authorisation flow.
+        code_verifier:
+          type: string
+          description: PKCE code verifier required when the provider enforces PKCE.
+        state:
+          type: string
+          description: Provider-issued state parameter used to prevent CSRF.
+    CreateAreaRequest:
+      type: object
+      description: Payload used to create a new automation owned by the authenticated user.
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Human readable name displayed across clients.
+        description:
+          type: string
+          maxLength: 512
+          description: Optional summary to distinguish this automation.
+    Area:
+      type: object
+      description: Automation linking an action to one or more reactions for a user.
+      required: [id, name, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the automation.
+        name:
+          type: string
+          description: Display name chosen by the user.
+        description:
+          type: string
+          nullable: true
+          description: Optional summary supplied by the user.
+        status:
+          type: string
+          description: Lifecycle status (`enabled`, `disabled`, or `archived`).
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp (UTC) when the automation was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp (UTC) of the last update.
+    ListAreasResponse:
+      type: object
+      description: Collection wrapper for automations returned to the client.
+      required: [areas]
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Area'
   parameters:
     OAuthProvider:
       name: provider
