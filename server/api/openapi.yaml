@@ -866,7 +866,7 @@ components:
     CreateAreaRequest:
       type: object
       description: Payload used to create a new automation owned by the authenticated user.
-      required: [name, action]
+      required: [name, action, reactions]
       properties:
         name:
           type: string
@@ -879,6 +879,11 @@ components:
           description: Optional summary to distinguish this automation.
         action:
           $ref: '#/components/schemas/CreateAreaAction'
+        reactions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateAreaReaction'
     CreateAreaAction:
       type: object
       description: Configuration of the action component that triggers the automation.
@@ -896,10 +901,27 @@ components:
           type: object
           additionalProperties: true
           description: Free-form JSON parameters persisted in the user component configuration.
+    CreateAreaReaction:
+      type: object
+      description: Configuration of a reaction component executed when the automation fires.
+      required: [component_id]
+      properties:
+        component_id:
+          type: string
+          format: uuid
+          description: Identifier of the reaction component selected from the catalog.
+        name:
+          type: string
+          maxLength: 128
+          description: Optional nickname to show in clients when displaying the component configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Free-form JSON parameters persisted in the user component configuration.
     Area:
       type: object
       description: Automation linking an action to one or more reactions for a user.
-      required: [id, name, status, created_at, updated_at]
+      required: [id, name, status, created_at, updated_at, reactions]
       properties:
         id:
           type: string
@@ -925,6 +947,10 @@ components:
           description: Timestamp (UTC) of the last update.
         action:
           $ref: '#/components/schemas/AreaAction'
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaReaction'
     ListAreasResponse:
       type: object
       description: Collection wrapper for automations returned to the client.
@@ -943,6 +969,29 @@ components:
           type: string
           format: uuid
           description: Identifier of the user component configuration backing the action.
+        component_id:
+          type: string
+          format: uuid
+          description: Identifier of the catalog component associated with the configuration.
+        name:
+          type: string
+          nullable: true
+          description: Optional nickname saved alongside the configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Persisted configuration parameters supplied when creating the AREA.
+        component:
+          $ref: '#/components/schemas/ComponentSummary'
+    AreaReaction:
+      type: object
+      description: Reaction binding stored for an AREA automation.
+      required: [config_id, component_id, component]
+      properties:
+        config_id:
+          type: string
+          format: uuid
+          description: Identifier of the user component configuration backing the reaction.
         component_id:
           type: string
           format: uuid
