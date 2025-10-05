@@ -10,8 +10,14 @@ abstract class AuthRepository {
   Future<User> register(Email email, Password password);
   Future<void> logout();
   Future<User> getCurrentUser();
+  Future<User> verifyEmail(String token);
 
   Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider);
-  Future<AuthSession> completeOAuthLogin(OAuthProvider provider,
-      String callbackCode);
+  Future<AuthSession> completeOAuthLogin(
+      OAuthProvider provider,
+      String callbackCode,
+      String? codeVerifier,
+      String? redirectUri,
+      String? state,
+      );
 }

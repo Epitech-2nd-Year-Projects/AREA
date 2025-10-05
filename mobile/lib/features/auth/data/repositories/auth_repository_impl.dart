@@ -5,36 +5,145 @@ import '../../domain/entities/oauth_provider.dart';
 import '../../domain/value_objects/email.dart';
 import '../../domain/value_objects/password.dart';
 import '../../domain/value_objects/oauth_redirect_url.dart';
+import '../../domain/exceptions/auth_exceptions.dart';
+import '../../domain/exceptions/oauth_exceptions.dart';
+import '../datasources/auth_remote_datasource.dart';
+import '../datasources/auth_local_datasource.dart';
+import '../datasources/oauth_remote_datasource.dart';
+import '../../../../core/network/exceptions/unauthorized_exception.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  @override
-  Future<User> login(Email email, Password password) async {
-    // TODO: implement API call with Dio
-    throw UnimplementedError();
-  }
+  final AuthRemoteDataSource _remoteDataSource;
+  final AuthLocalDataSource _localDataSource;
+  final OAuthRemoteDataSource _oauthDataSource;
+
+  AuthRepositoryImpl(
+      this._remoteDataSource,
+      this._localDataSource,
+      this._oauthDataSource,
+      );
 
   @override
   Future<User> register(Email email, Password password) async {
-    throw UnimplementedError();
+    try {
+      final _ = await _remoteDataSource.register(
+        email.value,
+        password.value,
+      );
+      return User(
+        id: 'pending-verification',
+        email: email.value,
+      );
+    } on UserAlreadyExistsException {
+      rethrow;
+    } catch (e) {
+      throw AuthException('Registration failed: $e');
+    }
+  }
+
+  @override
+  Future<User> login(Email email, Password password) async {
+    try {
+      final response = await _remoteDataSource.login(
+        email.value,
+        password.value,
+      );
+      final user = response.user.toDomain();
+      await _localDataSource.cacheUser(response.user);
+      return user;
+    } on InvalidCredentialsException {
+      rethrow;
+    } on AccountNotVerifiedException {
+      rethrow;
+    } on UnauthorizedException {
+      throw InvalidCredentialsException();
+    } catch (e) {
+      throw AuthException('Login failed: $e');
+    }
   }
 
   @override
   Future<void> logout() async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<AuthSession> completeOAuthLogin(OAuthProvider provider, String callbackCode) async {
-    throw UnimplementedError();
+    try {
+      await _remoteDataSource.logout();
+    } finally {
+      await _localDataSource.clearCache();
+    }
   }
 
   @override
   Future<User> getCurrentUser() async {
-    throw UnimplementedError();
+    try {
+      final userModel = await _remoteDataSource.getCurrentUser();
+      final user = userModel.toDomain();
+
+      await _localDataSource.cacheUser(userModel);
+
+      return user;
+    } on UnauthorizedException {
+      await _localDataSource.clearCache();
+      throw UserNotAuthenticatedException();
+    } catch (e) {
+      final cachedUser = await _localDataSource.getCachedUser();
+      if (cachedUser != null) {
+        return cachedUser.toDomain();
+      }
+      throw UserNotAuthenticatedException();
+    }
+  }
+
+  @override
+  Future<User> verifyEmail(String token) async {
+    try {
+      final response = await _remoteDataSource.verifyEmail(token);
+      final user = response.user.toDomain();
+
+      await _localDataSource.cacheUser(response.user);
+
+      return user;
+    } on TokenExpiredException {
+      rethrow;
+    } catch (e) {
+      throw AuthException('Email verification failed: $e');
+    }
+  }
+
+  @override
+  Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider) async {
+    try {
+      final response = await _oauthDataSource.startOAuthFlow(provider, null);
+      return OAuthRedirectUrl(response.authorizationUrl);
+    } on OAuthException {
+      rethrow;
+    } catch (e) {
+      throw OAuthFlowFailedException('Failed to start OAuth: $e');
+    }
+  }
+
+  @override
+  Future<AuthSession> completeOAuthLogin(
+      OAuthProvider provider,
+      String callbackCode,
+      String? codeVerifier,
+      String? redirectUri,
+      String? state,
+      ) async {
+    try {
+      final sessionModel = await _oauthDataSource.exchangeCode(
+        provider,
+        callbackCode,
+        codeVerifier,
+        redirectUri,
+        state,
+      );
+
+      await _localDataSource.cacheUser(sessionModel.user);
+
+      return sessionModel.toDomain();
+    } on OAuthException {
+      rethrow;
+    } catch (e) {
+      throw CallbackErrorException('Failed to complete OAuth: $e');
+    }
   }
 }

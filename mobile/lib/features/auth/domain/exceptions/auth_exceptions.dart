@@ -34,3 +34,13 @@ class UserNotAuthenticatedException extends AuthException {
   UserNotAuthenticatedException()
       : super("No user is currently authenticated.");
 }
+
+class AccountNotVerifiedException extends AuthException {
+  AccountNotVerifiedException()
+      : super("Account not verified. Please check your email.");
+}
+
+class TokenExpiredException extends AuthException {
+  TokenExpiredException()
+      : super("Verification token has expired. Please request a new one.");
+}

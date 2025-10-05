@@ -5,6 +5,7 @@ import (
 
 	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	aboutapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/about"
+	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ type Dependencies struct {
 	AboutLoader catalog.Loader
 	Clock       aboutapp.Clock
 	AuthHandler *authapp.Handler
+	AreaHandler *areaapp.Handler
 }
 
 // Register mounts all HTTP endpoints on the provided router
@@ -29,6 +31,7 @@ func Register(r gin.IRouter, deps Dependencies) error {
 	handler := compositeHandler{
 		about: aboutapp.New(deps.AboutLoader, deps.Clock),
 		auth:  deps.AuthHandler,
+		area:  deps.AreaHandler,
 	}
 
 	openapi.RegisterHandlers(r, handler)
@@ -42,6 +45,7 @@ func Register(r gin.IRouter, deps Dependencies) error {
 type compositeHandler struct {
 	about *aboutapp.Handler
 	auth  *authapp.Handler
+	area  *areaapp.Handler
 }
 
 func (h compositeHandler) GetAbout(c *gin.Context) {
@@ -58,6 +62,22 @@ func (h compositeHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 	h.auth.RegisterUser(c)
+}
+
+func (h compositeHandler) ListAreas(c *gin.Context) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.ListAreas(c)
+}
+
+func (h compositeHandler) CreateArea(c *gin.Context) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.CreateArea(c)
 }
 
 func (h compositeHandler) VerifyEmail(c *gin.Context) {
@@ -90,4 +110,20 @@ func (h compositeHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 	h.auth.GetCurrentUser(c)
+}
+
+func (h compositeHandler) AuthorizeOAuth(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.AuthorizeOAuth(c, provider)
+}
+
+func (h compositeHandler) ExchangeOAuth(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ExchangeOAuth(c, provider)
 }

@@ -70,14 +70,14 @@ func (h *Handler) now() time.Time {
 	return h.clock.Now()
 }
 
-func mapServices(services []catalog.Service) []openapi.Service {
+func mapServices(services []catalog.Service) []openapi.AboutService {
 	if len(services) == 0 {
-		return make([]openapi.Service, 0)
+		return make([]openapi.AboutService, 0)
 	}
 
-	result := make([]openapi.Service, 0, len(services))
+	result := make([]openapi.AboutService, 0, len(services))
 	for _, svc := range services {
-		result = append(result, openapi.Service{
+		result = append(result, openapi.AboutService{
 			Name:      svc.Name,
 			Actions:   mapComponents(svc.Actions),
 			Reactions: mapComponents(svc.Reactions),
@@ -86,13 +86,13 @@ func mapServices(services []catalog.Service) []openapi.Service {
 	return result
 }
 
-func mapComponents(components []catalog.Component) []openapi.Component {
+func mapComponents(components []catalog.Component) []openapi.AboutComponent {
 	if len(components) == 0 {
-		return make([]openapi.Component, 0)
+		return make([]openapi.AboutComponent, 0)
 	}
-	mapped := make([]openapi.Component, 0, len(components))
+	mapped := make([]openapi.AboutComponent, 0, len(components))
 	for _, cmp := range components {
-		mapped = append(mapped, openapi.Component{
+		mapped = append(mapped, openapi.AboutComponent{
 			Name:        cmp.Name,
 			Description: cmp.Description,
 		})

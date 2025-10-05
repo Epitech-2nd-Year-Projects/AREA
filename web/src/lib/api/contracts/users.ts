@@ -8,5 +8,6 @@ export type User = {
   email: string
   imageUrl?: string
   role: UserRole
+  emailVerified: boolean
   connectedServices: string[]
 }

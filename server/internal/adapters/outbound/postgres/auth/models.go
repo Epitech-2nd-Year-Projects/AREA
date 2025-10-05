@@ -4,9 +4,11 @@ import (
 	"time"
 
 	authdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/auth"
+	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type userModel struct {
@@ -78,6 +80,57 @@ func sessionFromDomain(s sessiondomain.Session) sessionModel {
 		RevokedAt: s.RevokedAt,
 		IP:        s.IP,
 		UserAgent: s.UserAgent,
+	}
+}
+
+type identityModel struct {
+	ID           uuid.UUID      `gorm:"column:id;type:uuid;primaryKey"`
+	UserID       uuid.UUID      `gorm:"column:user_id"`
+	Provider     string         `gorm:"column:provider"`
+	Subject      string         `gorm:"column:subject"`
+	AccessToken  string         `gorm:"column:access_token"`
+	RefreshToken string         `gorm:"column:refresh_token"`
+	Scopes       pq.StringArray `gorm:"column:scopes;type:text[]"`
+	ExpiresAt    *time.Time     `gorm:"column:expires_at"`
+	CreatedAt    time.Time      `gorm:"column:created_at"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at"`
+}
+
+func (identityModel) TableName() string { return "user_identities" }
+
+func (m identityModel) toDomain() identitydomain.Identity {
+	scopes := make([]string, len(m.Scopes))
+	copy(scopes, m.Scopes)
+
+	return identitydomain.Identity{
+		ID:           m.ID,
+		UserID:       m.UserID,
+		Provider:     m.Provider,
+		Subject:      m.Subject,
+		AccessToken:  m.AccessToken,
+		RefreshToken: m.RefreshToken,
+		Scopes:       scopes,
+		ExpiresAt:    m.ExpiresAt,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+	}
+}
+
+func identityFromDomain(identity identitydomain.Identity) identityModel {
+	scopes := make(pq.StringArray, len(identity.Scopes))
+	copy(scopes, identity.Scopes)
+
+	return identityModel{
+		ID:           identity.ID,
+		UserID:       identity.UserID,
+		Provider:     identity.Provider,
+		Subject:      identity.Subject,
+		AccessToken:  identity.AccessToken,
+		RefreshToken: identity.RefreshToken,
+		Scopes:       scopes,
+		ExpiresAt:    identity.ExpiresAt,
+		CreatedAt:    identity.CreatedAt,
+		UpdatedAt:    identity.UpdatedAt,
 	}
 }
 
