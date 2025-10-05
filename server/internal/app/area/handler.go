@@ -10,6 +10,7 @@ import (
 	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	areaauth "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
@@ -91,7 +92,9 @@ func (h *Handler) CreateArea(c *gin.Context) {
 		desc = strings.TrimSpace(*payload.Description)
 	}
 
-	created, err := h.service.Create(c.Request.Context(), usr.ID, name, desc)
+	actionInput := fromCreateAction(payload.Action)
+
+	created, err := h.service.Create(c.Request.Context(), usr.ID, name, desc, actionInput)
 	if err != nil {
 		h.handleServiceError(c, err)
 		return
@@ -135,6 +138,8 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrNameRequired), errors.Is(err, ErrNameTooLong), errors.Is(err, ErrDescriptionTooLong):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid area payload"})
+	case errors.Is(err, ErrActionComponentRequired), errors.Is(err, ErrActionComponentInvalid), errors.Is(err, ErrActionComponentDisabled):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action component"})
 	case errors.Is(err, outbound.ErrConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": "area conflict"})
 	case errors.Is(err, outbound.ErrNotFound):
@@ -176,5 +181,89 @@ func toOpenAPIArea(area areadomain.Area) openapi.Area {
 		Status:      string(area.Status),
 		CreatedAt:   area.CreatedAt,
 		UpdatedAt:   area.UpdatedAt,
+		Action:      toOpenAPIAreaAction(area.Action),
 	}
+}
+
+func toOpenAPIAreaAction(action *areadomain.Link) *openapi.AreaAction {
+	if action == nil {
+		return nil
+	}
+	params := map[string]interface{}{}
+	if action.Config.Params != nil {
+		params = cloneMap(action.Config.Params)
+	}
+	var paramsPtr *map[string]interface{}
+	if len(params) > 0 {
+		paramsPtr = &params
+	}
+	var namePtr *string
+	if trimmed := strings.TrimSpace(action.Config.Name); trimmed != "" {
+		name := trimmed
+		namePtr = &name
+	}
+	summary := toComponentSummary(action.Config.Component, action.Config.ComponentID)
+	result := openapi.AreaAction{
+		ConfigId:    openapi_types.UUID(action.Config.ID),
+		ComponentId: openapi_types.UUID(action.Config.ComponentID),
+		Component:   summary,
+		Name:        namePtr,
+		Params:      paramsPtr,
+	}
+	return &result
+}
+
+func toComponentSummary(component *componentdomain.Component, componentID uuid.UUID) openapi.ComponentSummary {
+	if component == nil {
+		return openapi.ComponentSummary{
+			Id:       openapi_types.UUID(componentID),
+			Name:     "",
+			Kind:     openapi.ComponentSummaryKind(""),
+			Provider: openapi.ServiceProviderSummary{},
+		}
+	}
+	var description *string
+	if strings.TrimSpace(component.Description) != "" {
+		desc := component.Description
+		description = &desc
+	}
+	provider := openapi.ServiceProviderSummary{
+		Id:          openapi_types.UUID(component.Provider.ID),
+		Name:        component.Provider.Name,
+		DisplayName: component.Provider.DisplayName,
+	}
+	return openapi.ComponentSummary{
+		Id:          openapi_types.UUID(component.ID),
+		Name:        component.Name,
+		DisplayName: component.DisplayName,
+		Description: description,
+		Kind:        openapi.ComponentSummaryKind(component.Kind),
+		Provider:    provider,
+	}
+}
+
+func fromCreateAction(action openapi.CreateAreaAction) ActionInput {
+	params := map[string]any{}
+	if action.Params != nil {
+		params = cloneMap(*action.Params)
+	}
+	input := ActionInput{
+		ComponentID: uuid.UUID(action.ComponentId),
+		Params:      params,
+	}
+	if action.Name != nil {
+		input.Name = strings.TrimSpace(*action.Name)
+	}
+	return input
+}
+
+func cloneMap(source map[string]interface{}) map[string]interface{} {
+	if len(source) == 0 {
+		return map[string]interface{}{}
+	}
+	result := make(map[string]interface{}, len(source))
+	for key, value := range source {
+		result[key] = value
+	}
+	return result
 }

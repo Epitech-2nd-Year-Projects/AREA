@@ -2,6 +2,7 @@ package about
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
@@ -52,12 +53,18 @@ func (h *Handler) GetAbout(c *gin.Context) {
 		return
 	}
 
+	host := c.ClientIP()
 	response := openapi.AboutResponse{
-		Client: openapi.AboutClient{Host: c.ClientIP()},
+		Client: openapi.AboutClient{
+			Version: "",
+		},
 		Server: openapi.AboutServer{
 			CurrentTime: h.now().Unix(),
 			Services:    mapServices(cat.Services),
 		},
+	}
+	if strings.TrimSpace(host) != "" {
+		response.Client.Host = &host
 	}
 
 	c.JSON(http.StatusOK, response)

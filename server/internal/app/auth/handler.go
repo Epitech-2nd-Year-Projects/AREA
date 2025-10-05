@@ -206,7 +206,7 @@ func (h *Handler) AuthorizeOAuth(c *gin.Context, provider string) {
 		response.CodeChallenge = &resp.CodeChallenge
 	}
 	if resp.CodeChallengeMethod != "" {
-		method := openapi.OAuthAuthorizationResponseCodeChallengeMethod(resp.CodeChallengeMethod)
+		method := string(resp.CodeChallengeMethod)
 		response.CodeChallengeMethod = &method
 	}
 
@@ -307,7 +307,7 @@ func stringValue(value *string) string {
 func toOpenAPIUser(u userdomain.User) openapi.User {
 	return openapi.User{
 		Id:          openapi_types.UUID(u.ID),
-		Email:       u.Email,
+		Email:       openapi_types.Email(u.Email),
 		Status:      string(u.Status),
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
