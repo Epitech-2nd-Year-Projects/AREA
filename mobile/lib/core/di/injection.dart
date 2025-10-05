@@ -16,6 +16,8 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/presentation/blocs/auth_bloc.dart';
 import '../../features/services/data/repositories/services_repository_impl.dart';
 import '../../features/services/domain/repositories/services_repository.dart';
+import 'package:area/features/settings/domain/repositories/settings_repository.dart';
+import 'package:area/features/settings/data/repositories/settings_repository_impl.dart';
 
 final sl = GetIt.instance;
 
@@ -72,5 +74,9 @@ Future<void> initCoreDependencies() async {
 
   sl.registerLazySingleton<ServicesRepository>(
         () => ServicesRepositoryImpl(sl<ServicesRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(sl<LocalPrefsManager>(), sl<ApiClient>()),
   );
 }
