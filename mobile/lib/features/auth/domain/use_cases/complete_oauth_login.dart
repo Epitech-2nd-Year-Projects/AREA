@@ -7,7 +7,19 @@ class CompleteOAuthLogin {
 
   CompleteOAuthLogin(this.repository);
 
-  Future<AuthSession> call(OAuthProvider provider, String callbackCode) async {
-    return await repository.completeOAuthLogin(provider, callbackCode);
+  Future<AuthSession> call(
+      OAuthProvider provider,
+      String callbackCode,
+      String? codeVerifier,
+      String? redirectUri,
+      String? state,
+      ) async {
+    return await repository.completeOAuthLogin(
+      provider,
+      callbackCode,
+      codeVerifier,
+      redirectUri,
+      state,
+    );
   }
 }

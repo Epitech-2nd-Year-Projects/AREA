@@ -6,15 +6,22 @@ import '../../domain/value_objects/email.dart';
 import '../../domain/value_objects/password.dart';
 import '../../domain/value_objects/oauth_redirect_url.dart';
 import '../../domain/exceptions/auth_exceptions.dart';
+import '../../domain/exceptions/oauth_exceptions.dart';
 import '../datasources/auth_remote_datasource.dart';
 import '../datasources/auth_local_datasource.dart';
+import '../datasources/oauth_remote_datasource.dart';
 import '../../../../core/network/exceptions/unauthorized_exception.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
   final AuthLocalDataSource _localDataSource;
+  final OAuthRemoteDataSource _oauthDataSource;
 
-  AuthRepositoryImpl(this._remoteDataSource, this._localDataSource);
+  AuthRepositoryImpl(
+      this._remoteDataSource,
+      this._localDataSource,
+      this._oauthDataSource,
+      );
 
   @override
   Future<User> register(Email email, Password password) async {
@@ -103,14 +110,40 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider) async {
-    throw UnimplementedError('OAuth not yet implemented');
+    try {
+      final response = await _oauthDataSource.startOAuthFlow(provider, null);
+      return OAuthRedirectUrl(response.authorizationUrl);
+    } on OAuthException {
+      rethrow;
+    } catch (e) {
+      throw OAuthFlowFailedException('Failed to start OAuth: $e');
+    }
   }
 
   @override
   Future<AuthSession> completeOAuthLogin(
       OAuthProvider provider,
       String callbackCode,
+      String? codeVerifier,
+      String? redirectUri,
+      String? state,
       ) async {
-    throw UnimplementedError('OAuth not yet implemented');
+    try {
+      final sessionModel = await _oauthDataSource.exchangeCode(
+        provider,
+        callbackCode,
+        codeVerifier,
+        redirectUri,
+        state,
+      );
+
+      await _localDataSource.cacheUser(sessionModel.user);
+
+      return sessionModel.toDomain();
+    } on OAuthException {
+      rethrow;
+    } catch (e) {
+      throw CallbackErrorException('Failed to complete OAuth: $e');
+    }
   }
 }

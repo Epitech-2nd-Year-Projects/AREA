@@ -25,7 +25,7 @@ class LoginPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => LoginCubit(sl())),
-        BlocProvider(create: (_) => OAuthCubit(sl())),
+        BlocProvider(create: (_) => OAuthCubit()),
       ],
       child: const _LoginPageContent(),
     );
@@ -70,6 +70,9 @@ class _LoginPageContent extends StatelessWidget {
                     ),
                   );
                 }
+              } else if (state is OAuthSuccess) {
+                context.read<AuthBloc>().add(UserLoggedIn(state.user));
+                context.go('/dashboard');
               } else if (state is OAuthError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

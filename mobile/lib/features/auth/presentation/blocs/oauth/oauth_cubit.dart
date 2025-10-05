@@ -1,41 +1,68 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/use_cases/start_oauth_login.dart';
-import '../../../domain/use_cases/complete_oauth_login.dart';
-import '../../../domain/repositories/auth_repository.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/di/injection.dart';
+import '../../../../../core/services/oauth_manager.dart';
 import '../../../domain/entities/oauth_provider.dart';
 import '../../../domain/exceptions/oauth_exceptions.dart';
 import 'oauth_state.dart';
 
 class OAuthCubit extends Cubit<OAuthState> {
-  late final StartOAuthLogin _startOAuthLogin;
-  late final CompleteOAuthLogin _completeOAuthLogin;
+  final OAuthManager _oauthManager;
+  bool _isDisposed = false;
 
-  OAuthCubit(AuthRepository repository) : super(OAuthInitial()) {
-    _startOAuthLogin = StartOAuthLogin(repository);
-    _completeOAuthLogin = CompleteOAuthLogin(repository);
+  OAuthCubit()
+      : _oauthManager = sl<OAuthManager>(),
+        super(OAuthInitial()) {
+    _oauthManager.onSuccess = (user) {
+      if (!_isDisposed && !isClosed) {
+        emit(OAuthSuccess(user));
+      }
+    };
+    _oauthManager.onError = (error) {
+      if (!_isDisposed && !isClosed) {
+        emit(OAuthError(error));
+      }
+    };
   }
 
   Future<void> startOAuth(OAuthProvider provider) async {
+    if (_isDisposed || isClosed) return;
+
     try {
       emit(OAuthStarting(provider));
-      final redirectUrl = await _startOAuthLogin(provider);
-      emit(OAuthRedirectReady(provider, redirectUrl));
+
+      final authUrl = await _oauthManager.startOAuth(provider);
+      final url = Uri.parse(authUrl);
+
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        emit(OAuthError('Could not launch OAuth URL'));
+        return;
+      }
+
+      if (!_isDisposed && !isClosed) {
+        emit(OAuthWaitingForCallback(provider));
+      }
     } on OAuthException catch (e) {
-      emit(OAuthError(e.message));
-    } catch (_) {
-      emit(OAuthError('Failed to start OAuth login'));
+      if (!_isDisposed && !isClosed) {
+        emit(OAuthError(e.message));
+      }
+    } catch (e) {
+      if (!_isDisposed && !isClosed) {
+        emit(OAuthError('Failed to start OAuth: $e'));
+      }
     }
   }
 
-  Future<void> handleCallback(OAuthProvider provider, String code) async {
-    try {
-      emit(OAuthCallbackReceived(provider, code));
-      final session = await _completeOAuthLogin(provider, code);
-      emit(OAuthSuccess(session));
-    } on OAuthException catch (e) {
-      emit(OAuthError(e.message));
-    } catch (_) {
-      emit(OAuthError('OAuth callback failed'));
-    }
+  @override
+  Future<void> close() {
+    _isDisposed = true;
+    _oauthManager.onSuccess = null;
+    _oauthManager.onError = null;
+    return super.close();
   }
 }

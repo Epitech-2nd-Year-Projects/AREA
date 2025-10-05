@@ -6,6 +6,8 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../blocs/auth_bloc.dart';
+import '../blocs/auth_event.dart';
 import '../blocs/oauth/oauth_cubit.dart';
 import '../blocs/oauth/oauth_state.dart';
 import '../blocs/register/register_cubit.dart';
@@ -23,7 +25,7 @@ class RegisterPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => RegisterCubit(sl())),
-        BlocProvider(create: (context) => OAuthCubit(sl())),
+        BlocProvider(create: (context) => OAuthCubit()),
       ],
       child: const _RegisterPageContent(),
     );
@@ -74,6 +76,9 @@ class _RegisterPageContent extends StatelessWidget {
                     ),
                   );
                 }
+              } else if (state is OAuthSuccess) {
+                context.read<AuthBloc>().add(UserLoggedIn(state.user));
+                context.go('/dashboard');
               } else if (state is OAuthError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
