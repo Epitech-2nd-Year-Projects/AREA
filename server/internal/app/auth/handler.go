@@ -10,6 +10,7 @@ import (
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
+	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/gin-gonic/gin"
@@ -280,6 +281,132 @@ func (h *Handler) ExchangeOAuth(c *gin.Context, provider string) {
 	c.JSON(http.StatusOK, openapi.AuthSessionResponse{User: toOpenAPIUser(result.User)})
 }
 
+// SubscribeService handles POST /v1/services/{provider}/subscribe
+func (h *Handler) SubscribeService(c *gin.Context, provider string) {
+	if h.oauth == nil || h.service == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	var payload openapi.SubscribeServiceRequest
+	if err := c.ShouldBindJSON(&payload); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	req := identityport.AuthorizationRequest{
+		RedirectURI: stringValue(payload.RedirectUri),
+		State:       stringValue(payload.State),
+		Prompt:      stringValue(payload.Prompt),
+		UsePKCE:     true,
+	}
+	if payload.UsePkce != nil {
+		req.UsePKCE = *payload.UsePkce
+	}
+	if payload.Scopes != nil {
+		req.Scopes = append([]string(nil), *payload.Scopes...)
+	}
+
+	result, err := h.oauth.BeginSubscription(c.Request.Context(), usr, provider, req)
+	if err != nil {
+		h.handleSubscriptionError(c, err)
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+
+	if result.Authorization != nil {
+		authorization := toOpenAPIAuthorizationResponse(*result.Authorization)
+		resp := openapi.SubscribeServiceResponse{
+			Status:        "authorization_required",
+			Authorization: &authorization,
+		}
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	if result.Subscription != nil {
+		summary := toOpenAPISubscription(*result.Subscription)
+		resp := openapi.SubscribeServiceResponse{
+			Status:       "subscribed",
+			Subscription: &summary,
+		}
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "subscription initialization failed"})
+}
+
+// SubscribeServiceExchange handles POST /v1/services/{provider}/subscribe/exchange
+func (h *Handler) SubscribeServiceExchange(c *gin.Context, provider string) {
+	if h.oauth == nil || h.service == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	var payload openapi.SubscribeExchangeRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	code := strings.TrimSpace(payload.Code)
+	if code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "code is required"})
+		return
+	}
+
+	req := identityport.ExchangeRequest{
+		RedirectURI:  stringValue(payload.RedirectUri),
+		CodeVerifier: stringValue(payload.CodeVerifier),
+	}
+
+	subscription, identity, err := h.oauth.CompleteSubscription(c.Request.Context(), usr, provider, code, req)
+	if err != nil {
+		h.handleSubscriptionError(c, err)
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+
+	resp := openapi.SubscribeExchangeResponse{
+		Subscription: toOpenAPISubscription(subscription),
+	}
+	if identity.ID != uuid.Nil {
+		identitySummary := toOpenAPIIdentity(identity)
+		resp.Identity = &identitySummary
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 func (h *Handler) setSessionCookie(c *gin.Context, name string, sess sessiondomain.Session) {
 	maxAge := int(time.Until(sess.ExpiresAt).Seconds())
 	if maxAge <= 0 {
@@ -323,6 +450,25 @@ func (h *Handler) handleOAuthError(c *gin.Context, err error) {
 		c.Status(http.StatusInternalServerError)
 	case errors.Is(err, ErrProviderNotConfigured):
 		c.JSON(http.StatusNotFound, gin.H{"error": "provider not configured"})
+	case errors.Is(err, ErrOAuthEmailMissing):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email missing from provider"})
+	case errors.Is(err, ErrIdentityOwnershipConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": "identity already linked"})
+	default:
+		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth provider error"})
+	}
+}
+
+func (h *Handler) handleSubscriptionError(c *gin.Context, err error) {
+	switch {
+	case err == nil:
+		c.Status(http.StatusInternalServerError)
+	case errors.Is(err, ErrProviderNotConfigured):
+		c.JSON(http.StatusNotFound, gin.H{"error": "provider not configured"})
+	case errors.Is(err, ErrIdentityOwnershipConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": "identity already linked"})
+	case errors.Is(err, ErrSubscriptionNotSupported):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "subscription not supported"})
 	case errors.Is(err, ErrOAuthEmailMissing):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email missing from provider"})
 	default:
@@ -381,4 +527,48 @@ func toOpenAPIIdentity(identity identitydomain.Identity) openapi.IdentitySummary
 		ConnectedAt: identity.CreatedAt.UTC(),
 		ExpiresAt:   expiresAt,
 	}
+}
+
+func toOpenAPISubscription(subscription subscriptiondomain.Subscription) openapi.SubscriptionSummary {
+	var identityID *openapitypes.UUID
+	if subscription.IdentityID != nil {
+		id := openapitypes.UUID(*subscription.IdentityID)
+		identityID = &id
+	}
+
+	var scopeGrants *[]string
+	if len(subscription.ScopeGrants) > 0 {
+		copyScopes := append([]string(nil), subscription.ScopeGrants...)
+		scopeGrants = &copyScopes
+	}
+
+	return openapi.SubscriptionSummary{
+		Id:          subscription.ID,
+		ProviderId:  subscription.ProviderID,
+		IdentityId:  identityID,
+		Status:      string(subscription.Status),
+		ScopeGrants: scopeGrants,
+		CreatedAt:   subscription.CreatedAt.UTC(),
+		UpdatedAt:   subscription.UpdatedAt.UTC(),
+	}
+}
+
+func toOpenAPIAuthorizationResponse(response identityport.AuthorizationResponse) openapi.OAuthAuthorizationResponse {
+	result := openapi.OAuthAuthorizationResponse{
+		AuthorizationUrl: response.AuthorizationURL,
+	}
+	if response.State != "" {
+		result.State = &response.State
+	}
+	if response.CodeVerifier != "" {
+		result.CodeVerifier = &response.CodeVerifier
+	}
+	if response.CodeChallenge != "" {
+		result.CodeChallenge = &response.CodeChallenge
+	}
+	if response.CodeChallengeMethod != "" {
+		method := string(response.CodeChallengeMethod)
+		result.CodeChallengeMethod = &method
+	}
+	return result
 }

@@ -2,11 +2,16 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
+	servicedomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/service"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
+	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/oauth2"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
@@ -44,7 +49,7 @@ func TestOAuthServiceExchangeCreatesUser(t *testing.T) {
 
 	resolver := staticProviderResolver{"stub": provider}
 
-	svc := NewOAuthService(resolver, identities, users, sessions, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
+	svc := NewOAuthService(resolver, identities, users, sessions, nil, nil, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
 
 	login, storedIdentity, err := svc.Exchange(ctx, "stub", "code-abc", identityport.ExchangeRequest{}, Metadata{ClientIP: "127.0.0.1"})
 	if err != nil {
@@ -119,7 +124,7 @@ func TestOAuthServiceExchangeUpdatesIdentity(t *testing.T) {
 
 	resolver := staticProviderResolver{"stub": provider}
 
-	svc := NewOAuthService(resolver, identities, users, sessions, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
+	svc := NewOAuthService(resolver, identities, users, sessions, nil, nil, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
 
 	login, updatedIdentity, err := svc.Exchange(ctx, "stub", "code-abc", identityport.ExchangeRequest{}, Metadata{})
 	if err != nil {
@@ -140,8 +145,195 @@ func TestOAuthServiceExchangeUpdatesIdentity(t *testing.T) {
 	}
 }
 
+func TestOAuthServiceLinkServiceCreatesSubscription(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1725000000, 0).UTC()
+	clock := &fakeClock{t: now}
+
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusActive,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	identities := &memoryIdentityRepo{items: map[uuid.UUID]identitydomain.Identity{}, byKey: map[string]uuid.UUID{}}
+	providerID := uuid.New()
+	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
+		"stub": {
+			ID:        providerID,
+			Name:      "stub",
+			OAuthType: servicedomain.OAuthTypeOAuth2,
+		},
+	}}
+	subscriptions := &memorySubscriptionRepo{items: map[uuid.UUID]subscriptiondomain.Subscription{}, byKey: map[string]uuid.UUID{}}
+
+	provider := &stubProvider{
+		name: "stub",
+		exchange: identityport.TokenExchange{
+			Token: oauth2.Token{
+				AccessToken:  "access-123",
+				RefreshToken: "refresh-xyz",
+				Scope:        []string{"email.send"},
+				ExpiresAt:    now.Add(2 * time.Hour),
+			},
+			Profile: identitydomain.Profile{
+				Provider: "stub",
+				Subject:  "remote-1",
+				Email:    "user@example.com",
+			},
+		},
+	}
+	resolver := staticProviderResolver{"stub": provider}
+
+	svc := NewOAuthService(resolver, identities, nil, nil, serviceProviders, subscriptions, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
+
+	subscription, identity, err := svc.LinkService(ctx, user, "stub", "code-abc", identityport.ExchangeRequest{})
+	if err != nil {
+		t.Fatalf("LinkService returned error: %v", err)
+	}
+	if identity.UserID != user.ID {
+		t.Fatalf("identity not linked to user")
+	}
+	if len(identity.Scopes) != 1 || identity.Scopes[0] != "email.send" {
+		t.Fatalf("identity scopes not persisted")
+	}
+	if subscription.ProviderID != providerID {
+		t.Fatalf("subscription provider mismatch")
+	}
+	if subscription.IdentityID == nil || *subscription.IdentityID != identity.ID {
+		t.Fatalf("subscription not linked to identity")
+	}
+	if len(subscription.ScopeGrants) != 1 {
+		t.Fatalf("expected scope grants to be stored")
+	}
+	if _, err := subscriptions.FindByUserAndProvider(ctx, user.ID, providerID); err != nil {
+		t.Fatalf("subscription not persisted: %v", err)
+	}
+}
+
+func TestOAuthServiceLinkServiceIdentityConflict(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1726000000, 0).UTC()
+	clock := &fakeClock{t: now}
+
+	owner := uuid.New()
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusActive,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	identity := identitydomain.Identity{
+		ID:        uuid.New(),
+		UserID:    owner,
+		Provider:  "stub",
+		Subject:   "remote-1",
+		CreatedAt: now.Add(-time.Hour),
+		UpdatedAt: now.Add(-time.Hour),
+	}
+	identities := &memoryIdentityRepo{items: map[uuid.UUID]identitydomain.Identity{identity.ID: identity}, byKey: map[string]uuid.UUID{"stub|remote-1": identity.ID}}
+
+	providerID := uuid.New()
+	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
+		"stub": {ID: providerID, Name: "stub", OAuthType: servicedomain.OAuthTypeOAuth2},
+	}}
+	subscriptions := &memorySubscriptionRepo{items: map[uuid.UUID]subscriptiondomain.Subscription{}, byKey: map[string]uuid.UUID{}}
+
+	provider := &stubProvider{
+		name: "stub",
+		exchange: identityport.TokenExchange{
+			Token: oauth2.Token{AccessToken: "access-123"},
+			Profile: identitydomain.Profile{
+				Provider: "stub",
+				Subject:  "remote-1",
+				Email:    "user@example.com",
+			},
+		},
+	}
+	resolver := staticProviderResolver{"stub": provider}
+
+	svc := NewOAuthService(resolver, identities, nil, nil, serviceProviders, subscriptions, clock, zaptest.NewLogger(t), Config{SessionTTL: time.Hour, CookieName: "session"})
+
+	_, _, err := svc.LinkService(ctx, user, "stub", "code-abc", identityport.ExchangeRequest{})
+	if !errors.Is(err, ErrIdentityOwnershipConflict) {
+		t.Fatalf("expected identity ownership conflict, got %v", err)
+	}
+}
+
+func TestOAuthServiceBeginSubscriptionOAuth2(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1727000000, 0).UTC()
+	clock := &fakeClock{t: now}
+
+	user := userdomain.User{ID: uuid.New()}
+	providerID := uuid.New()
+	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
+		"stub": {ID: providerID, Name: "stub", OAuthType: servicedomain.OAuthTypeOAuth2},
+	}}
+	subscriptions := &memorySubscriptionRepo{items: map[uuid.UUID]subscriptiondomain.Subscription{}, byKey: map[string]uuid.UUID{}}
+
+	provider := &stubProvider{
+		name: "stub",
+		authResp: identityport.AuthorizationResponse{
+			AuthorizationURL: "https://auth.example/authorize",
+			State:            "state-123",
+			CodeVerifier:     "verifier",
+		},
+	}
+	resolver := staticProviderResolver{"stub": provider}
+
+	svc := NewOAuthService(resolver, nil, nil, nil, serviceProviders, subscriptions, clock, zaptest.NewLogger(t), Config{})
+
+	result, err := svc.BeginSubscription(ctx, user, "stub", identityport.AuthorizationRequest{State: "state-123"})
+	if err != nil {
+		t.Fatalf("BeginSubscription returned error: %v", err)
+	}
+	if result.Authorization == nil {
+		t.Fatalf("expected authorization response")
+	}
+	if result.Authorization.AuthorizationURL == "" {
+		t.Fatalf("authorization URL missing")
+	}
+	if result.Subscription != nil {
+		t.Fatalf("did not expect subscription to be created before exchange")
+	}
+}
+
+func TestOAuthServiceBeginSubscriptionWithoutOAuth(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1727100000, 0).UTC()
+	clock := &fakeClock{t: now}
+
+	user := userdomain.User{ID: uuid.New()}
+	providerID := uuid.New()
+	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
+		"timer": {ID: providerID, Name: "timer", OAuthType: servicedomain.OAuthTypeNone},
+	}}
+	subscriptions := &memorySubscriptionRepo{items: map[uuid.UUID]subscriptiondomain.Subscription{}, byKey: map[string]uuid.UUID{}}
+
+	svc := NewOAuthService(nil, nil, nil, nil, serviceProviders, subscriptions, clock, zaptest.NewLogger(t), Config{})
+
+	result, err := svc.BeginSubscription(ctx, user, "timer", identityport.AuthorizationRequest{})
+	if err != nil {
+		t.Fatalf("BeginSubscription returned error: %v", err)
+	}
+	if result.Subscription == nil {
+		t.Fatalf("expected subscription to be created")
+	}
+	if result.Authorization != nil {
+		t.Fatalf("did not expect authorization response for non-oauth provider")
+	}
+	if _, err := subscriptions.FindByUserAndProvider(ctx, user.ID, providerID); err != nil {
+		t.Fatalf("subscription not persisted: %v", err)
+	}
+}
+
 func TestOAuthServiceListIdentitiesRequiresRepository(t *testing.T) {
-	svc := NewOAuthService(nil, nil, nil, nil, nil, nil, Config{})
+	svc := NewOAuthService(nil, nil, nil, nil, nil, nil, nil, nil, Config{})
 
 	_, err := svc.ListIdentities(context.Background(), uuid.New())
 	if err == nil {
@@ -159,7 +351,7 @@ func TestOAuthServiceListIdentitiesSuccess(t *testing.T) {
 	}
 	repo := &memoryIdentityRepo{items: map[uuid.UUID]identitydomain.Identity{identity.ID: identity}}
 
-	svc := NewOAuthService(nil, repo, nil, nil, nil, nil, Config{})
+	svc := NewOAuthService(nil, repo, nil, nil, nil, nil, nil, nil, Config{})
 
 	items, err := svc.ListIdentities(context.Background(), userID)
 	if err != nil {
@@ -205,6 +397,86 @@ func (s *stubProvider) Exchange(ctx context.Context, code string, req identitypo
 
 func (s *stubProvider) Refresh(ctx context.Context, identity identitydomain.Identity) (identityport.TokenExchange, error) {
 	return identityport.TokenExchange{}, nil
+}
+
+type memoryServiceProviderRepo struct {
+	items map[string]servicedomain.Provider
+}
+
+func (m *memoryServiceProviderRepo) FindByName(ctx context.Context, name string) (servicedomain.Provider, error) {
+	if m.items == nil {
+		return servicedomain.Provider{}, outbound.ErrNotFound
+	}
+	key := strings.ToLower(strings.TrimSpace(name))
+	if provider, ok := m.items[key]; ok {
+		return provider, nil
+	}
+	return servicedomain.Provider{}, outbound.ErrNotFound
+}
+
+type memorySubscriptionRepo struct {
+	items map[uuid.UUID]subscriptiondomain.Subscription
+	byKey map[string]uuid.UUID
+}
+
+func (m *memorySubscriptionRepo) key(userID uuid.UUID, providerID uuid.UUID) string {
+	return userID.String() + "|" + providerID.String()
+}
+
+func (m *memorySubscriptionRepo) Create(ctx context.Context, subscription subscriptiondomain.Subscription) (subscriptiondomain.Subscription, error) {
+	if m.items == nil {
+		m.items = map[uuid.UUID]subscriptiondomain.Subscription{}
+		m.byKey = map[string]uuid.UUID{}
+	}
+	if subscription.ID == uuid.Nil {
+		subscription.ID = uuid.New()
+	}
+	key := m.key(subscription.UserID, subscription.ProviderID)
+	if _, exists := m.byKey[key]; exists {
+		return subscriptiondomain.Subscription{}, outbound.ErrConflict
+	}
+	clone := cloneSubscription(subscription)
+	m.items[clone.ID] = clone
+	m.byKey[key] = clone.ID
+	return clone, nil
+}
+
+func (m *memorySubscriptionRepo) Update(ctx context.Context, subscription subscriptiondomain.Subscription) error {
+	if m.items == nil {
+		return outbound.ErrNotFound
+	}
+	if subscription.ID == uuid.Nil {
+		return fmt.Errorf("missing id")
+	}
+	if _, ok := m.items[subscription.ID]; !ok {
+		return outbound.ErrNotFound
+	}
+	clone := cloneSubscription(subscription)
+	m.items[clone.ID] = clone
+	m.byKey[m.key(clone.UserID, clone.ProviderID)] = clone.ID
+	return nil
+}
+
+func (m *memorySubscriptionRepo) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) (subscriptiondomain.Subscription, error) {
+	if m.items == nil {
+		return subscriptiondomain.Subscription{}, outbound.ErrNotFound
+	}
+	key := m.key(userID, providerID)
+	id, ok := m.byKey[key]
+	if !ok {
+		return subscriptiondomain.Subscription{}, outbound.ErrNotFound
+	}
+	return cloneSubscription(m.items[id]), nil
+}
+
+func (m *memorySubscriptionRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]subscriptiondomain.Subscription, error) {
+	result := make([]subscriptiondomain.Subscription, 0)
+	for _, subscription := range m.items {
+		if subscription.UserID == userID {
+			result = append(result, cloneSubscription(subscription))
+		}
+	}
+	return result, nil
 }
 
 type memoryIdentityRepo struct {
@@ -296,6 +568,18 @@ func cloneIdentity(identity identitydomain.Identity) identitydomain.Identity {
 	clone := identity
 	if identity.Scopes != nil {
 		clone.Scopes = append([]string(nil), identity.Scopes...)
+	}
+	return clone
+}
+
+func cloneSubscription(subscription subscriptiondomain.Subscription) subscriptiondomain.Subscription {
+	clone := subscription
+	if subscription.ScopeGrants != nil {
+		clone.ScopeGrants = append([]string(nil), subscription.ScopeGrants...)
+	}
+	if subscription.IdentityID != nil {
+		id := *subscription.IdentityID
+		clone.IdentityID = &id
 	}
 	return clone
 }

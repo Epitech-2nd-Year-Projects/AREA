@@ -8,7 +8,9 @@ import (
 	"time"
 
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
+	servicedomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/service"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
+	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
@@ -22,6 +24,12 @@ var ErrProviderNotConfigured = errors.New("auth: oauth provider not configured")
 // ErrOAuthEmailMissing is returned when the provider payload does not include an email address
 var ErrOAuthEmailMissing = errors.New("auth: oauth email missing")
 
+// ErrIdentityOwnershipConflict is returned when attempting to reuse an identity owned by another user.
+var ErrIdentityOwnershipConflict = errors.New("auth: identity already linked to another user")
+
+// ErrSubscriptionNotSupported indicates the provider does not support automated subscriptions yet.
+var ErrSubscriptionNotSupported = errors.New("auth: provider does not support subscriptions")
+
 // ProviderResolver exposes configured OAuth providers by name
 // Implementations are expected to return providers for normalized (lowercase) identifiers
 type ProviderResolver interface {
@@ -30,17 +38,25 @@ type ProviderResolver interface {
 
 // OAuthService orchestrates OAuth-based authentication and identity persistence
 type OAuthService struct {
-	providers  ProviderResolver
-	identities identityport.Repository
-	users      outbound.UserRepository
-	sessions   outbound.SessionRepository
-	clock      Clock
-	logger     *zap.Logger
-	cfg        Config
+	providers        ProviderResolver
+	identities       identityport.Repository
+	users            outbound.UserRepository
+	sessions         outbound.SessionRepository
+	serviceProviders outbound.ServiceProviderRepository
+	subscriptions    outbound.SubscriptionRepository
+	clock            Clock
+	logger           *zap.Logger
+	cfg              Config
 }
 
-// NewOAuthService assembles an OAuth service from persistence stores and provider registry
-func NewOAuthService(providers ProviderResolver, identities identityport.Repository, users outbound.UserRepository, sessions outbound.SessionRepository, clock Clock, logger *zap.Logger, cfg Config) *OAuthService {
+// SubscriptionInitResult reports the outcome of initiating a subscription flow.
+type SubscriptionInitResult struct {
+	Authorization *identityport.AuthorizationResponse
+	Subscription  *subscriptiondomain.Subscription
+}
+
+// NewOAuthService assembles an OAuth service from persistence stores and provider registry.
+func NewOAuthService(providers ProviderResolver, identities identityport.Repository, users outbound.UserRepository, sessions outbound.SessionRepository, serviceProviders outbound.ServiceProviderRepository, subscriptions outbound.SubscriptionRepository, clock Clock, logger *zap.Logger, cfg Config) *OAuthService {
 	if clock == nil {
 		clock = systemClock{}
 	}
@@ -54,13 +70,15 @@ func NewOAuthService(providers ProviderResolver, identities identityport.Reposit
 		cfg.CookieName = "area_session"
 	}
 	return &OAuthService{
-		providers:  providers,
-		identities: identities,
-		users:      users,
-		sessions:   sessions,
-		clock:      clock,
-		logger:     logger,
-		cfg:        cfg,
+		providers:        providers,
+		identities:       identities,
+		users:            users,
+		sessions:         sessions,
+		serviceProviders: serviceProviders,
+		subscriptions:    subscriptions,
+		clock:            clock,
+		logger:           logger,
+		cfg:              cfg,
 	}
 }
 
@@ -110,6 +128,111 @@ func (s *OAuthService) Exchange(ctx context.Context, provider string, code strin
 	}
 
 	return login, identity, nil
+}
+
+// BeginSubscription prepares a subscription flow for the specified provider.
+func (s *OAuthService) BeginSubscription(ctx context.Context, user userdomain.User, provider string, req identityport.AuthorizationRequest) (SubscriptionInitResult, error) {
+	if s.subscriptions == nil || s.serviceProviders == nil {
+		return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription: persistence not configured")
+	}
+	if user.ID == uuid.Nil {
+		return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription: missing user")
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(provider))
+	if normalized == "" {
+		return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription: provider name empty")
+	}
+
+	providerRecord, err := s.serviceProviders.FindByName(ctx, normalized)
+	if err != nil {
+		if errors.Is(err, outbound.ErrNotFound) {
+			return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription[%s]: %w", normalized, ErrProviderNotConfigured)
+		}
+		return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription[%s]: serviceProviders.FindByName: %w", normalized, err)
+	}
+
+	now := s.clock.Now().UTC()
+
+	switch providerRecord.OAuthType {
+	case servicedomain.OAuthTypeNone:
+		subscription, ensureErr := s.ensureSubscription(ctx, user.ID, providerRecord, nil, nil, now)
+		if ensureErr != nil {
+			return SubscriptionInitResult{}, ensureErr
+		}
+		return SubscriptionInitResult{Subscription: &subscription}, nil
+	case servicedomain.OAuthTypeOAuth2:
+		prov, _, resolveErr := s.resolveProvider(normalized)
+		if resolveErr != nil {
+			return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription[%s]: %w", normalized, resolveErr)
+		}
+		resp, authErr := prov.AuthorizationURL(ctx, req)
+		if authErr != nil {
+			return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription[%s]: %w", normalized, authErr)
+		}
+		return SubscriptionInitResult{Authorization: &resp}, nil
+	default:
+		return SubscriptionInitResult{}, fmt.Errorf("auth.OAuthService.BeginSubscription[%s]: %w", normalized, ErrSubscriptionNotSupported)
+	}
+}
+
+// CompleteSubscription finalises a provider subscription by exchanging the OAuth code and persisting tokens.
+func (s *OAuthService) CompleteSubscription(ctx context.Context, user userdomain.User, provider string, code string, req identityport.ExchangeRequest) (subscriptiondomain.Subscription, identitydomain.Identity, error) {
+	if s.identities == nil || s.serviceProviders == nil || s.subscriptions == nil {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription: persistence not configured")
+	}
+	if user.ID == uuid.Nil {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription: missing user")
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(provider))
+	if normalized == "" {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription: provider name empty")
+	}
+
+	providerRecord, err := s.serviceProviders.FindByName(ctx, normalized)
+	if err != nil {
+		if errors.Is(err, outbound.ErrNotFound) {
+			return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: %w", normalized, ErrProviderNotConfigured)
+		}
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: serviceProviders.FindByName: %w", normalized, err)
+	}
+	if providerRecord.OAuthType != servicedomain.OAuthTypeOAuth2 {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: %w", normalized, ErrSubscriptionNotSupported)
+	}
+
+	prov, _, resolveErr := s.resolveProvider(normalized)
+	if resolveErr != nil {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: %w", normalized, resolveErr)
+	}
+
+	exchange, exchErr := prov.Exchange(ctx, code, req)
+	if exchErr != nil {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: %w", normalized, exchErr)
+	}
+	if exchange.Profile.Empty() {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: empty profile", normalized)
+	}
+
+	now := s.clock.Now().UTC()
+
+	identity, identityErr := s.linkIdentityToUser(ctx, user, normalized, exchange, now)
+	if identityErr != nil {
+		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, identityErr
+	}
+
+	scopeGrants := selectScopes(exchange.Token.Scope, identity.Scopes)
+	subscription, ensureErr := s.ensureSubscription(ctx, user.ID, providerRecord, &identity.ID, scopeGrants, now)
+	if ensureErr != nil {
+		return subscriptiondomain.Subscription{}, identity, ensureErr
+	}
+
+	return subscription, identity, nil
+}
+
+// LinkService completes an OAuth exchange for an authenticated user and records the subscription.
+func (s *OAuthService) LinkService(ctx context.Context, user userdomain.User, provider string, code string, req identityport.ExchangeRequest) (subscriptiondomain.Subscription, identitydomain.Identity, error) {
+	return s.CompleteSubscription(ctx, user, provider, code, req)
 }
 
 // ListIdentities lists linked identities for the specified user
@@ -210,6 +333,118 @@ func (s *OAuthService) upsertIdentity(ctx context.Context, provider string, exch
 	return user, updated, nil
 }
 
+func (s *OAuthService) ensureSubscription(ctx context.Context, userID uuid.UUID, provider servicedomain.Provider, identityID *uuid.UUID, scopeGrants []string, now time.Time) (subscriptiondomain.Subscription, error) {
+	if s.subscriptions == nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.ensureSubscription[%s]: subscriptions repository missing", provider.Name)
+	}
+
+	subscription, err := s.subscriptions.FindByUserAndProvider(ctx, userID, provider.ID)
+	if err != nil {
+		if !errors.Is(err, outbound.ErrNotFound) {
+			return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.ensureSubscription[%s]: subscriptions.FindByUserAndProvider: %w", provider.Name, err)
+		}
+
+		create := subscriptiondomain.Subscription{
+			ID:          uuid.New(),
+			UserID:      userID,
+			ProviderID:  provider.ID,
+			IdentityID:  cloneUUID(identityID),
+			Status:      subscriptiondomain.StatusActive,
+			ScopeGrants: cloneStrings(scopeGrants),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		created, createErr := s.subscriptions.Create(ctx, create)
+		if createErr != nil {
+			return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.ensureSubscription[%s]: subscriptions.Create: %w", provider.Name, createErr)
+		}
+		return created, nil
+	}
+
+	subscription.IdentityID = cloneUUID(identityID)
+	if scopeGrants != nil {
+		subscription.ScopeGrants = cloneStrings(scopeGrants)
+	} else if subscription.ScopeGrants != nil {
+		subscription.ScopeGrants = cloneStrings(subscription.ScopeGrants)
+	}
+	subscription.Status = subscriptiondomain.StatusActive
+	subscription.UpdatedAt = now
+
+	if err := s.subscriptions.Update(ctx, subscription); err != nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.ensureSubscription[%s]: subscriptions.Update: %w", provider.Name, err)
+	}
+	return subscription, nil
+}
+
+func (s *OAuthService) linkIdentityToUser(ctx context.Context, user userdomain.User, provider string, exchange identityport.TokenExchange, now time.Time) (identitydomain.Identity, error) {
+	if s.identities == nil {
+		return identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.linkIdentityToUser: identities repository missing")
+	}
+
+	profile := exchange.Profile
+	identity, err := s.identities.FindByProviderSubject(ctx, provider, profile.Subject)
+	if err != nil && !errors.Is(err, outbound.ErrNotFound) {
+		return identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.linkIdentityToUser[%s]: identities.FindByProviderSubject: %w", provider, err)
+	}
+
+	token := exchange.Token
+	var expiresAt *time.Time
+	if identity.ExpiresAt != nil {
+		copyExpiry := identity.ExpiresAt.UTC()
+		expiresAt = &copyExpiry
+	}
+	if !token.ExpiresAt.IsZero() {
+		expiry := token.ExpiresAt
+		expiresAt = &expiry
+	}
+
+	scopes := selectScopes(token.Scope, identity.Scopes)
+
+	if errors.Is(err, outbound.ErrNotFound) {
+		identity = identitydomain.Identity{
+			ID:        uuid.New(),
+			UserID:    user.ID,
+			Provider:  provider,
+			Subject:   profile.Subject,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		identity = identity.WithTokens(token.AccessToken, token.RefreshToken, expiresAt, cloneStrings(scopes))
+
+		created, createErr := s.identities.Create(ctx, identity)
+		if createErr != nil {
+			return identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.linkIdentityToUser[%s]: identities.Create: %w", provider, createErr)
+		}
+		return created, nil
+	}
+
+	if identity.UserID != user.ID {
+		return identitydomain.Identity{}, ErrIdentityOwnershipConflict
+	}
+
+	refreshToken := token.RefreshToken
+	if refreshToken == "" {
+		refreshToken = identity.RefreshToken
+	}
+	if len(scopes) == 0 {
+		scopes = identity.Scopes
+	}
+
+	updated := identity.WithTokens(token.AccessToken, refreshToken, expiresAt, cloneStrings(scopes))
+	updated.Provider = provider
+	updated.Subject = profile.Subject
+	updated.UserID = identity.UserID
+	updated.CreatedAt = identity.CreatedAt
+	updated.UpdatedAt = now
+
+	if err := s.identities.Update(ctx, updated); err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.linkIdentityToUser[%s]: identities.Update: %w", provider, err)
+	}
+
+	return updated, nil
+}
+
 func (s *OAuthService) resolveOrCreateUser(ctx context.Context, profile identitydomain.Profile, now time.Time) (userdomain.User, error) {
 	email := strings.TrimSpace(strings.ToLower(profile.Email))
 	if email == "" {
@@ -284,4 +519,33 @@ func (s *OAuthService) buildSession(user userdomain.User, meta Metadata, now tim
 		IP:        meta.ClientIP,
 		UserAgent: meta.UserAgent,
 	}
+}
+
+func selectScopes(primary []string, fallbacks ...[]string) []string {
+	if len(primary) > 0 {
+		return cloneStrings(primary)
+	}
+	for _, candidate := range fallbacks {
+		if len(candidate) > 0 {
+			return cloneStrings(candidate)
+		}
+	}
+	return nil
+}
+
+func cloneStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	clone := make([]string, len(values))
+	copy(clone, values)
+	return clone
+}
+
+func cloneUUID(value *uuid.UUID) *uuid.UUID {
+	if value == nil {
+		return nil
+	}
+	clone := *value
+	return &clone
 }
