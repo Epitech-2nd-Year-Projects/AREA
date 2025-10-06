@@ -85,6 +85,14 @@ func (h compositeHandler) ListComponents(c *gin.Context, params openapi.ListComp
 	h.components.ListComponents(c, params)
 }
 
+func (h compositeHandler) ListAvailableComponents(c *gin.Context, params openapi.ListComponentsParams) {
+	if h.components == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "component handler missing"})
+		return
+	}
+	h.components.ListAvailableComponents(c, params)
+}
+
 func (h compositeHandler) CreateArea(c *gin.Context) {
 	if h.area == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
@@ -147,6 +155,22 @@ func (h compositeHandler) ExchangeOAuth(c *gin.Context, provider string) {
 		return
 	}
 	h.auth.ExchangeOAuth(c, provider)
+}
+
+func (h compositeHandler) SubscribeService(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.SubscribeService(c, provider)
+}
+
+func (h compositeHandler) SubscribeServiceExchange(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.SubscribeServiceExchange(c, provider)
 }
 
 func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapitypes.UUID) {
