@@ -7,16 +7,19 @@ import (
 	aboutapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/about"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
+	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/gin-gonic/gin"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Dependencies aggregates inbound HTTP dependencies
 type Dependencies struct {
-	AboutLoader catalog.Loader
-	Clock       aboutapp.Clock
-	AuthHandler *authapp.Handler
-	AreaHandler *areaapp.Handler
+	AboutLoader      catalog.Loader
+	Clock            aboutapp.Clock
+	AuthHandler      *authapp.Handler
+	AreaHandler      *areaapp.Handler
+	ComponentHandler *componentapp.Handler
 }
 
 // Register mounts all HTTP endpoints on the provided router
@@ -29,9 +32,10 @@ func Register(r gin.IRouter, deps Dependencies) error {
 	}
 
 	handler := compositeHandler{
-		about: aboutapp.New(deps.AboutLoader, deps.Clock),
-		auth:  deps.AuthHandler,
-		area:  deps.AreaHandler,
+		about:      aboutapp.New(deps.AboutLoader, deps.Clock),
+		auth:       deps.AuthHandler,
+		area:       deps.AreaHandler,
+		components: deps.ComponentHandler,
 	}
 
 	openapi.RegisterHandlers(r, handler)
@@ -43,9 +47,10 @@ func Register(r gin.IRouter, deps Dependencies) error {
 }
 
 type compositeHandler struct {
-	about *aboutapp.Handler
-	auth  *authapp.Handler
-	area  *areaapp.Handler
+	about      *aboutapp.Handler
+	auth       *authapp.Handler
+	area       *areaapp.Handler
+	components *componentapp.Handler
 }
 
 func (h compositeHandler) GetAbout(c *gin.Context) {
@@ -70,6 +75,14 @@ func (h compositeHandler) ListAreas(c *gin.Context) {
 		return
 	}
 	h.area.ListAreas(c)
+}
+
+func (h compositeHandler) ListComponents(c *gin.Context, params openapi.ListComponentsParams) {
+	if h.components == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "component handler missing"})
+		return
+	}
+	h.components.ListComponents(c, params)
 }
 
 func (h compositeHandler) CreateArea(c *gin.Context) {
@@ -112,6 +125,14 @@ func (h compositeHandler) GetCurrentUser(c *gin.Context) {
 	h.auth.GetCurrentUser(c)
 }
 
+func (h compositeHandler) ListIdentities(c *gin.Context) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ListIdentities(c)
+}
+
 func (h compositeHandler) AuthorizeOAuth(c *gin.Context, provider string) {
 	if h.auth == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
@@ -126,4 +147,12 @@ func (h compositeHandler) ExchangeOAuth(c *gin.Context, provider string) {
 		return
 	}
 	h.auth.ExchangeOAuth(c, provider)
+}
+
+func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapi_types.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.ExecuteArea(c, areaId)
 }
