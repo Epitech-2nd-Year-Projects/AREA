@@ -1,5 +1,5 @@
 'use client'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useCallback, useMemo, useState } from 'react'
 import {
   CheckIcon,
   ChevronsUpDown,
@@ -15,6 +15,10 @@ import { useCreateAreaMutation } from '@/lib/api/openapi/areas'
 import { ApiError } from '@/lib/api/http/errors'
 import { cn } from '@/lib/utils'
 import { useAvailableComponentsQuery } from '@/lib/api/openapi/components'
+import type {
+  ComponentParameterDTO,
+  ComponentSummaryDTO
+} from '@/lib/api/contracts/openapi/areas'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -39,6 +43,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   ComponentConfigSheet,
+  type ConfigParamField,
   type ComponentConfigState,
   type ConfigEditorTarget,
   cloneComponentConfig,
@@ -60,7 +65,10 @@ type ReactionField = {
 const textareaClasses =
   'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 min-h-[120px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
 
-function getServiceKeywords(serviceName: string, displayNameMap: Record<string, string>) {
+function getServiceKeywords(
+  serviceName: string,
+  displayNameMap: Record<string, string>
+) {
   const keywords = [serviceName]
   const displayName = displayNameMap[serviceName]
 
@@ -125,10 +133,69 @@ function buildParamsFromConfig(
     if (!key) {
       continue
     }
-    params[key] = field.value
+    params[key] = coerceParamValue(field)
   }
 
   return Object.keys(params).length > 0 ? params : undefined
+}
+
+const truthyBooleanValues = new Set(['true', '1', 'yes', 'on'])
+const falsyBooleanValues = new Set(['false', '0', 'no', 'off'])
+
+function coerceParamValue(field: ConfigParamField): unknown {
+  const rawValue = field.value
+  const type = field.type?.toLowerCase()
+
+  if (!type) {
+    return rawValue
+  }
+
+  const trimmedValue = rawValue.trim()
+
+  if (!trimmedValue) {
+    return rawValue
+  }
+
+  if (type === 'boolean') {
+    const normalized = trimmedValue.toLowerCase()
+    if (truthyBooleanValues.has(normalized)) {
+      return true
+    }
+    if (falsyBooleanValues.has(normalized)) {
+      return false
+    }
+    return rawValue
+  }
+
+  if (
+    type === 'integer' ||
+    type === 'int' ||
+    type === 'int32' ||
+    type === 'int64'
+  ) {
+    const parsed = Number.parseInt(trimmedValue, 10)
+    return Number.isNaN(parsed) ? rawValue : parsed
+  }
+
+  if (
+    type === 'number' ||
+    type === 'float' ||
+    type === 'double' ||
+    type === 'decimal'
+  ) {
+    const parsed = Number(trimmedValue)
+    return Number.isNaN(parsed) ? rawValue : parsed
+  }
+
+  if (type === 'array' || type === 'object' || type === 'json') {
+    try {
+      return JSON.parse(rawValue)
+    } catch (error) {
+      return rawValue
+    }
+  }
+
+  return rawValue
 }
 
 export default function CreateAreaModal() {
@@ -140,6 +207,48 @@ export default function CreateAreaModal() {
   const { data: availableReactions = [] } = useAvailableComponentsQuery({
     params: { kind: 'reaction' }
   })
+
+  const componentParametersById = useMemo(() => {
+    const map: Record<string, ComponentParameterDTO[]> = {}
+
+    const normalize = (parameters?: ComponentParameterDTO[] | null) => {
+      if (!Array.isArray(parameters) || parameters.length === 0) {
+        return [] as ComponentParameterDTO[]
+      }
+      return parameters
+        .filter(
+          (parameter): parameter is ComponentParameterDTO =>
+            typeof parameter?.key === 'string' &&
+            parameter.key.trim().length > 0
+        )
+        .map((parameter) => ({
+          ...parameter,
+          key: parameter.key.trim()
+        }))
+    }
+
+    const register = (component: ComponentSummaryDTO) => {
+      const normalized = normalize(component.metadata?.parameters)
+      if (normalized.length > 0) {
+        map[component.id] = normalized
+      }
+    }
+
+    for (const component of availableActions) {
+      register(component)
+    }
+
+    for (const component of availableReactions) {
+      register(component)
+    }
+
+    return map
+  }, [availableActions, availableReactions])
+
+  const getComponentParameters = useCallback(
+    (componentId: string) => componentParametersById[componentId] ?? [],
+    [componentParametersById]
+  )
 
   const actions: Action[] = availableActions.map((c) => ({
     id: c.id,
@@ -154,9 +263,10 @@ export default function CreateAreaModal() {
     serviceName: c.provider.name
   }))
 
-  const serviceDisplayNameMap = [...availableActions, ...availableReactions].reduce<
-    Record<string, string>
-  >((acc, c) => {
+  const serviceDisplayNameMap = [
+    ...availableActions,
+    ...availableReactions
+  ].reduce<Record<string, string>>((acc, c) => {
     if (!acc[c.provider.name]) acc[c.provider.name] = c.provider.displayName
     return acc
   }, {})
@@ -603,6 +713,7 @@ export default function CreateAreaModal() {
         getReactionName={(reactionId) => reactionsById[reactionId]?.name ?? ''}
         initialConfig={configSheetInitialConfig}
         onSave={handleConfigSave}
+        getComponentParameters={getComponentParameters}
       />
     </Dialog>
   )
@@ -665,7 +776,10 @@ function ActionCombobox({
                     <CommandItem
                       key={action.id}
                       value={action.id}
-                      keywords={getServiceKeywords(action.serviceName, serviceDisplayNameMap)}
+                      keywords={getServiceKeywords(
+                        action.serviceName,
+                        serviceDisplayNameMap
+                      )}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue
@@ -760,7 +874,10 @@ function ReactionCombobox({
                     <CommandItem
                       key={reaction.id}
                       value={reaction.id}
-                      keywords={getServiceKeywords(reaction.serviceName, serviceDisplayNameMap)}
+                      keywords={getServiceKeywords(
+                        reaction.serviceName,
+                        serviceDisplayNameMap
+                      )}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue

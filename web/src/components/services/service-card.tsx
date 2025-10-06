@@ -27,6 +27,7 @@ import { useSubscribeServiceMutation } from '@/lib/api/openapi/services'
 import type { SubscribeServiceResponseDTO } from '@/lib/api/contracts/openapi/services'
 import {
   clearOAuthState,
+  createClientOAuthState,
   persistOAuthState
 } from '@/lib/auth/oauth'
 
@@ -55,7 +56,10 @@ export function ServiceCard({
   }
 
   const connectButtonState = authenticated
-    ? { label: linked ? t('linked') : t('connect'), variant: 'default' as const }
+    ? {
+        label: linked ? t('linked') : t('connect'),
+        variant: 'default' as const
+      }
     : { label: t('getStarted'), variant: 'outline' as const }
 
   const handleConnectClick = authenticated
@@ -64,35 +68,43 @@ export function ServiceCard({
         if (typeof window === 'undefined') return
 
         const provider = service.name
-        const redirectUrl = new URL('/oauth/callback', window.location.origin)
-        redirectUrl.searchParams.set('flow', 'service')
-        redirectUrl.searchParams.set('provider', provider)
-        redirectUrl.searchParams.set('redirect', '/dashboard/profile')
-        const redirectUri = redirectUrl.toString()
+        const redirectUri = new URL(
+          '/oauth/callback',
+          window.location.origin
+        ).toString()
+        const redirectTarget = '/dashboard/profile'
+        const { value: clientState } = createClientOAuthState({
+          provider,
+          flow: 'service',
+          redirect: redirectTarget
+        })
 
         try {
           const response: SubscribeServiceResponseDTO = await subscribeService({
             provider,
-            body: { redirectUri, usePkce: true }
+            body: { redirectUri, usePkce: true, state: clientState }
           })
 
-          if (response.status === 'authorization_required' && response.authorization) {
+          if (
+            response.status === 'authorization_required' &&
+            response.authorization
+          ) {
             clearOAuthState(provider)
             persistOAuthState(provider, {
               provider,
               redirectUri,
-              state: response.authorization.state,
+              state: response.authorization.state ?? clientState,
               codeVerifier: response.authorization.codeVerifier,
+              flow: 'service',
+              redirect: redirectTarget,
               createdAt: Date.now()
             })
             window.location.assign(response.authorization.authorizationUrl)
             return
           }
-
-          // If subscribed instantly (no OAuth), refresh profile page
           router.refresh()
         } catch {
-          // Silently ignore for now; optional: surface an error toast
+          // TODO: Error toast
         }
       }
     : () => router.push('/register')

@@ -1,6 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { PlusIcon, TrashIcon } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -14,29 +13,22 @@ import {
   SheetHeader,
   SheetTitle
 } from '../ui/sheet'
+import type { ComponentParameterDTO } from '@/lib/api/contracts/openapi/areas'
 
 export type ConfigParamField = {
   id: string
   key: string
   value: string
+  label?: string
+  description?: string
+  required?: boolean
+  type?: ComponentParameterDTO['type']
 }
 
 export type ComponentConfigState = {
   secretsRef: string
   params: ConfigParamField[]
 }
-
-let configParamIndex = 0
-const createConfigParamId = () => {
-  configParamIndex += 1
-  return `param-${configParamIndex}-${Date.now().toString(36)}`
-}
-
-export const createEmptyParamField = (): ConfigParamField => ({
-  id: createConfigParamId(),
-  key: '',
-  value: ''
-})
 
 export const createEmptyComponentConfig = (): ComponentConfigState => ({
   secretsRef: '',
@@ -62,6 +54,7 @@ export type ComponentConfigSheetProps = {
   getReactionName: (reactionId: string) => string
   initialConfig: ComponentConfigState
   onSave: (config: ComponentConfigState) => void
+  getComponentParameters: (componentId: string) => ComponentParameterDTO[]
 }
 
 export function ComponentConfigSheet({
@@ -71,11 +64,22 @@ export function ComponentConfigSheet({
   selectedActionName,
   getReactionName,
   initialConfig,
-  onSave
+  onSave,
+  getComponentParameters
 }: ComponentConfigSheetProps) {
   const t = useTranslations('ComponentConfigSheet')
   const [secretsRef, setSecretsRef] = useState(initialConfig.secretsRef)
   const [params, setParams] = useState<ConfigParamField[]>(initialConfig.params)
+  const componentParameters = useMemo(() => {
+    if (!target) {
+      return [] as ComponentParameterDTO[]
+    }
+    const parameters = getComponentParameters(target.componentId)
+    if (!Array.isArray(parameters) || parameters.length === 0) {
+      return [] as ComponentParameterDTO[]
+    }
+    return parameters.filter((parameter) => parameter.key.trim().length > 0)
+  }, [getComponentParameters, target])
 
   useEffect(() => {
     if (!open) {
@@ -83,8 +87,58 @@ export function ComponentConfigSheet({
     }
 
     setSecretsRef(initialConfig.secretsRef)
+    if (componentParameters.length > 0) {
+      const valuesByKey = new Map<string, string>()
+      for (const param of initialConfig.params) {
+        if (param.key) {
+          valuesByKey.set(param.key, param.value)
+        }
+      }
+
+      const definitionKeys = new Set<string>()
+      const definitionFields: ConfigParamField[] = componentParameters.map(
+        (definition) => {
+          const key = definition.key.trim()
+          definitionKeys.add(key)
+          const label =
+            typeof definition.label === 'string' &&
+            definition.label.trim().length
+              ? definition.label
+              : key
+          const description =
+            typeof definition.description === 'string'
+              ? definition.description
+              : undefined
+          return {
+            id: key,
+            key,
+            value: valuesByKey.get(key) ?? '',
+            label,
+            description,
+            required: Boolean(definition.required),
+            type: definition.type
+          }
+        }
+      )
+
+      const customFields = initialConfig.params
+        .filter((param) => param.key && !definitionKeys.has(param.key))
+        .map((param) => ({
+          id: param.id || param.key,
+          key: param.key,
+          value: param.value,
+          label: param.label ?? param.key,
+          description: param.description,
+          required: param.required,
+          type: param.type
+        }))
+
+      setParams([...definitionFields, ...customFields])
+      return
+    }
+
     setParams(initialConfig.params.map((param) => ({ ...param })))
-  }, [initialConfig, open])
+  }, [componentParameters, initialConfig, open])
 
   const isActionTarget = target?.type === 'action'
   const isReactionTarget = target?.type === 'reaction'
@@ -106,24 +160,12 @@ export function ComponentConfigSheet({
       ? t('descriptionReaction')
       : ''
 
-  const handleParamChange = (
-    paramId: string,
-    field: 'key' | 'value',
-    nextValue: string
-  ) => {
+  const handleParamValueChange = (paramId: string, nextValue: string) => {
     setParams((previous) =>
       previous.map((param) =>
-        param.id === paramId ? { ...param, [field]: nextValue } : param
+        param.id === paramId ? { ...param, value: nextValue } : param
       )
     )
-  }
-
-  const handleAddParam = () => {
-    setParams((previous) => [...previous, createEmptyParamField()])
-  }
-
-  const handleRemoveParam = (paramId: string) => {
-    setParams((previous) => previous.filter((param) => param.id !== paramId))
   }
 
   const handleSave = () => {
@@ -162,50 +204,29 @@ export function ComponentConfigSheet({
             {params.length > 0 ? (
               <div className="space-y-3">
                 {params.map((param) => (
-                  <div
-                    key={param.id}
-                    className="flex flex-col gap-2 sm:flex-row"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <Label htmlFor={`param-${param.id}-key`}>
-                        {t('paramKey')}
-                      </Label>
-                      <Input
-                        id={`param-${param.id}-key`}
-                        value={param.key}
-                        onChange={(event) =>
-                          handleParamChange(param.id, 'key', event.target.value)
-                        }
-                        placeholder={t('paramKey')}
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1">
+                  <div key={param.id} className="space-y-2">
+                    <div className="space-y-1">
                       <Label htmlFor={`param-${param.id}-value`}>
-                        {t('paramValue')}
+                        {(param.label ?? param.key) +
+                          (param.required ? ' *' : '')}
                       </Label>
-                      <Input
-                        id={`param-${param.id}-value`}
-                        value={param.value}
-                        onChange={(event) =>
-                          handleParamChange(
-                            param.id,
-                            'value',
-                            event.target.value
-                          )
-                        }
-                        placeholder={t('paramValue')}
-                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('paramKey')}: {param.key}
+                      </p>
+                      {param.description ? (
+                        <p className="text-xs text-muted-foreground">
+                          {param.description}
+                        </p>
+                      ) : null}
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="self-start text-muted-foreground"
-                      onClick={() => handleRemoveParam(param.id)}
-                      aria-label={t('removeParam')}
-                    >
-                      <TrashIcon className="size-4" />
-                    </Button>
+                    <Input
+                      id={`param-${param.id}-value`}
+                      value={param.value}
+                      onChange={(event) =>
+                        handleParamValueChange(param.id, event.target.value)
+                      }
+                      placeholder={t('paramValue')}
+                    />
                   </div>
                 ))}
               </div>
@@ -214,15 +235,6 @@ export function ComponentConfigSheet({
                 {t('emptyParams')}
               </p>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-dashed"
-              onClick={handleAddParam}
-            >
-              <PlusIcon className="mr-2 size-4" />
-              {t('addParam')}
-            </Button>
           </div>
         </div>
         <SheetFooter>

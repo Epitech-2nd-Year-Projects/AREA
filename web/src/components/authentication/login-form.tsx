@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import {
   buildCleanOAuthPath,
   clearOAuthState,
-  extractRedirectFromUri,
+  createClientOAuthState,
   persistOAuthState,
   readOAuthState,
   sanitizeRedirectTarget
@@ -169,10 +169,7 @@ export function LoginForm({
         const cleanPath = buildCleanOAuthPath(params)
         router.replace(cleanPath, { scroll: false })
 
-        const redirectFromState = extractRedirectFromUri(
-          storedState.redirectUri
-        )
-        completeLogin(redirectFromState)
+        completeLogin(storedState.redirect)
       } catch (error) {
         if (cancelled) return
 
@@ -262,13 +259,16 @@ export function LoginForm({
     setResendFeedback(null)
     setUnverifiedEmail(null)
 
-    const redirectUrl = new URL('/oauth/callback', window.location.origin)
-    // one callback for all: encode flow, provider, and desired next route
-    redirectUrl.searchParams.set('flow', 'login')
-    redirectUrl.searchParams.set('provider', GOOGLE_PROVIDER)
+    const redirectUri = new URL(
+      '/oauth/callback',
+      window.location.origin
+    ).toString()
     const next = redirectParam ?? '/dashboard'
-    redirectUrl.searchParams.set('redirect', next)
-    const redirectUri = redirectUrl.toString()
+    const { value: clientState } = createClientOAuthState({
+      provider: GOOGLE_PROVIDER,
+      flow: 'login',
+      redirect: next
+    })
 
     try {
       setStatusMessage(t('oauth.starting'))
@@ -276,7 +276,8 @@ export function LoginForm({
         provider: GOOGLE_PROVIDER,
         body: {
           redirectUri,
-          usePkce: true
+          usePkce: true,
+          state: clientState
         }
       })
 
@@ -284,8 +285,10 @@ export function LoginForm({
       persistOAuthState(GOOGLE_PROVIDER, {
         provider: GOOGLE_PROVIDER,
         redirectUri,
-        state: response.state,
+        state: response.state ?? clientState,
         codeVerifier: response.codeVerifier,
+        flow: 'login',
+        redirect: next,
         createdAt: Date.now()
       })
 

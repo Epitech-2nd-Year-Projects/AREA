@@ -2,10 +2,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { useAuthorizeOAuthMutation, useExchangeOAuthMutation } from '@/lib/api/openapi/auth'
+import { useExchangeOAuthMutation } from '@/lib/api/openapi/auth'
 import { useSubscribeServiceExchangeMutation } from '@/lib/api/openapi/services'
 import { ApiError } from '@/lib/api/http/errors'
-import { clearOAuthState, readOAuthState } from '@/lib/auth/oauth'
+import type { OAuthSessionState } from '@/lib/auth/oauth'
+import {
+  clearOAuthState,
+  parseClientOAuthState,
+  readOAuthState,
+  readOAuthStateByStateValue,
+  sanitizeRedirectTarget
+} from '@/lib/auth/oauth'
 import { useQueryClient } from '@tanstack/react-query'
 import { authKeys } from '@/lib/api/openapi/auth/query-keys'
 import { aboutKeys } from '@/lib/api/openapi/about/query-keys'
@@ -18,7 +25,8 @@ export default function OAuthCallbackPage() {
   const [message, setMessage] = useState<string>('Completing authorization...')
 
   const { mutateAsync: exchangeOAuth } = useExchangeOAuthMutation()
-  const { mutateAsync: exchangeSubscription } = useSubscribeServiceExchangeMutation()
+  const { mutateAsync: exchangeSubscription } =
+    useSubscribeServiceExchangeMutation()
 
   const params = useMemo(() => new URLSearchParams(serialized), [serialized])
 
@@ -27,16 +35,41 @@ export default function OAuthCallbackPage() {
     const code = params.get('code')
     const oauthError = params.get('error')
     const stateParam = params.get('state')
-    const provider = params.get('provider')
-    const flow = params.get('flow') // 'login' | 'service'
-    const next = params.get('redirect') || undefined
+    const providerFromQuery = params.get('provider') || undefined
+    const flowFromQuery = params.get('flow') || undefined
+    const redirectFromQuery =
+      sanitizeRedirectTarget(params.get('redirect')) || undefined
+    const parsedState = parseClientOAuthState(stateParam)
+
+    const candidateProviders = [
+      parsedState?.provider,
+      providerFromQuery
+    ].filter(
+      (value): value is string => typeof value === 'string' && value.length > 0
+    )
+
+    let stored: OAuthSessionState | null = null
+    for (const candidate of candidateProviders) {
+      stored = readOAuthState(candidate)
+      if (stored) break
+    }
+
+    if (!stored && stateParam) {
+      stored = readOAuthStateByStateValue(stateParam)
+    }
+
+    const provider =
+      stored?.provider ?? parsedState?.provider ?? providerFromQuery
+    const flow = stored?.flow ?? parsedState?.flow ?? flowFromQuery
+    const redirectTarget =
+      sanitizeRedirectTarget(stored?.redirect ?? parsedState?.redirect) ||
+      redirectFromQuery
 
     const goNext = (fallback: string) => {
-      router.replace(next || fallback)
+      router.replace(redirectTarget || fallback)
     }
 
     if (oauthError) {
-      // Clean stored state if possible
       if (provider) clearOAuthState(provider)
       setMessage('Authorization canceled or failed. Redirecting...')
       goNext(flow === 'service' ? '/dashboard/profile' : '/login')
@@ -52,14 +85,14 @@ export default function OAuthCallbackPage() {
     let cancelled = false
 
     const run = async () => {
-      const stored = readOAuthState(provider)
-      if (!stored) {
+      const session = stored
+      if (!session) {
         clearOAuthState(provider)
         setMessage('Session expired. Redirecting...')
         goNext(flow === 'service' ? '/dashboard/profile' : '/login')
         return
       }
-      if (stored.state && stateParam && stored.state !== stateParam) {
+      if (session.state && stateParam && session.state !== stateParam) {
         clearOAuthState(provider)
         setMessage('State mismatch. Redirecting...')
         goNext(flow === 'service' ? '/dashboard/profile' : '/login')
@@ -72,9 +105,9 @@ export default function OAuthCallbackPage() {
             provider,
             body: {
               code,
-              redirectUri: stored.redirectUri,
-              codeVerifier: stored.codeVerifier,
-              state: stateParam ?? stored.state
+              redirectUri: session.redirectUri,
+              codeVerifier: session.codeVerifier,
+              state: stateParam ?? session.state
             }
           })
           if (cancelled) return
@@ -84,18 +117,16 @@ export default function OAuthCallbackPage() {
           return
         }
 
-        // service subscription
         await exchangeSubscription({
           provider,
           body: {
             code,
-            redirectUri: stored.redirectUri,
-            codeVerifier: stored.codeVerifier
+            redirectUri: session.redirectUri,
+            codeVerifier: session.codeVerifier
           }
         })
         if (cancelled) return
         clearOAuthState(provider)
-        // refresh current user + about info
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
           queryClient.invalidateQueries({ queryKey: aboutKeys.detail() })
@@ -118,7 +149,15 @@ export default function OAuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [aboutKeys, authKeys, exchangeOAuth, exchangeSubscription, params, queryClient, router])
+  }, [
+    aboutKeys,
+    authKeys,
+    exchangeOAuth,
+    exchangeSubscription,
+    params,
+    queryClient,
+    router
+  ])
 
   return (
     <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
@@ -127,4 +166,3 @@ export default function OAuthCallbackPage() {
     </div>
   )
 }
-
