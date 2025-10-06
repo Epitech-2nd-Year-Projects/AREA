@@ -1,12 +1,10 @@
-# Monorepo Stack
+# AREA
 
 This repository contains three projects developed and deployed together using `docker-compose`:
 
 ```
 .
 ├── server/         # Golang backend
-│   ├── cmd/server/ # Entrypoint
-│   └── internal/   # Business logic, handlers, middleware
 ├── web/            # Next.js frontend
 │   └── public/     # Serves the built client.apk
 ├── mobile/         # Flutter app (Android APK build)

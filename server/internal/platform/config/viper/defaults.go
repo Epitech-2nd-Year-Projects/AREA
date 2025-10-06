@@ -20,7 +20,7 @@ var _defaultConfig = Config{
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  60 * time.Second,
 			CORS: HTTPCORSConfig{
-				AllowedOrigins:   []string{"http://localhost:3000"},
+				AllowedOrigins:   []string{"http://localhost:8081"},
 				AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 				AllowedHeaders:   []string{"Authorization", "Content-Type"},
 				AllowCredentials: true,

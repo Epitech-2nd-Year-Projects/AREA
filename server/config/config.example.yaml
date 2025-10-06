@@ -12,7 +12,7 @@ server:
     idleTimeout: 60s
     cors:
       allowedOrigins:
-        - http://localhost:3000
+        - http://localhost:8081
       allowedMethods:
         - GET
         - POST
