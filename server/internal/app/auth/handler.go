@@ -2,12 +2,14 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
@@ -161,6 +163,38 @@ func (h *Handler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(usr)})
 }
 
+// ListIdentities handles GET /v1/identities
+func (h *Handler) ListIdentities(c *gin.Context) {
+	if h.oauth == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+
+	items, err := h.oauth.ListIdentities(c.Request.Context(), usr.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list identities"})
+		return
+	}
+
+	response := openapi.IdentityListResponse{Identities: mapIdentities(items)}
+	c.JSON(http.StatusOK, response)
+}
+
 // AuthorizeOAuth handles POST /v1/oauth/{provider}/authorize
 func (h *Handler) AuthorizeOAuth(c *gin.Context, provider string) {
 	if h.oauth == nil {
@@ -293,6 +327,7 @@ func (h *Handler) handleOAuthError(c *gin.Context, err error) {
 	case errors.Is(err, ErrOAuthEmailMissing):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email missing from provider"})
 	default:
+		fmt.Println(err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth provider error"})
 	}
 }
@@ -312,5 +347,40 @@ func toOpenAPIUser(u userdomain.User) openapi.User {
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
 		LastLoginAt: u.LastLoginAt,
+	}
+}
+
+func mapIdentities(items []identitydomain.Identity) []openapi.IdentitySummary {
+	if len(items) == 0 {
+		return make([]openapi.IdentitySummary, 0)
+	}
+	result := make([]openapi.IdentitySummary, 0, len(items))
+	for _, item := range items {
+		result = append(result, toOpenAPIIdentity(item))
+	}
+	return result
+}
+
+func toOpenAPIIdentity(identity identitydomain.Identity) openapi.IdentitySummary {
+	scopesCopy := append([]string(nil), identity.Scopes...)
+
+	var scopesPtr *[]string
+	if len(scopesCopy) > 0 {
+		scopesPtr = &scopesCopy
+	}
+
+	var expiresAt *time.Time
+	if identity.ExpiresAt != nil {
+		expiry := identity.ExpiresAt.UTC()
+		expiresAt = &expiry
+	}
+
+	return openapi.IdentitySummary{
+		Id:          openapi_types.UUID(identity.ID),
+		Provider:    identity.Provider,
+		Subject:     identity.Subject,
+		Scopes:      scopesPtr,
+		ConnectedAt: identity.CreatedAt.UTC(),
+		ExpiresAt:   expiresAt,
 	}
 }
