@@ -17,7 +17,6 @@ import { ServiceCardList } from '@/components/services/service-card-list'
 import { useTranslations } from 'next-intl'
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
 import { mapUserDTOToUser, useCurrentUserQuery } from '@/lib/api/openapi/auth'
-// centralized OAuth handling now lives in /oauth/callback
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
 
@@ -38,7 +37,6 @@ function getAvatarFallback(email: string) {
 
 export default function ProfilePage() {
   const t = useTranslations('ProfilePage')
-  // no local OAuth handling here; handled by /oauth/callback
   const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
   const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
 
@@ -52,7 +50,6 @@ export default function ProfilePage() {
   const [passwordStatus, setPasswordStatus] = useState<FormStatus>(null)
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-
 
   useEffect(() => {
     if (!user) return
