@@ -7,13 +7,13 @@ class RegisterResponseModel {
 
   factory RegisterResponseModel.fromJson(Map<String, dynamic> json) {
     return RegisterResponseModel(
-      expiresAt: DateTime.parse(json['expires_at'] as String),
+      expiresAt: DateTime.parse(json['expiresAt'] as String),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'expires_at': expiresAt.toIso8601String(),
+      'expiresAt': expiresAt.toIso8601String(),
     };
   }
 }

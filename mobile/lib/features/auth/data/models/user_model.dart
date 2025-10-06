@@ -20,14 +20,14 @@ class UserModel extends User {
       id: json['id'] as String,
       email: json['email'] as String,
       status: json['status'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
           : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
           : null,
-      lastLoginAt: json['last_login_at'] != null
-          ? DateTime.parse(json['last_login_at'] as String)
+      lastLoginAt: json['lastLoginAt'] != null
+          ? DateTime.parse(json['lastLoginAt'] as String)
           : null,
     );
   }
@@ -37,10 +37,10 @@ class UserModel extends User {
       'id': id,
       'email': email,
       if (status != null) 'status': status,
-      if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
-      if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       if (lastLoginAt != null)
-        'last_login_at': lastLoginAt!.toIso8601String(),
+        'lastLoginAt': lastLoginAt!.toIso8601String(),
     };
   }
 

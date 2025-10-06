@@ -38,7 +38,7 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
 
       final Map<String, dynamic> requestData = {};
       if (redirectUri != null) {
-        requestData['redirect_uri'] = redirectUri;
+        requestData['redirectUri'] = redirectUri;
       }
 
       final response = await _apiClient.post<Map<String, dynamic>>(
@@ -70,11 +70,11 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
       final Map<String, dynamic> requestData = {'code': code};
 
       if (codeVerifier != null) {
-        requestData['code_verifier'] = codeVerifier;
+        requestData['codeVerifier'] = codeVerifier;
       }
 
       if (redirectUri != null) {
-        requestData['redirect_uri'] = redirectUri;
+        requestData['redirectUri'] = redirectUri;
       }
 
       if (state != null) {
