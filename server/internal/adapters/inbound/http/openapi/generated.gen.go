@@ -9,7 +9,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -229,6 +231,46 @@ type IdentitySummary struct {
 	Subject     string             `json:"subject"`
 }
 
+// SubscribeExchangeRequest defines model for SubscribeExchangeRequest.
+type SubscribeExchangeRequest struct {
+	Code         string  `json:"code"`
+	CodeVerifier *string `json:"codeVerifier,omitempty"`
+	RedirectUri  *string `json:"redirectUri,omitempty"`
+}
+
+// SubscribeExchangeResponse defines model for SubscribeExchangeResponse.
+type SubscribeExchangeResponse struct {
+	Identity     *IdentitySummary    `json:"identity,omitempty"`
+	Subscription SubscriptionSummary `json:"subscription"`
+}
+
+// SubscribeServiceRequest defines model for SubscribeServiceRequest.
+type SubscribeServiceRequest struct {
+	Prompt      *string   `json:"prompt,omitempty"`
+	RedirectUri *string   `json:"redirectUri,omitempty"`
+	Scopes      *[]string `json:"scopes,omitempty"`
+	State       *string   `json:"state,omitempty"`
+	UsePkce     *bool     `json:"usePkce,omitempty"`
+}
+
+// SubscribeServiceResponse defines model for SubscribeServiceResponse.
+type SubscribeServiceResponse struct {
+	Authorization *OAuthAuthorizationResponse `json:"authorization,omitempty"`
+	Status        string                      `json:"status"`
+	Subscription  *SubscriptionSummary        `json:"subscription,omitempty"`
+}
+
+// SubscriptionSummary defines model for SubscriptionSummary.
+type SubscriptionSummary struct {
+	CreatedAt   time.Time           `json:"createdAt"`
+	Id          openapi_types.UUID  `json:"id"`
+	IdentityId  *openapi_types.UUID `json:"identityId,omitempty"`
+	ProviderId  openapi_types.UUID  `json:"providerId"`
+	ScopeGrants *[]string           `json:"scopeGrants,omitempty"`
+	Status      string              `json:"status"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+}
+
 // ListAreasResponse Collection wrapper for automations returned to the client.
 type ListAreasResponse struct {
 	Areas []Area `json:"areas"`
@@ -382,6 +424,12 @@ type AuthorizeOAuthJSONRequestBody = OAuthAuthorizationRequest
 // ExchangeOAuthJSONRequestBody defines body for ExchangeOAuth for application/json ContentType.
 type ExchangeOAuthJSONRequestBody = OAuthExchangeRequest
 
+// SubscribeServiceJSONRequestBody defines body for SubscribeService for application/json ContentType.
+type SubscribeServiceJSONRequestBody = SubscribeServiceRequest
+
+// SubscribeServiceExchangeJSONRequestBody defines body for SubscribeServiceExchange for application/json ContentType.
+type SubscribeServiceExchangeJSONRequestBody = SubscribeExchangeRequest
+
 // RegisterUserJSONRequestBody defines body for RegisterUser for application/json ContentType.
 type RegisterUserJSONRequestBody = RegisterUserRequest
 
@@ -414,6 +462,9 @@ type ServerInterface interface {
 	// List service components
 	// (GET /v1/components)
 	ListComponents(c *gin.Context, params ListComponentsParams)
+	// List components available to the current user
+	// (GET /v1/components/available)
+	ListAvailableComponents(c *gin.Context, params ListComponentsParams)
 	// List connected identities
 	// (GET /v1/identities)
 	ListIdentities(c *gin.Context)
@@ -423,6 +474,12 @@ type ServerInterface interface {
 	// Exchange authorization code for session
 	// (POST /v1/oauth/{provider}/exchange)
 	ExchangeOAuth(c *gin.Context, provider OAuthProvider)
+	// Subscribe current user to service provider
+	// (POST /v1/services/{provider}/subscribe)
+	SubscribeService(c *gin.Context, provider OAuthProvider)
+	// Complete service subscription exchange
+	// (POST /v1/services/{provider}/subscribe/exchange)
+	SubscribeServiceExchange(c *gin.Context, provider OAuthProvider)
 	// Register a new user
 	// (POST /v1/users)
 	RegisterUser(c *gin.Context)
@@ -598,6 +655,37 @@ func (siw *ServerInterfaceWrapper) ListComponents(c *gin.Context) {
 	siw.Handler.ListComponents(c, params)
 }
 
+// ListAvailableComponents operation middleware
+func (siw *ServerInterfaceWrapper) ListAvailableComponents(c *gin.Context) {
+
+	var err error
+
+	c.Set(SessionAuthScopes, []string{})
+
+	var params ListComponentsParams
+
+	err = runtime.BindQueryParameter("form", true, false, "kind", c.Request.URL.Query(), &params.Kind)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter kind: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "provider", c.Request.URL.Query(), &params.Provider)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListAvailableComponents(c, params)
+}
+
 // ListIdentities operation middleware
 func (siw *ServerInterfaceWrapper) ListIdentities(c *gin.Context) {
 
@@ -665,6 +753,58 @@ func (siw *ServerInterfaceWrapper) ExchangeOAuth(c *gin.Context) {
 	siw.Handler.ExchangeOAuth(c, provider)
 }
 
+// SubscribeService operation middleware
+func (siw *ServerInterfaceWrapper) SubscribeService(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "provider" -------------
+	var provider OAuthProvider
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(SessionAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SubscribeService(c, provider)
+}
+
+// SubscribeServiceExchange operation middleware
+func (siw *ServerInterfaceWrapper) SubscribeServiceExchange(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "provider" -------------
+	var provider OAuthProvider
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(SessionAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SubscribeServiceExchange(c, provider)
+}
+
 // RegisterUser operation middleware
 func (siw *ServerInterfaceWrapper) RegisterUser(c *gin.Context) {
 
@@ -714,9 +854,12 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/auth/me", wrapper.GetCurrentUser)
 	router.POST(options.BaseURL+"/v1/auth/verify", wrapper.VerifyEmail)
 	router.GET(options.BaseURL+"/v1/components", wrapper.ListComponents)
+	router.GET(options.BaseURL+"/v1/components/available", wrapper.ListAvailableComponents)
 	router.GET(options.BaseURL+"/v1/identities", wrapper.ListIdentities)
 	router.POST(options.BaseURL+"/v1/oauth/:provider/authorize", wrapper.AuthorizeOAuth)
 	router.POST(options.BaseURL+"/v1/oauth/:provider/exchange", wrapper.ExchangeOAuth)
+	router.POST(options.BaseURL+"/v1/services/:provider/subscribe", wrapper.SubscribeService)
+	router.POST(options.BaseURL+"/v1/services/:provider/subscribe/exchange", wrapper.SubscribeServiceExchange)
 	router.POST(options.BaseURL+"/v1/users", wrapper.RegisterUser)
 }
 
@@ -987,6 +1130,14 @@ func (response ListComponents200JSONResponse) VisitListComponentsResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListComponents400Response struct {
+}
+
+func (response ListComponents400Response) VisitListComponentsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
 type ListComponents401Response struct {
 }
 
@@ -1135,6 +1286,122 @@ func (response ExchangeOAuth502Response) VisitExchangeOAuthResponse(w http.Respo
 	return nil
 }
 
+type SubscribeServiceRequestObject struct {
+	Provider OAuthProvider `json:"provider"`
+	Body     *SubscribeServiceJSONRequestBody
+}
+
+type SubscribeServiceResponseObject interface {
+	VisitSubscribeServiceResponse(w http.ResponseWriter) error
+}
+
+type SubscribeService200JSONResponse SubscribeServiceResponse
+
+func (response SubscribeService200JSONResponse) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubscribeService400Response struct {
+}
+
+func (response SubscribeService400Response) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type SubscribeService401Response struct {
+}
+
+func (response SubscribeService401Response) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type SubscribeService404Response struct {
+}
+
+func (response SubscribeService404Response) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
+type SubscribeService409Response struct {
+}
+
+func (response SubscribeService409Response) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
+}
+
+type SubscribeService502Response struct {
+}
+
+func (response SubscribeService502Response) VisitSubscribeServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(502)
+	return nil
+}
+
+type SubscribeServiceExchangeRequestObject struct {
+	Provider OAuthProvider `json:"provider"`
+	Body     *SubscribeServiceExchangeJSONRequestBody
+}
+
+type SubscribeServiceExchangeResponseObject interface {
+	VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+}
+
+type SubscribeServiceExchange200JSONResponse SubscribeExchangeResponse
+
+func (response SubscribeServiceExchange200JSONResponse) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubscribeServiceExchange400Response struct {
+}
+
+func (response SubscribeServiceExchange400Response) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type SubscribeServiceExchange401Response struct {
+}
+
+func (response SubscribeServiceExchange401Response) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type SubscribeServiceExchange404Response struct {
+}
+
+func (response SubscribeServiceExchange404Response) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
+type SubscribeServiceExchange409Response struct {
+}
+
+func (response SubscribeServiceExchange409Response) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
+}
+
+type SubscribeServiceExchange502Response struct {
+}
+
+func (response SubscribeServiceExchange502Response) VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(502)
+	return nil
+}
+
 type RegisterUserRequestObject struct {
 	Body *RegisterUserJSONRequestBody
 }
@@ -1197,6 +1464,9 @@ type StrictServerInterface interface {
 	// List service components
 	// (GET /v1/components)
 	ListComponents(ctx context.Context, request ListComponentsRequestObject) (ListComponentsResponseObject, error)
+	// List components available to the current user
+	// (GET /v1/components/available)
+	ListAvailableComponents(ctx context.Context, request ListComponentsRequestObject) (ListComponentsResponseObject, error)
 	// List connected identities
 	// (GET /v1/identities)
 	ListIdentities(ctx context.Context, request ListIdentitiesRequestObject) (ListIdentitiesResponseObject, error)
@@ -1206,6 +1476,12 @@ type StrictServerInterface interface {
 	// Exchange authorization code for session
 	// (POST /v1/oauth/{provider}/exchange)
 	ExchangeOAuth(ctx context.Context, request ExchangeOAuthRequestObject) (ExchangeOAuthResponseObject, error)
+	// Subscribe current user to service provider
+	// (POST /v1/services/{provider}/subscribe)
+	SubscribeService(ctx context.Context, request SubscribeServiceRequestObject) (SubscribeServiceResponseObject, error)
+	// Complete service subscription exchange
+	// (POST /v1/services/{provider}/subscribe/exchange)
+	SubscribeServiceExchange(ctx context.Context, request SubscribeServiceExchangeRequestObject) (SubscribeServiceExchangeResponseObject, error)
 	// Register a new user
 	// (POST /v1/users)
 	RegisterUser(ctx context.Context, request RegisterUserRequestObject) (RegisterUserResponseObject, error)
@@ -1476,6 +1752,32 @@ func (sh *strictHandler) ListComponents(ctx *gin.Context, params ListComponentsP
 	}
 }
 
+func (sh *strictHandler) ListAvailableComponents(ctx *gin.Context, params ListComponentsParams) {
+	var request ListComponentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAvailableComponents(ctx, request.(ListComponentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAvailableComponents")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(ListComponentsResponseObject); ok {
+		if err := validResponse.VisitListComponentsResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListIdentities operation middleware
 func (sh *strictHandler) ListIdentities(ctx *gin.Context) {
 	var request ListIdentitiesRequestObject
@@ -1564,6 +1866,79 @@ func (sh *strictHandler) ExchangeOAuth(ctx *gin.Context, provider OAuthProvider)
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(ExchangeOAuthResponseObject); ok {
 		if err := validResponse.VisitExchangeOAuthResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubscribeService operation middleware
+func (sh *strictHandler) SubscribeService(ctx *gin.Context, provider OAuthProvider) {
+	var request SubscribeServiceRequestObject
+
+	request.Provider = provider
+
+	var body SubscribeServiceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			ctx.Status(http.StatusBadRequest)
+			ctx.Error(err)
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SubscribeService(ctx, request.(SubscribeServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubscribeService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(SubscribeServiceResponseObject); ok {
+		if err := validResponse.VisitSubscribeServiceResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubscribeServiceExchange operation middleware
+func (sh *strictHandler) SubscribeServiceExchange(ctx *gin.Context, provider OAuthProvider) {
+	var request SubscribeServiceExchangeRequestObject
+
+	request.Provider = provider
+
+	var body SubscribeServiceExchangeJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SubscribeServiceExchange(ctx, request.(SubscribeServiceExchangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubscribeServiceExchange")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(SubscribeServiceExchangeResponseObject); ok {
+		if err := validResponse.VisitSubscribeServiceExchangeResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

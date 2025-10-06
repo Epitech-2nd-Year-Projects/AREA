@@ -139,6 +139,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComponentListResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Authentication required
+        '500':
+          description: Failed to load component catalog
+  /v1/components/available:
+    get:
+      summary: List components available to the current user
+      description: Retrieve catalog entries whose providers are subscribed by the current user
+      operationId: listAvailableComponents
+      tags:
+        - catalog
+      security:
+        - sessionAuth: []
+      parameters:
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum: [action, reaction]
+          description: Filter components by kind
+        - in: query
+          name: provider
+          schema:
+            type: string
+          description: Filter components by provider slug (for example `google`)
+      responses:
+        '200':
+          description: Component catalog filtered by subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentListResponse'
+        '400':
+          description: Invalid request
         '401':
           description: Authentication required
         '500':
@@ -611,6 +647,73 @@ paths:
           description: OAuth not configured
         '502':
           description: Provider exchange failed
+  /v1/services/{provider}/subscribe:
+    post:
+      summary: Subscribe current user to service provider
+      description: |-
+        Initiates a subscription for the authenticated user. For OAuth-backed providers this returns
+        authorization parameters so the client can redirect the user; for providers that do not
+        require OAuth the subscription is created immediately.
+      operationId: subscribeService
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/OAuthProvider'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeServiceRequest'
+      responses:
+        '200':
+          description: Subscription outcome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscribeServiceResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Session missing or expired
+        '404':
+          description: Provider not configured
+        '409':
+          description: Identity already linked to another user
+        '502':
+          description: OAuth provider error
+  /v1/services/{provider}/subscribe/exchange:
+    post:
+      summary: Complete service subscription exchange
+      description: Completes the subscription after the user authorised the external provider.
+      operationId: subscribeServiceExchange
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/OAuthProvider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeExchangeRequest'
+      responses:
+        '200':
+          description: Subscription recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscribeExchangeResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Session missing or expired
+        '404':
+          description: Provider not configured
+        '409':
+          description: Identity already linked to another user
+        '502':
+          description: OAuth provider error
   /v1/areas:
     get:
       summary: List automations owned by the current user
@@ -1143,6 +1246,76 @@ components:
           type: string
           format: date-time
           nullable: true
+    SubscriptionSummary:
+      type: object
+      required: [id, providerId, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        identityId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        scopeGrants:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SubscribeServiceRequest:
+      type: object
+      properties:
+        scopes:
+          type: array
+          items:
+            type: string
+        redirectUri:
+          type: string
+        state:
+          type: string
+        prompt:
+          type: string
+        usePkce:
+          type: boolean
+    SubscribeServiceResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [authorization_required, subscribed]
+        authorization:
+          $ref: '#/components/schemas/OAuthAuthorizationResponse'
+        subscription:
+          $ref: '#/components/schemas/SubscriptionSummary'
+    SubscribeExchangeRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+        redirectUri:
+          type: string
+        codeVerifier:
+          type: string
+    SubscribeExchangeResponse:
+      type: object
+      required: [subscription]
+      properties:
+        subscription:
+          $ref: '#/components/schemas/SubscriptionSummary'
+        identity:
+          $ref: '#/components/schemas/IdentitySummary'
   parameters:
     OAuthProvider:
       name: provider
