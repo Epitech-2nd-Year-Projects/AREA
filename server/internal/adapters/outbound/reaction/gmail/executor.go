@@ -251,19 +251,19 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	if !ok {
 		return cfg, fmt.Errorf("to missing")
 	}
-	cfg.to, err = toEmailList(toRaw)
+	cfg.to, err = toEmailList(toRaw, false)
 	if err != nil {
 		return cfg, fmt.Errorf("to invalid: %w", err)
 	}
 
 	if ccRaw, ok := params["cc"]; ok {
-		cfg.cc, err = toEmailList(ccRaw)
+		cfg.cc, err = toEmailList(ccRaw, true)
 		if err != nil {
 			return cfg, fmt.Errorf("cc invalid: %w", err)
 		}
 	}
 	if bccRaw, ok := params["bcc"]; ok {
-		cfg.bcc, err = toEmailList(bccRaw)
+		cfg.bcc, err = toEmailList(bccRaw, true)
 		if err != nil {
 			return cfg, fmt.Errorf("bcc invalid: %w", err)
 		}
@@ -297,37 +297,67 @@ func sanitizeHeader(value string) string {
 	return strings.TrimSpace(replacer.Replace(value))
 }
 
-func toEmailList(value any) ([]string, error) {
+func toEmailList(value any, allowEmpty bool) ([]string, error) {
 	if value == nil {
 		return nil, nil
 	}
-	if list, ok := value.([]any); ok {
-		emails := make([]string, 0, len(list))
-		for _, item := range list {
-			address, err := toString(item)
-			if err != nil {
+
+	replacer := strings.NewReplacer(";", ",", "\n", ",")
+	emails := make([]string, 0, 4)
+
+	collect := func(raw any) error {
+		if raw == nil {
+			return nil
+		}
+		str, err := toString(raw)
+		if err != nil {
+			if allowEmpty {
+				return nil
+			}
+			return err
+		}
+		str = strings.TrimSpace(str)
+		if str == "" {
+			return nil
+		}
+
+		parts := strings.Split(replacer.Replace(str), ",")
+		for _, part := range parts {
+			address := normalizeEmail(part)
+			if address != "" {
+				emails = append(emails, address)
+			}
+		}
+		return nil
+	}
+
+	switch typed := value.(type) {
+	case []string:
+		for _, item := range typed {
+			if err := collect(item); err != nil {
 				return nil, err
 			}
-			emails = append(emails, normalizeEmail(address))
 		}
-		return filterEmpty(emails), nil
-	}
-	str, err := toString(value)
-	if err != nil {
-		return nil, err
-	}
-	replacer := strings.NewReplacer(";", ",", "\n", ",")
-	parts := strings.Split(replacer.Replace(str), ",")
-	emails := make([]string, 0, len(parts))
-	for _, part := range parts {
-		address := normalizeEmail(part)
-		if address != "" {
-			emails = append(emails, address)
+	case []any:
+		for _, item := range typed {
+			if err := collect(item); err != nil {
+				return nil, err
+			}
+		}
+	default:
+		if err := collect(typed); err != nil {
+			return nil, err
 		}
 	}
+
+	emails = filterEmpty(emails)
 	if len(emails) == 0 {
+		if allowEmpty {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("no recipients provided")
 	}
+
 	return emails, nil
 }
 

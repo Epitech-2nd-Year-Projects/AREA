@@ -129,7 +129,8 @@ export default function OAuthCallbackPage() {
         clearOAuthState(provider)
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
-          queryClient.invalidateQueries({ queryKey: aboutKeys.detail() })
+          queryClient.invalidateQueries({ queryKey: aboutKeys.detail() }),
+          queryClient.invalidateQueries({ queryKey: authKeys.identities() })
         ])
         setMessage('Service connected. Redirecting...')
         goNext('/dashboard/profile')

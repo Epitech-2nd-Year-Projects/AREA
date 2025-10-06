@@ -7,6 +7,7 @@ import {
   OAuthAuthorizationRequestDTO,
   OAuthAuthorizationResponseDTO,
   OAuthExchangeRequestDTO,
+  IdentityListResponseDTO,
   UserResponseDTO,
   VerifyEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
@@ -62,6 +63,16 @@ export function currentUserClient(options?: ClientRequestOptions) {
   }
   return apiFetchClient<UserResponseDTO>(
     '/v1/auth/me',
+    buildClientOptions(options)
+  )
+}
+
+export function listIdentitiesClient(options?: ClientRequestOptions) {
+  if (apiRuntime.useMocks) {
+    throw new Error('Identities mock not implemented')
+  }
+  return apiFetchClient<IdentityListResponseDTO>(
+    '/v1/identities',
     buildClientOptions(options)
   )
 }

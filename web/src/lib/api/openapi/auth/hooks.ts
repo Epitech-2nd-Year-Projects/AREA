@@ -11,6 +11,7 @@ import {
   AuthSessionResponseDTO,
   LoginRequestDTO,
   OAuthAuthorizationResponseDTO,
+  IdentityListResponseDTO,
   UserResponseDTO,
   VerifyEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
@@ -31,6 +32,18 @@ type CurrentUserQueryOptions = {
     ApiError,
     UserResponseDTO,
     ReturnType<typeof authKeys.currentUser>
+  >,
+  'queryKey' | 'queryFn'
+>
+
+type IdentitiesQueryOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseQueryOptions<
+    IdentityListResponseDTO,
+    ApiError,
+    IdentityListResponseDTO,
+    ReturnType<typeof authKeys.identities>
   >,
   'queryKey' | 'queryFn'
 >
@@ -77,6 +90,14 @@ export function useCurrentUserQuery(options?: CurrentUserQueryOptions) {
   const { clientOptions, ...queryOptions } = options ?? {}
   return useQuery({
     ...authQueries.currentUser({ clientOptions }),
+    ...queryOptions
+  })
+}
+
+export function useIdentitiesQuery(options?: IdentitiesQueryOptions) {
+  const { clientOptions, ...queryOptions } = options ?? {}
+  return useQuery({
+    ...authQueries.identities({ clientOptions }),
     ...queryOptions
   })
 }

@@ -288,6 +288,9 @@
     "addParam": "Add parameter",
     "paramKey": "Key",
     "paramValue": "Value",
+    "identityValuePlaceholder": "Linked identity selected automatically",
+    "identityResolvedHelper": "Using account {subject}.",
+    "identityUnresolvedHelper": "No linked identity found. Connect the service from your profile.",
     "removeParam": "Remove parameter",
     "cancel": "Cancel",
     "save": "Save configuration"

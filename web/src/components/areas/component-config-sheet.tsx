@@ -14,6 +14,8 @@ import {
   SheetTitle
 } from '../ui/sheet'
 import type { ComponentParameterDTO } from '@/lib/api/contracts/openapi/areas'
+import { useIdentitiesQuery } from '@/lib/api/openapi/auth'
+import type { IdentitySummaryDTO } from '@/lib/api/contracts/openapi/auth'
 
 export type ConfigParamField = {
   id: string
@@ -81,6 +83,45 @@ export function ComponentConfigSheet({
     return parameters.filter((parameter) => parameter.key.trim().length > 0)
   }, [getComponentParameters, target])
 
+  const { data: identitiesData } = useIdentitiesQuery({
+    enabled: open
+  })
+  const identitySummaries = identitiesData?.identities ?? []
+
+  const identitiesByProvider = useMemo(() => {
+    const map = new Map<string, IdentitySummaryDTO[]>()
+    for (const identity of identitySummaries) {
+      const providerKey = identity.provider.trim().toLowerCase()
+      const existing = map.get(providerKey)
+      if (existing) {
+        existing.push(identity)
+      } else {
+        map.set(providerKey, [identity])
+      }
+    }
+    return map
+  }, [identitySummaries])
+
+  const identitiesById = useMemo(() => {
+    const map = new Map<string, IdentitySummaryDTO>()
+    for (const identity of identitySummaries) {
+      map.set(identity.id, identity)
+    }
+    return map
+  }, [identitySummaries])
+
+  const componentParametersByKey = useMemo(() => {
+    const map = new Map<string, ComponentParameterDTO>()
+    for (const definition of componentParameters) {
+      const key = definition.key.trim()
+      if (!key) {
+        continue
+      }
+      map.set(key, definition)
+    }
+    return map
+  }, [componentParameters])
+
   useEffect(() => {
     if (!open) {
       return
@@ -139,6 +180,62 @@ export function ComponentConfigSheet({
 
     setParams(initialConfig.params.map((param) => ({ ...param })))
   }, [componentParameters, initialConfig, open])
+
+  useEffect(() => {
+    if (!open || identitySummaries.length === 0) {
+      return
+    }
+
+    setParams((previous) => {
+      let changed = false
+
+      const next = previous.map((param) => {
+        const paramType =
+          typeof param.type === 'string'
+            ? param.type.toLowerCase()
+            : ''
+
+        if (paramType !== 'identity') {
+          return param
+        }
+
+        if (param.value.trim().length > 0) {
+          return param
+        }
+
+        const definition = componentParametersByKey.get(param.key)
+        const provider =
+          typeof definition?.provider === 'string'
+            ? definition.provider.trim().toLowerCase()
+            : undefined
+
+        let identity: IdentitySummaryDTO | undefined
+        if (provider) {
+          identity = identitiesByProvider.get(provider)?.[0]
+        } else {
+          identity = identitySummaries[0]
+        }
+
+        if (!identity) {
+          return param
+        }
+
+        if (param.value === identity.id) {
+          return param
+        }
+
+        changed = true
+        return { ...param, value: identity.id }
+      })
+
+      return changed ? next : previous
+    })
+  }, [
+    componentParametersByKey,
+    identitiesByProvider,
+    identitySummaries,
+    open
+  ])
 
   const isActionTarget = target?.type === 'action'
   const isReactionTarget = target?.type === 'reaction'
@@ -203,32 +300,61 @@ export function ComponentConfigSheet({
             </div>
             {params.length > 0 ? (
               <div className="space-y-3">
-                {params.map((param) => (
-                  <div key={param.id} className="space-y-2">
-                    <div className="space-y-1">
-                      <Label htmlFor={`param-${param.id}-value`}>
-                        {(param.label ?? param.key) +
-                          (param.required ? ' *' : '')}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {t('paramKey')}: {param.key}
-                      </p>
-                      {param.description ? (
+                {params.map((param) => {
+                  const paramType =
+                    typeof param.type === 'string'
+                      ? param.type.toLowerCase()
+                      : ''
+                  const isIdentityParam = paramType === 'identity'
+                  const identitySummary =
+                    isIdentityParam && param.value
+                      ? identitiesById.get(param.value)
+                      : undefined
+
+                  return (
+                    <div key={param.id} className="space-y-2">
+                      <div className="space-y-1">
+                        <Label htmlFor={`param-${param.id}-value`}>
+                          {(param.label ?? param.key) +
+                            (param.required ? ' *' : '')}
+                        </Label>
                         <p className="text-xs text-muted-foreground">
-                          {param.description}
+                          {t('paramKey')}: {param.key}
+                        </p>
+                        {param.description ? (
+                          <p className="text-xs text-muted-foreground">
+                            {param.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Input
+                        id={`param-${param.id}-value`}
+                        value={param.value}
+                        onChange={(event) =>
+                          handleParamValueChange(param.id, event.target.value)
+                        }
+                        placeholder={
+                          isIdentityParam
+                            ? t('identityValuePlaceholder')
+                            : t('paramValue')
+                        }
+                        readOnly={isIdentityParam}
+                        disabled={isIdentityParam}
+                      />
+                      {isIdentityParam ? (
+                        <p className="text-xs text-muted-foreground">
+                          {identitySummary
+                            ? t('identityResolvedHelper', {
+                                subject:
+                                  identitySummary.subject ||
+                                  identitySummary.id
+                              })
+                            : t('identityUnresolvedHelper')}
                         </p>
                       ) : null}
                     </div>
-                    <Input
-                      id={`param-${param.id}-value`}
-                      value={param.value}
-                      onChange={(event) =>
-                        handleParamValueChange(param.id, event.target.value)
-                      }
-                      placeholder={t('paramValue')}
-                    />
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">

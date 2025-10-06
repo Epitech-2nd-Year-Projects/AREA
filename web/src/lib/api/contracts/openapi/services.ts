@@ -36,13 +36,5 @@ export type SubscribeExchangeResponseDTO = {
     createdAt: string
     updatedAt?: string
   }
-  identity?: {
-    id: string
-    provider: string
-    subject: string
-    scopes?: string[]
-    connectedAt: string
-    expiresAt?: string | null
-  } | null
+  identity?: import('./auth').IdentitySummaryDTO | null
 }
-
