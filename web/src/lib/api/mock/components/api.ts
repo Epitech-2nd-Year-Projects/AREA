@@ -47,4 +47,3 @@ export async function getAvailableComponentsMock(params?: {
 
   return { components }
 }
-

@@ -18,7 +18,9 @@ type AvailableComponentsOptions = {
   'queryKey' | 'queryFn'
 >
 
-export function useAvailableComponentsQuery(options?: AvailableComponentsOptions) {
+export function useAvailableComponentsQuery(
+  options?: AvailableComponentsOptions
+) {
   const { clientOptions, meta, ...queryOptions } = options ?? {}
   return useQuery({
     ...componentsQueries.available({
@@ -29,4 +31,3 @@ export function useAvailableComponentsQuery(options?: AvailableComponentsOptions
     ...queryOptions
   })
 }
-

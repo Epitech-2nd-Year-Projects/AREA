@@ -1,5 +1,8 @@
 import { componentsKeys } from './query-keys'
-import { listAvailableComponentsClient, type ComponentListResponseDTO } from './client'
+import {
+  listAvailableComponentsClient,
+  type ComponentListResponseDTO
+} from './client'
 import type { ClientRequestOptions } from '../common'
 import type { ComponentSummaryDTO } from '@/lib/api/contracts/openapi/areas'
 

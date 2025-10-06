@@ -191,9 +191,7 @@ export function ComponentConfigSheet({
 
       const next = previous.map((param) => {
         const paramType =
-          typeof param.type === 'string'
-            ? param.type.toLowerCase()
-            : ''
+          typeof param.type === 'string' ? param.type.toLowerCase() : ''
 
         if (paramType !== 'identity') {
           return param
@@ -230,12 +228,7 @@ export function ComponentConfigSheet({
 
       return changed ? next : previous
     })
-  }, [
-    componentParametersByKey,
-    identitiesByProvider,
-    identitySummaries,
-    open
-  ])
+  }, [componentParametersByKey, identitiesByProvider, identitySummaries, open])
 
   const isActionTarget = target?.type === 'action'
   const isReactionTarget = target?.type === 'reaction'
@@ -346,8 +339,7 @@ export function ComponentConfigSheet({
                           {identitySummary
                             ? t('identityResolvedHelper', {
                                 subject:
-                                  identitySummary.subject ||
-                                  identitySummary.id
+                                  identitySummary.subject || identitySummary.id
                               })
                             : t('identityUnresolvedHelper')}
                         </p>

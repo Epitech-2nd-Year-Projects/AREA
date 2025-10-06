@@ -23,5 +23,8 @@ export function listAvailableComponentsClient(
   const path = query
     ? `/v1/components/available?${query}`
     : '/v1/components/available'
-  return apiFetchClient<ComponentListResponseDTO>(path, buildClientOptions(options))
+  return apiFetchClient<ComponentListResponseDTO>(
+    path,
+    buildClientOptions(options)
+  )
 }
