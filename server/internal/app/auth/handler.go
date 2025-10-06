@@ -327,7 +327,6 @@ func (h *Handler) handleOAuthError(c *gin.Context, err error) {
 	case errors.Is(err, ErrOAuthEmailMissing):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email missing from provider"})
 	default:
-		fmt.Println(err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth provider error"})
 	}
 }
