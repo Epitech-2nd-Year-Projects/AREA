@@ -18,6 +18,7 @@ import (
 	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
+	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	reactionhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
@@ -104,6 +105,7 @@ func run() error {
 		loaders = append(loaders, catalog.DBLoader{DB: db})
 
 		repo := authpostgres.NewRepository(db)
+		serviceRepo := servicepostgres.NewRepository(db)
 
 		mailer := buildMailer(cfg, logger)
 
@@ -130,7 +132,17 @@ func run() error {
 		if managerErr != nil {
 			logger.Warn("failed to build oauth manager", zap.Error(managerErr))
 		} else if oauthManager != nil {
-			oauthService = authapp.NewOAuthService(oauthManager, repo.Identities(), repo.Users(), repo.Sessions(), nil, logger, authCfg)
+			oauthService = authapp.NewOAuthService(
+				oauthManager,
+				repo.Identities(),
+				repo.Users(),
+				repo.Sessions(),
+				serviceRepo.Providers(),
+				serviceRepo.Subscriptions(),
+				nil,
+				logger,
+				authCfg,
+			)
 		}
 
 		authHandler = authapp.NewHandler(authService, oauthService, authapp.CookieConfig{
@@ -172,7 +184,7 @@ func run() error {
 		areaHandler = areaapp.NewHandler(areaService, authService, areaCookies)
 
 		componentHandler = componentapp.NewHandler(
-			componentapp.NewService(componentRepo),
+			componentapp.NewService(componentRepo, serviceRepo.Subscriptions()),
 			authService,
 			componentapp.CookieConfig{
 				Name:     cfg.Security.Sessions.CookieName,
