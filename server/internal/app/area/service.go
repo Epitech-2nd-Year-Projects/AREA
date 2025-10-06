@@ -25,9 +25,11 @@ func (systemClock) Now() time.Time { return time.Now() }
 
 // Service orchestrates creation and retrieval of AREA automations
 type Service struct {
-	repo       outbound.AreaRepository
-	components outbound.ComponentRepository
-	clock      Clock
+	repo        outbound.AreaRepository
+	components  outbound.ComponentRepository
+	clock       Clock
+	executor    outbound.ReactionExecutor
+	provisioner ActionProvisioner
 }
 
 // Validation errors returned by the service
@@ -41,6 +43,8 @@ var (
 	ErrReactionsRequired         = errors.New("area: at least one reaction required")
 	ErrReactionComponentInvalid  = errors.New("area: reaction component invalid")
 	ErrReactionComponentDisabled = errors.New("area: reaction component disabled")
+	ErrAreaNotOwned              = errors.New("area: not owner")
+	ErrAreaMisconfigured         = errors.New("area: misconfigured")
 )
 
 const (
@@ -48,12 +52,17 @@ const (
 	descriptionMaxLength = 512
 )
 
+// ActionProvisioner configures action-specific infrastructure once an AREA is stored
+type ActionProvisioner interface {
+	Provision(ctx context.Context, area areadomain.Area) error
+}
+
 // NewService builds a Service bound to the provided repository
-func NewService(repo outbound.AreaRepository, components outbound.ComponentRepository, clock Clock) *Service {
+func NewService(repo outbound.AreaRepository, components outbound.ComponentRepository, executor outbound.ReactionExecutor, clock Clock, provisioner ActionProvisioner) *Service {
 	if clock == nil {
 		clock = systemClock{}
 	}
-	return &Service{repo: repo, components: components, clock: clock}
+	return &Service{repo: repo, components: components, executor: executor, clock: clock, provisioner: provisioner}
 }
 
 // ActionInput carries action configuration used when creating an AREA
@@ -219,7 +228,47 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 			}
 		}
 	}
+
+	if s.provisioner != nil {
+		if err := s.provisioner.Provision(ctx, stored); err != nil {
+			if cleanupErr := s.repo.Delete(ctx, stored.ID); cleanupErr != nil {
+				return areadomain.Area{}, fmt.Errorf("area.Service.Create: provision: %w (cleanup failed: %v)", err, cleanupErr)
+			}
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: provision: %w", err)
+		}
+	}
 	return stored, nil
+}
+
+// Execute triggers all reactions for the specified area owned by the user
+func (s *Service) Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error {
+	if s.repo == nil {
+		return fmt.Errorf("area.Service.Execute: repository unavailable")
+	}
+	if s.executor == nil {
+		return fmt.Errorf("area.Service.Execute: executor unavailable")
+	}
+	area, err := s.repo.FindByID(ctx, areaID)
+	if err != nil {
+		return fmt.Errorf("area.Service.Execute: repo.FindByID: %w", err)
+	}
+	if !area.OwnedBy(userID) {
+		return fmt.Errorf("area.Service.Execute: %w", ErrAreaNotOwned)
+	}
+	if area.Action == nil || len(area.Reactions) == 0 {
+		return fmt.Errorf("area.Service.Execute: %w", ErrAreaMisconfigured)
+	}
+	areaWithComponents, err := s.populateComponents(ctx, []areadomain.Area{area})
+	if err != nil {
+		return err
+	}
+	area = areaWithComponents[0]
+	for _, reaction := range area.Reactions {
+		if err := s.executor.ExecuteReaction(ctx, area, reaction); err != nil {
+			return fmt.Errorf("area.Service.Execute: execute reaction: %w", err)
+		}
+	}
+	return nil
 }
 
 // List fetches all areas owned by the given user

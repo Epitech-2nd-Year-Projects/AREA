@@ -187,10 +187,10 @@ Failing fast prevents the server from running with incomplete configuration, imp
 
 ## Sample Deployment Matrix
 
-| Environment | Config Source                         | Notes |
-|-------------|----------------------------------------|-------|
-| Local Dev   | `config.yaml` + `.env`                 | Telemetry exporters disabled or local collector.
-| Staging     | `config.yaml` + CI env vars            | Secrets injected via CI, telemetry enabled.
-| Production  | `config.yaml` + secrets manager adapter| High availability settings (timeouts, queue).
+| Environment | Config Source                           | Notes                                            |
+|-------------|-----------------------------------------|--------------------------------------------------|
+| Local Dev   | `config.yaml` + `.env`                  | Telemetry exporters disabled or local collector. 
+| Staging     | `config.yaml` + CI env vars             | Secrets injected via CI, telemetry enabled.      
+| Production  | `config.yaml` + secrets manager adapter | High availability settings (timeouts, queue).    
 
 Keep `config.yaml` small and declarative. Logic belongs in the config loader or application services, not in the YAML files.

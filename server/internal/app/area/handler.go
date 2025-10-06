@@ -7,16 +7,17 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	areaauth "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
+	componentview "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
-	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	openapitypes "github.com/oapi-codegen/runtime/types"
+	"go.uber.org/zap"
 )
 
 // CookieConfig replicates the session cookie directives enforced at the edge
@@ -109,6 +110,21 @@ func (h *Handler) CreateArea(c *gin.Context) {
 	c.JSON(http.StatusCreated, toOpenAPIArea(created))
 }
 
+// ExecuteArea handles POST /v1/areas/{areaId}/execute
+func (h *Handler) ExecuteArea(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	if err := h.service.Execute(c.Request.Context(), usr.ID, areaID); err != nil {
+		h.handleExecuteError(c, err)
+		return
+	}
+
+	c.Status(http.StatusAccepted)
+}
+
 func (h *Handler) authorize(c *gin.Context) (userdomain.User, sessiondomain.Session, bool) {
 	value, err := c.Cookie(h.cookies.Name)
 	if err != nil {
@@ -151,7 +167,21 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 	case errors.Is(err, outbound.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "area not found"})
 	default:
+		zap.L().Error("area service error", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+	}
+}
+
+func (h *Handler) handleExecuteError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, outbound.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "area not found"})
+	case errors.Is(err, ErrAreaNotOwned):
+		c.JSON(http.StatusForbidden, gin.H{"error": "not owner"})
+	case errors.Is(err, ErrAreaMisconfigured):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "area misconfigured"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute area"})
 	}
 }
 
@@ -181,7 +211,7 @@ func mapAreas(items []areadomain.Area) []openapi.Area {
 
 func toOpenAPIArea(area areadomain.Area) openapi.Area {
 	return openapi.Area{
-		Id:          openapi_types.UUID(area.ID),
+		Id:          area.ID,
 		Name:        area.Name,
 		Description: area.Description,
 		Status:      string(area.Status),
@@ -209,10 +239,10 @@ func toOpenAPIAreaAction(action *areadomain.Link) *openapi.AreaAction {
 		name := trimmed
 		namePtr = &name
 	}
-	summary := toComponentSummary(action.Config.Component, action.Config.ComponentID)
+	summary := componentview.ToSummary(action.Config.Component, action.Config.ComponentID)
 	result := openapi.AreaAction{
-		ConfigId:    openapi_types.UUID(action.Config.ID),
-		ComponentId: openapi_types.UUID(action.Config.ComponentID),
+		ConfigId:    action.Config.ID,
+		ComponentId: action.Config.ComponentID,
 		Component:   summary,
 		Name:        namePtr,
 		Params:      paramsPtr,
@@ -239,10 +269,10 @@ func toOpenAPIAreaReactions(reactions []areadomain.Link) []openapi.AreaReaction 
 			name := trimmed
 			namePtr = &name
 		}
-		summary := toComponentSummary(reaction.Config.Component, reaction.Config.ComponentID)
+		summary := componentview.ToSummary(reaction.Config.Component, reaction.Config.ComponentID)
 		result = append(result, openapi.AreaReaction{
-			ConfigId:    openapi_types.UUID(reaction.Config.ID),
-			ComponentId: openapi_types.UUID(reaction.Config.ComponentID),
+			ConfigId:    reaction.Config.ID,
+			ComponentId: reaction.Config.ComponentID,
 			Component:   summary,
 			Name:        namePtr,
 			Params:      paramsPtr,
@@ -251,42 +281,13 @@ func toOpenAPIAreaReactions(reactions []areadomain.Link) []openapi.AreaReaction 
 	return result
 }
 
-func toComponentSummary(component *componentdomain.Component, componentID uuid.UUID) openapi.ComponentSummary {
-	if component == nil {
-		return openapi.ComponentSummary{
-			Id:       openapi_types.UUID(componentID),
-			Name:     "",
-			Kind:     openapi.ComponentSummaryKind(""),
-			Provider: openapi.ServiceProviderSummary{},
-		}
-	}
-	var description *string
-	if strings.TrimSpace(component.Description) != "" {
-		desc := component.Description
-		description = &desc
-	}
-	provider := openapi.ServiceProviderSummary{
-		Id:          openapi_types.UUID(component.Provider.ID),
-		Name:        component.Provider.Name,
-		DisplayName: component.Provider.DisplayName,
-	}
-	return openapi.ComponentSummary{
-		Id:          openapi_types.UUID(component.ID),
-		Name:        component.Name,
-		DisplayName: component.DisplayName,
-		Description: description,
-		Kind:        openapi.ComponentSummaryKind(component.Kind),
-		Provider:    provider,
-	}
-}
-
 func fromCreateAction(action openapi.CreateAreaAction) ActionInput {
 	params := map[string]any{}
 	if action.Params != nil {
 		params = cloneMap(*action.Params)
 	}
 	input := ActionInput{
-		ComponentID: uuid.UUID(action.ComponentId),
+		ComponentID: action.ComponentId,
 		Params:      params,
 	}
 	if action.Name != nil {
@@ -303,7 +304,7 @@ func fromCreateReactions(reactions []openapi.CreateAreaReaction) []ReactionInput
 			params = cloneMap(*reaction.Params)
 		}
 		input := ReactionInput{
-			ComponentID: uuid.UUID(reaction.ComponentId),
+			ComponentID: reaction.ComponentId,
 			Params:      params,
 		}
 		if reaction.Name != nil {

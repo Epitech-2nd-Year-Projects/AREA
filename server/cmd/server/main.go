@@ -14,11 +14,15 @@ import (
 	loggerMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/logger"
 	sendgridMailer "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/mailer/sendgrid"
 	oauthadapter "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/oauth"
+	actionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/action"
 	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
+	reactionhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
+	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
@@ -84,10 +88,12 @@ func run() error {
 	}
 
 	var (
-		loaders      []catalog.Loader
-		authHandler  *authapp.Handler
-		oauthService *authapp.OAuthService
-		areaHandler  *areaapp.Handler
+		loaders          []catalog.Loader
+		authHandler      *authapp.Handler
+		oauthService     *authapp.OAuthService
+		areaHandler      *areaapp.Handler
+		componentHandler *componentapp.Handler
+		timerScheduler   *areaapp.TimerScheduler
 	)
 
 	dbCtx := context.Background()
@@ -137,10 +143,38 @@ func run() error {
 
 		areaRepo := areapostgres.NewRepository(db)
 		componentRepo := componentpostgres.NewRepository(db)
-		areaHandler = areaapp.NewHandler(
-			areaapp.NewService(areaRepo, componentRepo, nil),
+		actionRepo := actionpostgres.NewRepository(db)
+
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		reactionHTTP := &reactionhttp.Executor{
+			Client: httpClient,
+			Logger: logger,
+		}
+
+		reactionHandlers := make([]areaapp.ComponentReactionHandler, 0, 1)
+		if oauthManager != nil {
+			gmailExecutor := gmail.NewExecutor(repo.Identities(), oauthManager, httpClient, nil, logger)
+			reactionHandlers = append(reactionHandlers, gmailExecutor)
+		}
+
+		reactionDispatcher := areaapp.NewCompositeReactionExecutor(reactionHTTP, logger, reactionHandlers...)
+		timerProvisioner := areaapp.NewTimerProvisioner(actionRepo, nil)
+		areaService := areaapp.NewService(areaRepo, componentRepo, reactionDispatcher, nil, timerProvisioner)
+
+		areaCookies := areaapp.CookieConfig{
+			Name:     cfg.Security.Sessions.CookieName,
+			Domain:   cfg.Security.Sessions.Domain,
+			Path:     cfg.Security.Sessions.Path,
+			Secure:   cfg.Security.Sessions.Secure,
+			HTTPOnly: cfg.Security.Sessions.HTTPOnly,
+			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
+		}
+		areaHandler = areaapp.NewHandler(areaService, authService, areaCookies)
+
+		componentHandler = componentapp.NewHandler(
+			componentapp.NewService(componentRepo),
 			authService,
-			areaapp.CookieConfig{
+			componentapp.CookieConfig{
 				Name:     cfg.Security.Sessions.CookieName,
 				Domain:   cfg.Security.Sessions.Domain,
 				Path:     cfg.Security.Sessions.Path,
@@ -149,6 +183,8 @@ func run() error {
 				SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
 			},
 		)
+
+		timerScheduler = areaapp.NewTimerScheduler(actionRepo, areaService, nil, areaapp.WithTimerLogger(logger))
 		sqlDB, err := db.DB()
 		if err != nil {
 			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
@@ -167,15 +203,20 @@ func run() error {
 	}
 
 	if err := router.Register(server.Engine(), router.Dependencies{
-		AboutLoader: catalog.NewChainLoader(loaders...),
-		AuthHandler: authHandler,
-		AreaHandler: areaHandler,
+		AboutLoader:      catalog.NewChainLoader(loaders...),
+		AuthHandler:      authHandler,
+		AreaHandler:      areaHandler,
+		ComponentHandler: componentHandler,
 	}); err != nil {
 		return fmt.Errorf("router.Register: %w", err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	if timerScheduler != nil {
+		go timerScheduler.Run(ctx)
+	}
 
 	logger.Info("starting http server",
 		zap.String("environment", cfg.App.Environment),

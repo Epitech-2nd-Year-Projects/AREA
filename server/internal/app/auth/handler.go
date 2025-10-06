@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	openapitypes "github.com/oapi-codegen/runtime/types"
 )
 
 // CookieConfig encapsulates browser cookie attributes enforced by the handler
@@ -51,8 +52,8 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 
 	result, err := h.service.Register(c.Request.Context(), string(payload.Email), payload.Password)
 	if err != nil {
-		switch err {
-		case ErrEmailAlreadyRegistered:
+		switch {
+		case errors.Is(err, ErrEmailAlreadyRegistered):
 			c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
 			return
 		default:
@@ -82,8 +83,8 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 
 	result, err := h.service.VerifyEmail(c.Request.Context(), token, h.requestMetadata(c))
 	if err != nil {
-		switch err {
-		case ErrVerificationTokenExpired, ErrVerificationTokenUsed:
+		switch {
+		case errors.Is(err, ErrVerificationTokenExpired), errors.Is(err, ErrVerificationTokenUsed):
 			c.JSON(http.StatusGone, gin.H{"error": "token invalid"})
 			return
 		default:
@@ -106,11 +107,11 @@ func (h *Handler) Login(c *gin.Context) {
 
 	result, err := h.service.Login(c.Request.Context(), string(payload.Email), payload.Password, h.requestMetadata(c))
 	if err != nil {
-		switch err {
-		case ErrInvalidCredentials:
+		switch {
+		case errors.Is(err, ErrInvalidCredentials):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
 			return
-		case ErrAccountNotVerified:
+		case errors.Is(err, ErrAccountNotVerified):
 			c.JSON(http.StatusForbidden, gin.H{"error": "account not verified"})
 			return
 		default:
@@ -161,6 +162,38 @@ func (h *Handler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(usr)})
 }
 
+// ListIdentities handles GET /v1/identities
+func (h *Handler) ListIdentities(c *gin.Context) {
+	if h.oauth == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+
+	items, err := h.oauth.ListIdentities(c.Request.Context(), usr.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list identities"})
+		return
+	}
+
+	response := openapi.IdentityListResponse{Identities: mapIdentities(items)}
+	c.JSON(http.StatusOK, response)
+}
+
 // AuthorizeOAuth handles POST /v1/oauth/{provider}/authorize
 func (h *Handler) AuthorizeOAuth(c *gin.Context, provider string) {
 	if h.oauth == nil {
@@ -184,7 +217,7 @@ func (h *Handler) AuthorizeOAuth(c *gin.Context, provider string) {
 		req.UsePKCE = *payload.UsePkce
 	}
 	if payload.Scopes != nil {
-		req.Scopes = append([]string(nil), (*payload.Scopes)...)
+		req.Scopes = append([]string(nil), *payload.Scopes...)
 	}
 
 	resp, err := h.oauth.AuthorizationURL(c.Request.Context(), provider, req)
@@ -306,11 +339,46 @@ func stringValue(value *string) string {
 
 func toOpenAPIUser(u userdomain.User) openapi.User {
 	return openapi.User{
-		Id:          openapi_types.UUID(u.ID),
-		Email:       openapi_types.Email(u.Email),
+		Id:          u.ID,
+		Email:       openapitypes.Email(u.Email),
 		Status:      string(u.Status),
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
 		LastLoginAt: u.LastLoginAt,
+	}
+}
+
+func mapIdentities(items []identitydomain.Identity) []openapi.IdentitySummary {
+	if len(items) == 0 {
+		return make([]openapi.IdentitySummary, 0)
+	}
+	result := make([]openapi.IdentitySummary, 0, len(items))
+	for _, item := range items {
+		result = append(result, toOpenAPIIdentity(item))
+	}
+	return result
+}
+
+func toOpenAPIIdentity(identity identitydomain.Identity) openapi.IdentitySummary {
+	scopesCopy := append([]string(nil), identity.Scopes...)
+
+	var scopesPtr *[]string
+	if len(scopesCopy) > 0 {
+		scopesPtr = &scopesCopy
+	}
+
+	var expiresAt *time.Time
+	if identity.ExpiresAt != nil {
+		expiry := identity.ExpiresAt.UTC()
+		expiresAt = &expiry
+	}
+
+	return openapi.IdentitySummary{
+		Id:          identity.ID,
+		Provider:    identity.Provider,
+		Subject:     identity.Subject,
+		Scopes:      scopesPtr,
+		ConnectedAt: identity.CreatedAt.UTC(),
+		ExpiresAt:   expiresAt,
 	}
 }

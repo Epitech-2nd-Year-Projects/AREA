@@ -36,4 +36,5 @@ type Component struct {
 	Enabled     bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Metadata    map[string]any
 }

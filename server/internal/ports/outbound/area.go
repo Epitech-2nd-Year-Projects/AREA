@@ -12,4 +12,5 @@ type AreaRepository interface {
 	Create(ctx context.Context, area areadomain.Area, action areadomain.Link, reactions []areadomain.Link) (areadomain.Area, error)
 	FindByID(ctx context.Context, id uuid.UUID) (areadomain.Area, error)
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]areadomain.Area, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }

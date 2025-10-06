@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/gin-gonic/gin"
 )

@@ -234,6 +234,17 @@ func (r Repository) ListByUser(ctx context.Context, userID uuid.UUID) ([]areadom
 	return areas, nil
 }
 
+// Delete removes an area by its identifier
+func (r Repository) Delete(ctx context.Context, id uuid.UUID) error {
+	if r.db == nil {
+		return fmt.Errorf("postgres.area.Repository.Delete: nil db handle")
+	}
+	if err := r.db.WithContext(ctx).Delete(&areaModel{}, "id = ?", id).Error; err != nil {
+		return fmt.Errorf("postgres.area.Repository.Delete: %w", err)
+	}
+	return nil
+}
+
 func isUniqueViolation(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "duplicate")
 }

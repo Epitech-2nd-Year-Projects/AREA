@@ -12,14 +12,14 @@ import (
 )
 
 type areaModel struct {
-	ID          uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
-	UserID      uuid.UUID `gorm:"column:user_id"`
-	Name        string    `gorm:"column:name"`
-	Description *string   `gorm:"column:description"`
-	Status      string    `gorm:"column:status"`
-	CreatedAt   time.Time `gorm:"column:created_at"`
-	UpdatedAt   time.Time `gorm:"column:updated_at"`
-	Links       []areaLinkModel
+	ID          uuid.UUID       `gorm:"column:id;type:uuid;primaryKey"`
+	UserID      uuid.UUID       `gorm:"column:user_id"`
+	Name        string          `gorm:"column:name"`
+	Description *string         `gorm:"column:description"`
+	Status      string          `gorm:"column:status"`
+	CreatedAt   time.Time       `gorm:"column:created_at"`
+	UpdatedAt   time.Time       `gorm:"column:updated_at"`
+	Links       []areaLinkModel `gorm:"foreignKey:AreaID;constraint:OnDelete:CASCADE"`
 }
 
 func (areaModel) TableName() string { return "areas" }

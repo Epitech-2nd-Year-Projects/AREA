@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -109,7 +110,7 @@ func TestService_Login_Unverified(t *testing.T) {
 	})
 
 	_, err = svc.Login(ctx, "user@example.com", "password123", Metadata{})
-	if err != ErrAccountNotVerified {
+	if !errors.Is(err, ErrAccountNotVerified) {
 		t.Fatalf("expected ErrAccountNotVerified got %v", err)
 	}
 }

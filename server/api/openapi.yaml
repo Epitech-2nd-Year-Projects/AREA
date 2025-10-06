@@ -56,6 +56,9 @@ tags:
   - name: auth
     x-displayName: Authentication
     description: Manage user identities, sessions, and third-party authorisations.
+  - name: catalog
+    x-displayName: Service catalog
+    description: Discover available action and reaction components.
 x-tagGroups:
   - name: Platform Overview
     tags:
@@ -63,6 +66,9 @@ x-tagGroups:
   - name: Identity & Access
     tags:
       - auth
+  - name: Automation Catalog
+    tags:
+      - catalog
 security:
   - sessionAuth: []
 paths:
@@ -105,6 +111,38 @@ paths:
                 $ref: '#/components/schemas/AboutResponse'
         '404':
           description: Server metadata unavailable
+  /v1/components:
+    get:
+      summary: List service components
+      description: Retrieve automation components that can be used as actions or reactions
+      operationId: listComponents
+      tags:
+        - catalog
+      security:
+        - sessionAuth: []
+      parameters:
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum: [action, reaction]
+          description: Filter components by kind
+        - in: query
+          name: provider
+          schema:
+            type: string
+          description: Filter components by provider slug (for example `google`)
+      responses:
+        '200':
+          description: Component catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentListResponse'
+        '401':
+          description: Authentication required
+        '500':
+          description: Failed to load component catalog
   /v1/users:
     post:
       summary: Register a new user
@@ -404,6 +442,24 @@ paths:
                     email: alex.martin@example.com
         '401':
           description: Session missing or expired
+  /v1/identities:
+    get:
+      summary: List connected identities
+      description: Retrieve OAuth identities linked to the authenticated user
+      operationId: listIdentities
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Linked identities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityListResponse'
+        '401':
+          description: Authentication required
+        '500':
+          description: Failed to list identities
   /v1/oauth/{provider}/authorize:
     post:
       summary: Initiate OAuth authorization
@@ -590,6 +646,30 @@ paths:
           description: Invalid payload
         '401':
           description: Authentication required
+  /v1/areas/{areaId}/execute:
+    post:
+      summary: Execute area reactions immediately
+      operationId: executeArea
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Execution accepted
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
+        '500':
+          description: Failed to execute reactions
 components:
   securitySchemes:
     sessionAuth:
@@ -617,9 +697,9 @@ components:
           example: 10.0.0.1
     AboutServer:
       type: object
-      required: [current_time, services]
+      required: [currentTime, services]
       properties:
-        current_time:
+        currentTime:
           type: integer
           format: int64
           description: Current server time expressed as an Epoch Unix timestamp.
@@ -681,13 +761,13 @@ components:
     RegisterUserResponse:
       type: object
       description: Confirmation payload indicating the asynchronous verification workflow started.
-      required: [userId, expires_at]
+      required: [userId, expiresAt]
       properties:
         userId:
           type: string
           description: Unique identifier assigned to the provisioned user.
           example: usr_01H9ZQF8E4XKC5V7QMMC1782X9
-        expires_at:
+        expiresAt:
           type: string
           format: date-time
           description: Expiration timestamp of the verification token.
@@ -725,8 +805,8 @@ components:
           id: usr_01H9ZQF8E4XKC5V7QMMC1782X9
           email: alex.martin@example.com
           status: active
-          created_at: 2024-04-01T10:00:00Z
-          updated_at: 2024-04-01T10:00:00Z
+          createdAt: 2024-04-01T10:00:00Z
+          updatedAt: 2024-04-01T10:00:00Z
     LoginRequest:
       type: object
       description: Credential-based authentication payload.
@@ -755,7 +835,7 @@ components:
     User:
       type: object
       description: Detailed user payload returned by authenticated endpoints.
-      required: [id, email, status, created_at, updated_at]
+      required: [id, email, status, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -768,15 +848,15 @@ components:
         status:
           type: string
           description: Lifecycle status (`pending`, `active`, etc.).
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Account creation timestamp in UTC.
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: Timestamp of the latest account update in UTC.
-        last_login_at:
+        lastLoginAt:
           type: string
           format: date-time
           nullable: true
@@ -835,11 +915,11 @@ components:
           type: string
           description: One-time authorisation code issued by the provider.
           example: 4/0AbCDefGhIjKlMnOpQrStUvWxYz
-        redirect_uri:
+        redirectUri:
           type: string
           format: uri
           description: Redirect URI supplied during the authorisation flow.
-        code_verifier:
+        codeVerifier:
           type: string
           description: PKCE code verifier required when the provider enforces PKCE.
         state:
@@ -869,9 +949,9 @@ components:
     CreateAreaAction:
       type: object
       description: Configuration of the action component that triggers the automation.
-      required: [component_id]
+      required: [componentId]
       properties:
-        component_id:
+        componentId:
           type: string
           format: uuid
           description: Identifier of the action component selected from the catalog.
@@ -886,9 +966,9 @@ components:
     CreateAreaReaction:
       type: object
       description: Configuration of a reaction component executed when the automation fires.
-      required: [component_id]
+      required: [componentId]
       properties:
-        component_id:
+        componentId:
           type: string
           format: uuid
           description: Identifier of the reaction component selected from the catalog.
@@ -903,7 +983,7 @@ components:
     Area:
       type: object
       description: Automation linking an action to one or more reactions for a user.
-      required: [id, name, status, created_at, updated_at, reactions]
+      required: [id, name, status, createdAt, updatedAt, reactions]
       properties:
         id:
           type: string
@@ -919,11 +999,11 @@ components:
         status:
           type: string
           description: Lifecycle status (`enabled`, `disabled`, or `archived`).
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Timestamp (UTC) when the automation was created.
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: Timestamp (UTC) of the last update.
@@ -945,13 +1025,13 @@ components:
     AreaAction:
       type: object
       description: Action binding stored for an AREA automation.
-      required: [config_id, component_id, component]
+      required: [configId, componentId, component]
       properties:
-        config_id:
+        configId:
           type: string
           format: uuid
           description: Identifier of the user component configuration backing the action.
-        component_id:
+        componentId:
           type: string
           format: uuid
           description: Identifier of the catalog component associated with the configuration.
@@ -968,13 +1048,13 @@ components:
     AreaReaction:
       type: object
       description: Reaction binding stored for an AREA automation.
-      required: [config_id, component_id, component]
+      required: [configId, componentId, component]
       properties:
-        config_id:
+        configId:
           type: string
           format: uuid
           description: Identifier of the user component configuration backing the reaction.
-        component_id:
+        componentId:
           type: string
           format: uuid
           description: Identifier of the catalog component associated with the configuration.
@@ -991,7 +1071,7 @@ components:
     ComponentSummary:
       type: object
       description: Minimal catalog metadata required by clients to render a component reference.
-      required: [id, kind, name, display_name, provider]
+      required: [id, kind, name, displayName, provider]
       properties:
         id:
           type: string
@@ -1001,25 +1081,68 @@ components:
           enum: [action, reaction]
         name:
           type: string
-        display_name:
+        displayName:
           type: string
         description:
           type: string
           nullable: true
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Additional configuration metadata describing expected parameters.
         provider:
           $ref: '#/components/schemas/ServiceProviderSummary'
+    ComponentListResponse:
+      type: object
+      required: [components]
+      properties:
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentSummary'
     ServiceProviderSummary:
       type: object
       description: Lightweight representation of a service provider exposing components.
-      required: [id, name, display_name]
+      required: [id, name, displayName]
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-        display_name:
+        displayName:
           type: string
+    IdentityListResponse:
+      type: object
+      required: [identities]
+      properties:
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentitySummary'
+    IdentitySummary:
+      type: object
+      required: [id, provider, subject, connectedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        subject:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        connectedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
   parameters:
     OAuthProvider:
       name: provider
