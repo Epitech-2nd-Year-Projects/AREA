@@ -84,6 +84,41 @@ func (h *Handler) ListComponents(c *gin.Context, params openapi.ListComponentsPa
 	c.JSON(http.StatusOK, response)
 }
 
+// ListAvailableComponents handles GET /v1/components/available
+func (h *Handler) ListAvailableComponents(c *gin.Context, params openapi.ListComponentsParams) {
+	if h.service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "catalog unavailable"})
+		return
+	}
+
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	opts := ListOptions{}
+	if params.Kind != nil {
+		opts.Kind = string(*params.Kind)
+	}
+	if params.Provider != nil {
+		opts.Provider = *params.Provider
+	}
+
+	items, err := h.service.ListAvailable(c.Request.Context(), usr.ID, opts)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrInvalidKind):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component kind"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list components"})
+		}
+		return
+	}
+
+	response := openapi.ComponentListResponse{Components: MapComponents(items)}
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *Handler) authorize(c *gin.Context) (userdomain.User, sessiondomain.Session, bool) {
 	if h.sessions == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "session resolver unavailable"})
