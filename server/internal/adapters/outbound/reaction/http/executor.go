@@ -1,0 +1,163 @@
+package http
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	"go.uber.org/zap"
+)
+
+// Executor delivers reaction payloads over HTTP according to reaction configuration
+type Executor struct {
+	Client *http.Client
+	Logger *zap.Logger
+}
+
+// ExecuteReaction sends an HTTP request when the reaction component is supported
+func (e Executor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+	component := link.Config.Component
+	if component == nil {
+		return fmt.Errorf("reaction.http: component metadata missing")
+	}
+	name := strings.ToLower(component.Name)
+	switch name {
+	case "http_webhook", "http_request":
+		return e.execHTTPRequest(ctx, area, link)
+	default:
+		logger := e.logger()
+		logger.Warn("unsupported reaction component", zap.String("component", component.Name))
+		return fmt.Errorf("reaction.http: component %s unsupported", component.Name)
+	}
+}
+
+func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+	params := link.Config.Params
+	url := stringParam(params, "url", "endpoint")
+	if url == "" {
+		return fmt.Errorf("reaction.http: params.url required")
+	}
+	method := strings.ToUpper(stringParam(params, "method"))
+	if method == "" {
+		method = http.MethodPost
+	}
+
+	bodyBytes, contentType, err := e.buildBody(area, link, params)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("reaction.http: new request: %w", err)
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	for key, value := range headerMap(params) {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := e.client().Do(req)
+	if err != nil {
+		return fmt.Errorf("reaction.http: request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("reaction.http: received status %d", resp.StatusCode)
+	}
+
+	e.logger().Info("reaction delivered",
+		zap.String("area_id", area.ID.String()),
+		zap.String("area_name", area.Name),
+		zap.String("reaction_id", link.ID.String()),
+		zap.String("endpoint", url),
+		zap.Int("status", resp.StatusCode),
+	)
+	return nil
+}
+
+func (e Executor) client() *http.Client {
+	if e.Client != nil {
+		return e.Client
+	}
+	return &http.Client{Timeout: 10 * time.Second}
+}
+
+func (e Executor) logger() *zap.Logger {
+	if e.Logger != nil {
+		return e.Logger
+	}
+	return zap.NewNop()
+}
+
+func (e Executor) buildBody(area areadomain.Area, link areadomain.Link, params map[string]any) ([]byte, string, error) {
+	if raw, ok := params["body"]; ok {
+		switch v := raw.(type) {
+		case string:
+			return []byte(v), "", nil
+		default:
+			payload, err := json.Marshal(v)
+			if err != nil {
+				return nil, "", fmt.Errorf("reaction.http: marshal params.body: %w", err)
+			}
+			return payload, "application/json", nil
+		}
+	}
+	defaultBody := map[string]any{
+		"area": map[string]any{
+			"id":   area.ID.String(),
+			"name": area.Name,
+		},
+		"reaction": map[string]any{
+			"id":   link.ID.String(),
+			"name": link.Config.Name,
+		},
+		"triggered_at": time.Now().UTC().Format(time.RFC3339Nano),
+	}
+	body, err := json.Marshal(defaultBody)
+	if err != nil {
+		return nil, "", fmt.Errorf("reaction.http: marshal default body: %w", err)
+	}
+	return body, "application/json", nil
+}
+
+func stringParam(params map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := params[key]; ok {
+			switch v := value.(type) {
+			case string:
+				if trimmed := strings.TrimSpace(v); trimmed != "" {
+					return trimmed
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func headerMap(params map[string]any) map[string]string {
+	raw, ok := params["headers"]
+	if !ok {
+		return map[string]string{}
+	}
+	result := make(map[string]string)
+	switch v := raw.(type) {
+	case map[string]any:
+		for key, value := range v {
+			if str, ok := value.(string); ok {
+				result[key] = str
+			}
+		}
+	case map[string]string:
+		for key, value := range v {
+			result[key] = value
+		}
+	}
+	return result
+}
