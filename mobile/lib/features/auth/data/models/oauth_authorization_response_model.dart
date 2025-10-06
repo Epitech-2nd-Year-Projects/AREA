@@ -31,12 +31,12 @@ class OAuthAuthorizationResponseModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'authorization_url': authorizationUrl, // snake_case pour cohérence
+      'authorizationUrl': authorizationUrl,
       if (state != null) 'state': state,
-      if (codeVerifier != null) 'code_verifier': codeVerifier,
-      if (codeChallenge != null) 'code_challenge': codeChallenge,
+      if (codeVerifier != null) 'codeVerifier': codeVerifier,
+      if (codeChallenge != null) 'codeChallenge': codeChallenge,
       if (codeChallengeMethod != null)
-        'code_challenge_method': codeChallengeMethod,
+        'code_challengeMethod': codeChallengeMethod,
     };
   }
 }

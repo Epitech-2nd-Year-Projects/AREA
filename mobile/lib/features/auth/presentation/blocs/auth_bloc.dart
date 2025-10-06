@@ -24,11 +24,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
    Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    emit(Authenticated(User(
-      id: "dev-user-1",
-      email: "dev@area.app",
-    )));
+     emit(AuthLoading());
+     try {
+       final user = await _getCurrentUser();
+       emit(Authenticated(user));
+     } on AuthException {
+       emit(Unauthenticated());
+     } catch (_) {
+       emit(Unauthenticated());
+     }
   }
 
   Future<void> _onUserLoggedIn(UserLoggedIn event, Emitter<AuthState> emit) async {
