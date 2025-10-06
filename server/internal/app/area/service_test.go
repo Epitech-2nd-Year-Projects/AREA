@@ -37,7 +37,7 @@ func TestService_CreateAndList(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, clock)
+	svc := NewService(repo, components, noopExecutor{}, clock, nil)
 
 	userID := uuid.New()
 	area, err := svc.Create(ctx, userID, "Morning digest", "Send me a digest every morning", ActionInput{
@@ -115,7 +115,7 @@ func TestService_CreateValidation(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, stubClock{now: time.Now()})
+	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
 
 	tests := []struct {
 		name        string
@@ -152,7 +152,7 @@ func TestService_CreateActionValidation(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, stubClock{now: time.Now()})
+	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
 
 	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentRequired) {
@@ -182,7 +182,7 @@ func TestService_CreateReactionValidation(t *testing.T) {
 	components.items[actionID] = componentdomain.Component{ID: actionID, Kind: componentdomain.KindAction, Enabled: true, ProviderID: uuid.New()}
 	reactionID := uuid.New()
 	components.items[reactionID] = componentdomain.Component{ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true, ProviderID: uuid.New()}
-	svc := NewService(repo, components, stubClock{now: time.Now()})
+	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
 
 	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, nil)
 	if !errors.Is(err, ErrReactionsRequired) {
@@ -265,6 +265,11 @@ func (m *memoryAreaRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]ar
 	return areas, nil
 }
 
+func (m *memoryAreaRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	delete(m.items, id)
+	return nil
+}
+
 type memoryComponentRepo struct {
 	items map[uuid.UUID]componentdomain.Component
 }
@@ -285,4 +290,88 @@ func (m *memoryComponentRepo) FindByIDs(ctx context.Context, ids []uuid.UUID) (m
 		}
 	}
 	return result, nil
+}
+
+func (m *memoryComponentRepo) List(ctx context.Context, opts outbound.ComponentListOptions) ([]componentdomain.Component, error) {
+	components := make([]componentdomain.Component, 0, len(m.items))
+	for _, component := range m.items {
+		if opts.Kind != nil && component.Kind != *opts.Kind {
+			continue
+		}
+		if opts.Provider != "" && !strings.EqualFold(component.Provider.Name, opts.Provider) {
+			continue
+		}
+		components = append(components, component)
+	}
+	return components, nil
+}
+
+type noopExecutor struct{}
+
+func (noopExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+	return nil
+}
+
+func TestService_Execute(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	actionID := uuid.New()
+	reactionID := uuid.New()
+	providerID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionID: {
+			ID: actionID, Kind: componentdomain.KindAction, Enabled: true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "github", DisplayName: "GitHub"},
+		},
+		reactionID: {
+			ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "github", DisplayName: "GitHub"},
+		},
+	}}
+	exec := &recordingExecutor{}
+	svc := NewService(repo, components, exec, stubClock{now: time.Now()}, nil)
+
+	userID := uuid.New()
+	areaID := uuid.New()
+	repo.items[areaID] = areadomain.Area{
+		ID:     areaID,
+		UserID: userID,
+		Name:   "Test AREA",
+		Status: areadomain.StatusEnabled,
+		Action: &areadomain.Link{
+			Role:   areadomain.LinkRoleAction,
+			Config: componentdomain.Config{ComponentID: actionID},
+		},
+		Reactions: []areadomain.Link{{
+			Role:   areadomain.LinkRoleReaction,
+			Config: componentdomain.Config{ComponentID: reactionID},
+		}},
+	}
+
+	if err := svc.Execute(ctx, userID, areaID); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	if len(exec.calls) != 1 {
+		t.Fatalf("expected 1 reaction executed, got %d", len(exec.calls))
+	}
+	if exec.calls[0].Reaction.Config.ComponentID != reactionID {
+		t.Fatalf("unexpected reaction executed")
+	}
+}
+
+type recordingExecutor struct {
+	calls []struct {
+		Area     areadomain.Area
+		Reaction areadomain.Link
+	}
+}
+
+func (r *recordingExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+	r.calls = append(r.calls, struct {
+		Area     areadomain.Area
+		Reaction areadomain.Link
+	}{Area: area, Reaction: link})
+	return nil
 }
