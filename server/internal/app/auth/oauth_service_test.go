@@ -140,6 +140,39 @@ func TestOAuthServiceExchangeUpdatesIdentity(t *testing.T) {
 	}
 }
 
+func TestOAuthServiceListIdentitiesRequiresRepository(t *testing.T) {
+	svc := NewOAuthService(nil, nil, nil, nil, nil, nil, Config{})
+
+	_, err := svc.ListIdentities(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatalf("expected error when repository unavailable")
+	}
+}
+
+func TestOAuthServiceListIdentitiesSuccess(t *testing.T) {
+	userID := uuid.New()
+	identity := identitydomain.Identity{
+		ID:       uuid.New(),
+		UserID:   userID,
+		Provider: "google",
+		Subject:  "subject-1",
+	}
+	repo := &memoryIdentityRepo{items: map[uuid.UUID]identitydomain.Identity{identity.ID: identity}}
+
+	svc := NewOAuthService(nil, repo, nil, nil, nil, nil, Config{})
+
+	items, err := svc.ListIdentities(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("ListIdentities returned error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 identity, got %d", len(items))
+	}
+	if items[0].ID != identity.ID {
+		t.Fatalf("unexpected identity returned")
+	}
+}
+
 type staticProviderResolver map[string]identityport.Provider
 
 func (m staticProviderResolver) Provider(name string) (identityport.Provider, bool) {

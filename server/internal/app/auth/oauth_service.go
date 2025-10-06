@@ -112,6 +112,22 @@ func (s *OAuthService) Exchange(ctx context.Context, provider string, code strin
 	return login, identity, nil
 }
 
+// ListIdentities lists linked identities for the specified user
+func (s *OAuthService) ListIdentities(ctx context.Context, userID uuid.UUID) ([]identitydomain.Identity, error) {
+	if s == nil || s.identities == nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListIdentities: identities repository unavailable")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListIdentities: missing user id")
+	}
+
+	items, err := s.identities.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListIdentities: identities.ListByUser: %w", err)
+	}
+	return items, nil
+}
+
 func (s *OAuthService) resolveProvider(name string) (identityport.Provider, string, error) {
 	if s.providers == nil {
 		return nil, "", fmt.Errorf("auth.OAuthService.resolveProvider: providers unavailable")
