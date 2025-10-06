@@ -288,7 +288,6 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	}
 
 	cfg.subject = strings.TrimSpace(cfg.subject)
-	cfg.body = cfg.body
 
 	return cfg, nil
 }
