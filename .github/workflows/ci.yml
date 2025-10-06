@@ -54,7 +54,7 @@ jobs:
       # Mobile
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.0"
+          flutter-version: "3.35.3"
           channel: "stable"
       - name: Flutter deps, analyze, test
         working-directory: mobile
@@ -113,7 +113,7 @@ jobs:
           java-version: "17"
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.0"
+          flutter-version: "3.35.3"
           channel: "stable"
       - name: Build Flutter APK
         working-directory: mobile
