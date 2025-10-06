@@ -64,8 +64,10 @@ export function ServiceCard({
         if (typeof window === 'undefined') return
 
         const provider = service.name
-        const redirectUrl = new URL('/dashboard/profile', window.location.origin)
-        redirectUrl.searchParams.set('service', provider)
+        const redirectUrl = new URL('/oauth/callback', window.location.origin)
+        redirectUrl.searchParams.set('flow', 'service')
+        redirectUrl.searchParams.set('provider', provider)
+        redirectUrl.searchParams.set('redirect', '/dashboard/profile')
         const redirectUri = redirectUrl.toString()
 
         try {

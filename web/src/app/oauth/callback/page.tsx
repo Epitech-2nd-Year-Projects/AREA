@@ -1,0 +1,130 @@
+'use client'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
+import { useAuthorizeOAuthMutation, useExchangeOAuthMutation } from '@/lib/api/openapi/auth'
+import { useSubscribeServiceExchangeMutation } from '@/lib/api/openapi/services'
+import { ApiError } from '@/lib/api/http/errors'
+import { clearOAuthState, readOAuthState } from '@/lib/auth/oauth'
+import { useQueryClient } from '@tanstack/react-query'
+import { authKeys } from '@/lib/api/openapi/auth/query-keys'
+import { aboutKeys } from '@/lib/api/openapi/about/query-keys'
+
+export default function OAuthCallbackPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const serialized = searchParams.toString()
+  const queryClient = useQueryClient()
+  const [message, setMessage] = useState<string>('Completing authorization...')
+
+  const { mutateAsync: exchangeOAuth } = useExchangeOAuthMutation()
+  const { mutateAsync: exchangeSubscription } = useSubscribeServiceExchangeMutation()
+
+  const params = useMemo(() => new URLSearchParams(serialized), [serialized])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const code = params.get('code')
+    const oauthError = params.get('error')
+    const stateParam = params.get('state')
+    const provider = params.get('provider')
+    const flow = params.get('flow') // 'login' | 'service'
+    const next = params.get('redirect') || undefined
+
+    const goNext = (fallback: string) => {
+      router.replace(next || fallback)
+    }
+
+    if (oauthError) {
+      // Clean stored state if possible
+      if (provider) clearOAuthState(provider)
+      setMessage('Authorization canceled or failed. Redirecting...')
+      goNext(flow === 'service' ? '/dashboard/profile' : '/login')
+      return
+    }
+
+    if (!code || !provider || !flow) {
+      setMessage('Missing OAuth parameters. Redirecting...')
+      goNext('/login')
+      return
+    }
+
+    let cancelled = false
+
+    const run = async () => {
+      const stored = readOAuthState(provider)
+      if (!stored) {
+        clearOAuthState(provider)
+        setMessage('Session expired. Redirecting...')
+        goNext(flow === 'service' ? '/dashboard/profile' : '/login')
+        return
+      }
+      if (stored.state && stateParam && stored.state !== stateParam) {
+        clearOAuthState(provider)
+        setMessage('State mismatch. Redirecting...')
+        goNext(flow === 'service' ? '/dashboard/profile' : '/login')
+        return
+      }
+
+      try {
+        if (flow === 'login') {
+          await exchangeOAuth({
+            provider,
+            body: {
+              code,
+              redirectUri: stored.redirectUri,
+              codeVerifier: stored.codeVerifier,
+              state: stateParam ?? stored.state
+            }
+          })
+          if (cancelled) return
+          clearOAuthState(provider)
+          setMessage('Login successful. Redirecting...')
+          goNext('/dashboard')
+          return
+        }
+
+        // service subscription
+        await exchangeSubscription({
+          provider,
+          body: {
+            code,
+            redirectUri: stored.redirectUri,
+            codeVerifier: stored.codeVerifier
+          }
+        })
+        if (cancelled) return
+        clearOAuthState(provider)
+        // refresh current user + about info
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
+          queryClient.invalidateQueries({ queryKey: aboutKeys.detail() })
+        ])
+        setMessage('Service connected. Redirecting...')
+        goNext('/dashboard/profile')
+      } catch (error) {
+        if (cancelled) return
+        clearOAuthState(provider)
+        if (error instanceof ApiError) {
+          setMessage('Authorization failed. Redirecting...')
+        } else {
+          setMessage('Unexpected error. Redirecting...')
+        }
+        goNext(flow === 'service' ? '/dashboard/profile' : '/login')
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [aboutKeys, authKeys, exchangeOAuth, exchangeSubscription, params, queryClient, router])
+
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
+      <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+      <p className="text-muted-foreground text-sm">{message}</p>
+    </div>
+  )
+}
+

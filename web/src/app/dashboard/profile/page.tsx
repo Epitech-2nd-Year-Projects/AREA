@@ -17,12 +17,7 @@ import { ServiceCardList } from '@/components/services/service-card-list'
 import { useTranslations } from 'next-intl'
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
 import { mapUserDTOToUser, useCurrentUserQuery } from '@/lib/api/openapi/auth'
-import { useSubscribeServiceExchangeMutation } from '@/lib/api/openapi/services'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { aboutKeys } from '@/lib/api/openapi/about/query-keys'
-import { authKeys } from '@/lib/api/openapi/auth/query-keys'
-import { clearOAuthState, buildCleanOAuthPath, readOAuthState } from '@/lib/auth/oauth'
+// centralized OAuth handling now lives in /oauth/callback
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
 
@@ -43,14 +38,9 @@ function getAvatarFallback(email: string) {
 
 export default function ProfilePage() {
   const t = useTranslations('ProfilePage')
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const serializedSearchParams = searchParams.toString()
-  const queryClient = useQueryClient()
+  // no local OAuth handling here; handled by /oauth/callback
   const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
   const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
-  const { mutateAsync: exchangeSubscription } =
-    useSubscribeServiceExchangeMutation()
 
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
   const services = aboutData ? extractServices(aboutData) : []
@@ -63,77 +53,6 @@ export default function ProfilePage() {
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Handle OAuth return for service subscription
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(serializedSearchParams)
-    const code = params.get('code')
-    const stateParam = params.get('state')
-    const provider = params.get('service')
-
-    if (!code || !provider) {
-      return
-    }
-
-    let cancelled = false
-    const run = async () => {
-      const stored = readOAuthState(provider)
-      if (!stored) {
-        clearOAuthState(provider)
-        // Clean URL
-        params.delete('code')
-        params.delete('state')
-        params.delete('service')
-        const cleanPath = buildCleanOAuthPath(params, '/dashboard/profile')
-        router.replace(cleanPath, { scroll: false })
-        return
-      }
-      if (stored.state && stateParam && stored.state !== stateParam) {
-        clearOAuthState(provider)
-        params.delete('code')
-        params.delete('state')
-        params.delete('service')
-        const cleanPath = buildCleanOAuthPath(params, '/dashboard/profile')
-        router.replace(cleanPath, { scroll: false })
-        return
-      }
-      try {
-        await exchangeSubscription({
-          provider,
-          body: {
-            code,
-            redirectUri: stored.redirectUri,
-            codeVerifier: stored.codeVerifier
-          }
-        })
-        if (cancelled) return
-        clearOAuthState(provider)
-        // Clean URL
-        params.delete('code')
-        params.delete('state')
-        params.delete('service')
-        const cleanPath = buildCleanOAuthPath(params, '/dashboard/profile')
-        router.replace(cleanPath, { scroll: false })
-        // Refresh user and about data
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
-          queryClient.invalidateQueries({ queryKey: aboutKeys.detail() })
-        ])
-      } catch {
-        // Clean and ignore errors for now
-        clearOAuthState(provider)
-        params.delete('code')
-        params.delete('state')
-        params.delete('service')
-        const cleanPath = buildCleanOAuthPath(params, '/dashboard/profile')
-        router.replace(cleanPath, { scroll: false })
-      }
-    }
-    run()
-    return () => {
-      cancelled = true
-    }
-  }, [exchangeSubscription, queryClient, router, serializedSearchParams])
 
   useEffect(() => {
     if (!user) return

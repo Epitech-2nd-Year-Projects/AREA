@@ -262,10 +262,12 @@ export function LoginForm({
     setResendFeedback(null)
     setUnverifiedEmail(null)
 
-    const redirectUrl = new URL('/login', window.location.origin)
-    if (redirectParam) {
-      redirectUrl.searchParams.set('redirect', redirectParam)
-    }
+    const redirectUrl = new URL('/oauth/callback', window.location.origin)
+    // one callback for all: encode flow, provider, and desired next route
+    redirectUrl.searchParams.set('flow', 'login')
+    redirectUrl.searchParams.set('provider', GOOGLE_PROVIDER)
+    const next = redirectParam ?? '/dashboard'
+    redirectUrl.searchParams.set('redirect', next)
     const redirectUri = redirectUrl.toString()
 
     try {
