@@ -95,7 +95,7 @@ var _defaultConfig = Config{
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
 				ClientSecretEnv: "GOOGLE_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/google/callback",
-				Scopes:          []string{"email", "profile"},
+				Scopes:          []string{"email", "profile", "https://www.googleapis.com/auth/gmail.send"},
 			},
 			"github": {
 				ClientIDEnv:     "GITHUB_OAUTH_CLIENT_ID",
