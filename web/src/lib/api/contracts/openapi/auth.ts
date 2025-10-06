@@ -46,3 +46,16 @@ export type OAuthExchangeRequestDTO = {
   codeVerifier?: string
   state?: string
 }
+
+export type IdentitySummaryDTO = {
+  id: string
+  provider: string
+  subject: string
+  scopes?: string[]
+  connectedAt: string
+  expiresAt?: string | null
+}
+
+export type IdentityListResponseDTO = {
+  identities: IdentitySummaryDTO[]
+}

@@ -2,7 +2,8 @@ const baseKey = ['openapi', 'auth'] as const
 
 export const authKeys = {
   all: () => baseKey,
-  currentUser: () => [...baseKey, 'current-user'] as const
+  currentUser: () => [...baseKey, 'current-user'] as const,
+  identities: () => [...baseKey, 'identities'] as const
 }
 
 export const authMutationKeys = {

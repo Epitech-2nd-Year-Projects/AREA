@@ -23,6 +23,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Service } from '@/lib/api/contracts/services'
 import { DisconnectModal } from '@/components/services/disconnect-modal'
+import { useSubscribeServiceMutation } from '@/lib/api/openapi/services'
+import type { SubscribeServiceResponseDTO } from '@/lib/api/contracts/openapi/services'
+import {
+  clearOAuthState,
+  createClientOAuthState,
+  persistOAuthState
+} from '@/lib/auth/oauth'
 
 type ServiceCardProps = {
   service: Service
@@ -41,18 +48,64 @@ export function ServiceCard({
   const { theme } = useTheme()
   const router = useRouter()
   const gradientColor = theme === 'dark' ? '#262626' : '#D9D9D955'
+  const { mutateAsync: subscribeService, isPending: isSubscribing } =
+    useSubscribeServiceMutation()
 
   const handleDisconnectConfirm = () => {
     // TODO: Implement service disconnect logic
   }
 
   const connectButtonState = authenticated
-    ? { label: t('connect'), variant: 'default' as const }
+    ? {
+        label: linked ? t('linked') : t('connect'),
+        variant: 'default' as const
+      }
     : { label: t('getStarted'), variant: 'outline' as const }
 
   const handleConnectClick = authenticated
-    ? () => {
-        // TODO: Redirect to back-end /oauth/:provider/start
+    ? async () => {
+        if (linked || isSubscribing) return
+        if (typeof window === 'undefined') return
+
+        const provider = service.name
+        const redirectUri = new URL(
+          '/oauth/callback',
+          window.location.origin
+        ).toString()
+        const redirectTarget = '/dashboard/profile'
+        const { value: clientState } = createClientOAuthState({
+          provider,
+          flow: 'service',
+          redirect: redirectTarget
+        })
+
+        try {
+          const response: SubscribeServiceResponseDTO = await subscribeService({
+            provider,
+            body: { redirectUri, usePkce: true, state: clientState }
+          })
+
+          if (
+            response.status === 'authorization_required' &&
+            response.authorization
+          ) {
+            clearOAuthState(provider)
+            persistOAuthState(provider, {
+              provider,
+              redirectUri,
+              state: response.authorization.state ?? clientState,
+              codeVerifier: response.authorization.codeVerifier,
+              flow: 'service',
+              redirect: redirectTarget,
+              createdAt: Date.now()
+            })
+            window.location.assign(response.authorization.authorizationUrl)
+            return
+          }
+          router.refresh()
+        } catch {
+          // TODO: Error toast
+        }
       }
     : () => router.push('/register')
 
@@ -173,6 +226,8 @@ export function ServiceCard({
               className="w-full cursor-pointer"
               variant={connectButtonState.variant}
               onClick={handleConnectClick}
+              disabled={linked || isSubscribing}
+              aria-disabled={linked || isSubscribing}
             >
               {connectButtonState.label}
             </Button>

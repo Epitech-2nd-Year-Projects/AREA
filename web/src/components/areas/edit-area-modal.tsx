@@ -12,6 +12,7 @@ import { mockActions, mockReactions, mockServices } from '@/lib/api/mock'
 import { Area } from '@/lib/api/contracts/areas'
 import { Action } from '@/lib/api/contracts/actions'
 import { Reaction } from '@/lib/api/contracts/reactions'
+import type { ComponentParameterDTO } from '@/lib/api/contracts/openapi/areas'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import {
@@ -180,6 +181,11 @@ export function EditAreaModal({
     useState<ConfigEditorTarget | null>(null)
   const [areaName, setAreaName] = useState(area.name)
   const [areaDescription, setAreaDescription] = useState(area.description)
+
+  const getComponentParameters = useCallback(
+    (_componentId: string): ComponentParameterDTO[] => [],
+    []
+  )
 
   const selectedAction = actionId ? actionsById[actionId] : undefined
 
@@ -503,6 +509,7 @@ export function EditAreaModal({
         getReactionName={(reactionId) => reactionsById[reactionId]?.name ?? ''}
         initialConfig={configSheetInitialConfig}
         onSave={handleConfigSave}
+        getComponentParameters={getComponentParameters}
       />
     </Dialog>
   )

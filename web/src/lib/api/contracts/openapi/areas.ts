@@ -10,7 +10,28 @@ export type ComponentSummaryDTO = {
   name: string
   displayName: string
   description?: string | null
+  metadata?: ComponentSummaryMetadataDTO
   provider: ServiceProviderSummaryDTO
+}
+
+export type ComponentSummaryMetadataDTO = {
+  parameters?: ComponentParameterDTO[]
+  [key: string]: unknown
+}
+
+export type ComponentParameterDTO = {
+  key: string
+  label?: string
+  type: string
+  required?: boolean
+  description?: string
+  options?: ComponentParameterOptionDTO[]
+  [key: string]: unknown
+}
+
+export type ComponentParameterOptionDTO = {
+  value: string
+  label: string
 }
 
 export type AreaComponentDTO = {

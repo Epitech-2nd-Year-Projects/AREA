@@ -1,5 +1,5 @@
 'use client'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useCallback, useMemo, useState } from 'react'
 import {
   CheckIcon,
   ChevronsUpDown,
@@ -8,13 +8,17 @@ import {
   TrashIcon
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { mockActions, mockReactions, mockServices } from '@/lib/api/mock'
 import { Action } from '@/lib/api/contracts/actions'
 import { Reaction } from '@/lib/api/contracts/reactions'
 import type { CreateAreaRequestDTO } from '@/lib/api/contracts/openapi/areas'
 import { useCreateAreaMutation } from '@/lib/api/openapi/areas'
 import { ApiError } from '@/lib/api/http/errors'
 import { cn } from '@/lib/utils'
+import { useAvailableComponentsQuery } from '@/lib/api/openapi/components'
+import type {
+  ComponentParameterDTO,
+  ComponentSummaryDTO
+} from '@/lib/api/contracts/openapi/areas'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -39,6 +43,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   ComponentConfigSheet,
+  type ConfigParamField,
   type ComponentConfigState,
   type ConfigEditorTarget,
   cloneComponentConfig,
@@ -60,17 +65,12 @@ type ReactionField = {
 const textareaClasses =
   'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 min-h-[120px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
 
-const serviceDisplayNameMap = mockServices.reduce<Record<string, string>>(
-  (acc, service) => {
-    acc[service.name] = service.displayName
-    return acc
-  },
-  {}
-)
-
-function getServiceKeywords(serviceName: string) {
+function getServiceKeywords(
+  serviceName: string,
+  displayNameMap: Record<string, string>
+) {
   const keywords = [serviceName]
-  const displayName = serviceDisplayNameMap[serviceName]
+  const displayName = displayNameMap[serviceName]
 
   if (displayName && displayName !== serviceName) {
     keywords.push(displayName)
@@ -79,24 +79,9 @@ function getServiceKeywords(serviceName: string) {
   return keywords
 }
 
-const actionsById = mockActions.reduce<Record<string, Action>>(
-  (acc, action) => {
-    acc[action.id] = action
-    return acc
-  },
-  {}
-)
-
-const reactionsById = mockReactions.reduce<Record<string, Reaction>>(
-  (acc, reaction) => {
-    acc[reaction.id] = reaction
-    return acc
-  },
-  {}
-)
-
 function groupItemsByService<T extends { serviceName: string }>(
-  items: T[]
+  items: T[],
+  displayNameMap: Record<string, string>
 ): GroupedItems<T>[] {
   const buckets = items.reduce<Record<string, T[]>>((acc, item) => {
     if (!acc[item.serviceName]) {
@@ -108,32 +93,15 @@ function groupItemsByService<T extends { serviceName: string }>(
     return acc
   }, {})
 
-  const orderedServiceNames = [
-    ...mockServices.map((service) => service.name),
-    ...Object.keys(buckets).filter(
-      (serviceName) => !serviceDisplayNameMap[serviceName]
-    )
-  ]
+  const groups = Object.keys(buckets).map((serviceName) => ({
+    serviceName,
+    label: displayNameMap[serviceName] ?? serviceName,
+    items: buckets[serviceName]
+  }))
 
-  return orderedServiceNames
-    .map((serviceName) => {
-      const groupedItems = buckets[serviceName]
-
-      if (!groupedItems) {
-        return null
-      }
-
-      return {
-        serviceName,
-        label: serviceDisplayNameMap[serviceName] ?? serviceName,
-        items: groupedItems
-      }
-    })
-    .filter((group): group is GroupedItems<T> => group !== null)
+  groups.sort((a, b) => a.label.localeCompare(b.label))
+  return groups
 }
-
-const groupedActions = groupItemsByService<Action>(mockActions)
-const groupedReactions = groupItemsByService<Reaction>(mockReactions)
 
 let reactionFieldIndex = 0
 const createReactionFieldId = () => {
@@ -165,14 +133,165 @@ function buildParamsFromConfig(
     if (!key) {
       continue
     }
-    params[key] = field.value
+    params[key] = coerceParamValue(field)
   }
 
   return Object.keys(params).length > 0 ? params : undefined
 }
 
+const truthyBooleanValues = new Set(['true', '1', 'yes', 'on'])
+const falsyBooleanValues = new Set(['false', '0', 'no', 'off'])
+
+function coerceParamValue(field: ConfigParamField): unknown {
+  const rawValue = field.value
+  const type = field.type?.toLowerCase()
+
+  if (!type) {
+    return rawValue
+  }
+
+  const trimmedValue = rawValue.trim()
+
+  if (!trimmedValue) {
+    return rawValue
+  }
+
+  if (type === 'boolean') {
+    const normalized = trimmedValue.toLowerCase()
+    if (truthyBooleanValues.has(normalized)) {
+      return true
+    }
+    if (falsyBooleanValues.has(normalized)) {
+      return false
+    }
+    return rawValue
+  }
+
+  if (
+    type === 'integer' ||
+    type === 'int' ||
+    type === 'int32' ||
+    type === 'int64'
+  ) {
+    const parsed = Number.parseInt(trimmedValue, 10)
+    return Number.isNaN(parsed) ? rawValue : parsed
+  }
+
+  if (
+    type === 'number' ||
+    type === 'float' ||
+    type === 'double' ||
+    type === 'decimal'
+  ) {
+    const parsed = Number(trimmedValue)
+    return Number.isNaN(parsed) ? rawValue : parsed
+  }
+
+  if (type === 'array' || type === 'object' || type === 'json') {
+    try {
+      return JSON.parse(rawValue)
+    } catch (error) {
+      return rawValue
+    }
+  }
+
+  return rawValue
+}
+
 export default function CreateAreaModal() {
   const t = useTranslations('CreateAreaModal')
+
+  const { data: availableActions = [] } = useAvailableComponentsQuery({
+    params: { kind: 'action' }
+  })
+  const { data: availableReactions = [] } = useAvailableComponentsQuery({
+    params: { kind: 'reaction' }
+  })
+
+  const componentParametersById = useMemo(() => {
+    const map: Record<string, ComponentParameterDTO[]> = {}
+
+    const normalize = (parameters?: ComponentParameterDTO[] | null) => {
+      if (!Array.isArray(parameters) || parameters.length === 0) {
+        return [] as ComponentParameterDTO[]
+      }
+      return parameters
+        .filter(
+          (parameter): parameter is ComponentParameterDTO =>
+            typeof parameter?.key === 'string' &&
+            parameter.key.trim().length > 0
+        )
+        .map((parameter) => ({
+          ...parameter,
+          key: parameter.key.trim()
+        }))
+    }
+
+    const register = (component: ComponentSummaryDTO) => {
+      const normalized = normalize(component.metadata?.parameters)
+      if (normalized.length > 0) {
+        map[component.id] = normalized
+      }
+    }
+
+    for (const component of availableActions) {
+      register(component)
+    }
+
+    for (const component of availableReactions) {
+      register(component)
+    }
+
+    return map
+  }, [availableActions, availableReactions])
+
+  const getComponentParameters = useCallback(
+    (componentId: string) => componentParametersById[componentId] ?? [],
+    [componentParametersById]
+  )
+
+  const actions: Action[] = availableActions.map((c) => ({
+    id: c.id,
+    name: c.displayName || c.name,
+    description: c.description ?? '',
+    serviceName: c.provider.name
+  }))
+  const reactions: Reaction[] = availableReactions.map((c) => ({
+    id: c.id,
+    name: c.displayName || c.name,
+    description: c.description ?? '',
+    serviceName: c.provider.name
+  }))
+
+  const serviceDisplayNameMap = [
+    ...availableActions,
+    ...availableReactions
+  ].reduce<Record<string, string>>((acc, c) => {
+    if (!acc[c.provider.name]) acc[c.provider.name] = c.provider.displayName
+    return acc
+  }, {})
+
+  const actionsById = actions.reduce<Record<string, Action>>((acc, action) => {
+    acc[action.id] = action
+    return acc
+  }, {})
+
+  const reactionsById = reactions.reduce<Record<string, Reaction>>(
+    (acc, reaction) => {
+      acc[reaction.id] = reaction
+      return acc
+    },
+    {}
+  )
+
+  const groupedActions = groupItemsByService<Action>(
+    actions,
+    serviceDisplayNameMap
+  )
+  const groupedReactions = groupItemsByService<Reaction>(
+    reactions,
+    serviceDisplayNameMap
+  )
 
   const [open, setOpen] = useState(false)
   const [actionId, setActionId] = useState('')
@@ -459,6 +578,9 @@ export default function CreateAreaModal() {
                 emptyText={t('actionsEmpty')}
                 ariaLabel={t('actionAriaLabel')}
                 configureLabel={t('configureAction')}
+                actionsById={actionsById}
+                groupedActions={groupedActions}
+                serviceDisplayNameMap={serviceDisplayNameMap}
                 onChange={handleActionValueChange}
                 onConfigure={handleOpenConfigEditorForAction}
               />
@@ -486,6 +608,9 @@ export default function CreateAreaModal() {
                             index: index + 1
                           })}
                           configureLabel={t('configureReaction')}
+                          reactionsById={reactionsById}
+                          groupedReactions={groupedReactions}
+                          serviceDisplayNameMap={serviceDisplayNameMap}
                           onChange={(value) =>
                             handleReactionValueChange(field.id, value)
                           }
@@ -588,6 +713,7 @@ export default function CreateAreaModal() {
         getReactionName={(reactionId) => reactionsById[reactionId]?.name ?? ''}
         initialConfig={configSheetInitialConfig}
         onSave={handleConfigSave}
+        getComponentParameters={getComponentParameters}
       />
     </Dialog>
   )
@@ -600,6 +726,9 @@ type ActionComboboxProps = {
   emptyText: string
   ariaLabel: string
   configureLabel: string
+  actionsById: Record<string, Action>
+  groupedActions: GroupedItems<Action>[]
+  serviceDisplayNameMap: Record<string, string>
   onChange: (value: string) => void
   onConfigure: () => void
 }
@@ -611,6 +740,9 @@ function ActionCombobox({
   emptyText,
   ariaLabel,
   configureLabel,
+  actionsById,
+  groupedActions,
+  serviceDisplayNameMap,
   onChange,
   onConfigure
 }: ActionComboboxProps) {
@@ -644,7 +776,10 @@ function ActionCombobox({
                     <CommandItem
                       key={action.id}
                       value={action.id}
-                      keywords={getServiceKeywords(action.serviceName)}
+                      keywords={getServiceKeywords(
+                        action.serviceName,
+                        serviceDisplayNameMap
+                      )}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue
@@ -689,6 +824,9 @@ type ReactionComboboxProps = {
   emptyText: string
   ariaLabel: string
   configureLabel: string
+  reactionsById: Record<string, Reaction>
+  groupedReactions: GroupedItems<Reaction>[]
+  serviceDisplayNameMap: Record<string, string>
   onChange: (value: string) => void
   onConfigure: () => void
 }
@@ -700,6 +838,9 @@ function ReactionCombobox({
   emptyText,
   ariaLabel,
   configureLabel,
+  reactionsById,
+  groupedReactions,
+  serviceDisplayNameMap,
   onChange,
   onConfigure
 }: ReactionComboboxProps) {
@@ -733,7 +874,10 @@ function ReactionCombobox({
                     <CommandItem
                       key={reaction.id}
                       value={reaction.id}
-                      keywords={getServiceKeywords(reaction.serviceName)}
+                      keywords={getServiceKeywords(
+                        reaction.serviceName,
+                        serviceDisplayNameMap
+                      )}
                       onSelect={(currentValue) => {
                         const nextValue =
                           currentValue === value ? '' : currentValue
