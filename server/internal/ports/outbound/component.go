@@ -11,4 +11,11 @@ import (
 type ComponentRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (componentdomain.Component, error)
 	FindByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]componentdomain.Component, error)
+	List(ctx context.Context, opts ComponentListOptions) ([]componentdomain.Component, error)
+}
+
+// ComponentListOptions filters component catalog listings
+type ComponentListOptions struct {
+	Kind     *componentdomain.Kind
+	Provider string
 }
