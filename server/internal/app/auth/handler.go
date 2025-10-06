@@ -396,7 +396,7 @@ func (h *Handler) SubscribeServiceExchange(c *gin.Context, provider string) {
 
 	h.refreshSessionCookie(c, sess)
 
-	resp := openapi.SubscribeServiceExchangeResponse{
+	resp := openapi.SubscribeExchangeResponse{
 		Subscription: toOpenAPISubscription(subscription),
 	}
 	if identity.ID != uuid.Nil {
