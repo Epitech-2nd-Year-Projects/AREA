@@ -25,7 +25,7 @@ type TimerScheduler struct {
 	batch    int
 }
 
-// TimerSchedulerOption configures scheduler behaviour
+// TimerSchedulerOption configures scheduler behavior
 type TimerSchedulerOption func(*TimerScheduler)
 
 // WithTimerInterval overrides the polling interval

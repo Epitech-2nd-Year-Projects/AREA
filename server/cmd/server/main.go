@@ -18,7 +18,7 @@ import (
 	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
-	gmail "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	reactionhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"

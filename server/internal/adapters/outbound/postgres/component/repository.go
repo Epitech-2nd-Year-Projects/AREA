@@ -2,6 +2,7 @@ package component
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -30,7 +31,7 @@ func (r Repository) FindByID(ctx context.Context, id uuid.UUID) (componentdomain
 	if err := r.db.WithContext(ctx).
 		Preload("Provider").
 		First(&model, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return componentdomain.Component{}, outbound.ErrNotFound
 		}
 		return componentdomain.Component{}, fmt.Errorf("postgres.component.Repository.FindByID: %w", err)

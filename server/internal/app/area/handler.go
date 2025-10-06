@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	areaauth "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	componentview "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
@@ -16,7 +16,7 @@ import (
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	openapitypes "github.com/oapi-codegen/runtime/types"
 	"go.uber.org/zap"
 )
 
@@ -111,13 +111,13 @@ func (h *Handler) CreateArea(c *gin.Context) {
 }
 
 // ExecuteArea handles POST /v1/areas/{areaId}/execute
-func (h *Handler) ExecuteArea(c *gin.Context, areaID openapi_types.UUID) {
+func (h *Handler) ExecuteArea(c *gin.Context, areaID openapitypes.UUID) {
 	usr, _, ok := h.authorize(c)
 	if !ok {
 		return
 	}
 
-	if err := h.service.Execute(c.Request.Context(), usr.ID, uuid.UUID(areaID)); err != nil {
+	if err := h.service.Execute(c.Request.Context(), usr.ID, areaID); err != nil {
 		h.handleExecuteError(c, err)
 		return
 	}
@@ -211,7 +211,7 @@ func mapAreas(items []areadomain.Area) []openapi.Area {
 
 func toOpenAPIArea(area areadomain.Area) openapi.Area {
 	return openapi.Area{
-		Id:          openapi_types.UUID(area.ID),
+		Id:          area.ID,
 		Name:        area.Name,
 		Description: area.Description,
 		Status:      string(area.Status),
@@ -241,8 +241,8 @@ func toOpenAPIAreaAction(action *areadomain.Link) *openapi.AreaAction {
 	}
 	summary := componentview.ToSummary(action.Config.Component, action.Config.ComponentID)
 	result := openapi.AreaAction{
-		ConfigId:    openapi_types.UUID(action.Config.ID),
-		ComponentId: openapi_types.UUID(action.Config.ComponentID),
+		ConfigId:    action.Config.ID,
+		ComponentId: action.Config.ComponentID,
 		Component:   summary,
 		Name:        namePtr,
 		Params:      paramsPtr,
@@ -271,8 +271,8 @@ func toOpenAPIAreaReactions(reactions []areadomain.Link) []openapi.AreaReaction 
 		}
 		summary := componentview.ToSummary(reaction.Config.Component, reaction.Config.ComponentID)
 		result = append(result, openapi.AreaReaction{
-			ConfigId:    openapi_types.UUID(reaction.Config.ID),
-			ComponentId: openapi_types.UUID(reaction.Config.ComponentID),
+			ConfigId:    reaction.Config.ID,
+			ComponentId: reaction.Config.ComponentID,
 			Component:   summary,
 			Name:        namePtr,
 			Params:      paramsPtr,
@@ -287,7 +287,7 @@ func fromCreateAction(action openapi.CreateAreaAction) ActionInput {
 		params = cloneMap(*action.Params)
 	}
 	input := ActionInput{
-		ComponentID: uuid.UUID(action.ComponentId),
+		ComponentID: action.ComponentId,
 		Params:      params,
 	}
 	if action.Name != nil {
@@ -304,7 +304,7 @@ func fromCreateReactions(reactions []openapi.CreateAreaReaction) []ReactionInput
 			params = cloneMap(*reaction.Params)
 		}
 		input := ReactionInput{
-			ComponentID: uuid.UUID(reaction.ComponentId),
+			ComponentID: reaction.ComponentId,
 			Params:      params,
 		}
 		if reaction.Name != nil {

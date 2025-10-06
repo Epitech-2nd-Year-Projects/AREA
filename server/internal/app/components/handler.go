@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	areaauth "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"

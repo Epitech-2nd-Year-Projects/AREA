@@ -1,10 +1,9 @@
 package components
 
 import (
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // MapComponents converts domain components into OpenAPI summaries ready for transport
@@ -24,7 +23,7 @@ func MapComponents(items []componentdomain.Component) []openapi.ComponentSummary
 func ToSummary(component *componentdomain.Component, fallbackID uuid.UUID) openapi.ComponentSummary {
 	if component == nil {
 		return openapi.ComponentSummary{
-			Id:          openapi_types.UUID(fallbackID),
+			Id:          fallbackID,
 			Provider:    openapi.ServiceProviderSummary{},
 			Metadata:    nil,
 			Name:        "",
@@ -45,13 +44,13 @@ func ToSummary(component *componentdomain.Component, fallbackID uuid.UUID) opena
 	}
 
 	provider := openapi.ServiceProviderSummary{
-		Id:          openapi_types.UUID(component.Provider.ID),
+		Id:          component.Provider.ID,
 		Name:        component.Provider.Name,
 		DisplayName: component.Provider.DisplayName,
 	}
 
 	return openapi.ComponentSummary{
-		Id:          openapi_types.UUID(component.ID),
+		Id:          component.ID,
 		Name:        component.Name,
 		DisplayName: component.DisplayName,
 		Description: description,

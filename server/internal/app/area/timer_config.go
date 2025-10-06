@@ -124,7 +124,7 @@ func (cfg timerConfig) nextAfter(reference time.Time) (time.Time, error) {
 
 	elapsed := ref.Sub(start)
 	cycles := elapsed/interval + 1
-	return start.Add(time.Duration(cycles) * interval), nil
+	return start.Add(cycles * interval), nil
 }
 
 func (cfg timerConfig) description() string {

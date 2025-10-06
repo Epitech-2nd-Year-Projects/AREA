@@ -3,14 +3,14 @@ package router
 import (
 	"net/http"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	aboutapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/about"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/gin-gonic/gin"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	openapitypes "github.com/oapi-codegen/runtime/types"
 )
 
 // Dependencies aggregates inbound HTTP dependencies
@@ -149,7 +149,7 @@ func (h compositeHandler) ExchangeOAuth(c *gin.Context, provider string) {
 	h.auth.ExchangeOAuth(c, provider)
 }
 
-func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapi_types.UUID) {
+func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapitypes.UUID) {
 	if h.area == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
 		return

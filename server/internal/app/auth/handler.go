@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	openapitypes "github.com/oapi-codegen/runtime/types"
 )
 
 // CookieConfig encapsulates browser cookie attributes enforced by the handler
@@ -52,8 +52,8 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 
 	result, err := h.service.Register(c.Request.Context(), string(payload.Email), payload.Password)
 	if err != nil {
-		switch err {
-		case ErrEmailAlreadyRegistered:
+		switch {
+		case errors.Is(err, ErrEmailAlreadyRegistered):
 			c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
 			return
 		default:
@@ -83,8 +83,8 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 
 	result, err := h.service.VerifyEmail(c.Request.Context(), token, h.requestMetadata(c))
 	if err != nil {
-		switch err {
-		case ErrVerificationTokenExpired, ErrVerificationTokenUsed:
+		switch {
+		case errors.Is(err, ErrVerificationTokenExpired), errors.Is(err, ErrVerificationTokenUsed):
 			c.JSON(http.StatusGone, gin.H{"error": "token invalid"})
 			return
 		default:
@@ -107,11 +107,11 @@ func (h *Handler) Login(c *gin.Context) {
 
 	result, err := h.service.Login(c.Request.Context(), string(payload.Email), payload.Password, h.requestMetadata(c))
 	if err != nil {
-		switch err {
-		case ErrInvalidCredentials:
+		switch {
+		case errors.Is(err, ErrInvalidCredentials):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
 			return
-		case ErrAccountNotVerified:
+		case errors.Is(err, ErrAccountNotVerified):
 			c.JSON(http.StatusForbidden, gin.H{"error": "account not verified"})
 			return
 		default:
@@ -217,7 +217,7 @@ func (h *Handler) AuthorizeOAuth(c *gin.Context, provider string) {
 		req.UsePKCE = *payload.UsePkce
 	}
 	if payload.Scopes != nil {
-		req.Scopes = append([]string(nil), (*payload.Scopes)...)
+		req.Scopes = append([]string(nil), *payload.Scopes...)
 	}
 
 	resp, err := h.oauth.AuthorizationURL(c.Request.Context(), provider, req)
@@ -339,8 +339,8 @@ func stringValue(value *string) string {
 
 func toOpenAPIUser(u userdomain.User) openapi.User {
 	return openapi.User{
-		Id:          openapi_types.UUID(u.ID),
-		Email:       openapi_types.Email(u.Email),
+		Id:          u.ID,
+		Email:       openapitypes.Email(u.Email),
 		Status:      string(u.Status),
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
@@ -374,7 +374,7 @@ func toOpenAPIIdentity(identity identitydomain.Identity) openapi.IdentitySummary
 	}
 
 	return openapi.IdentitySummary{
-		Id:          openapi_types.UUID(identity.ID),
+		Id:          identity.ID,
 		Provider:    identity.Provider,
 		Subject:     identity.Subject,
 		Scopes:      scopesPtr,
