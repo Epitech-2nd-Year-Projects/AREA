@@ -1,6 +1,7 @@
 import 'package:area/features/areas/data/repositories/area_repository_impl.dart';
 import 'package:area/features/areas/domain/repositories/area_repository.dart';
 import 'package:get_it/get_it.dart';
+import '../../features/areas/data/datasources/area_remote_datasource.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/datasources/oauth_remote_datasource.dart';
@@ -66,7 +67,13 @@ Future<void> initCoreDependencies() async {
     return oauthManager;
   });
 
-  sl.registerLazySingleton<AreaRepository>(() => AreaRepositoryImpl());
+  sl.registerLazySingleton<AreaRemoteDataSource>(
+        () => AreaRemoteDataSourceImpl(sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<AreaRepository>(
+        () => AreaRepositoryImpl(sl<AreaRemoteDataSource>()),
+  );
 
   sl.registerLazySingleton<ServicesRemoteDataSource>(
         () => ServicesRemoteDataSourceImpl(sl<ApiClient>()),

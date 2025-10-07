@@ -1,63 +1,42 @@
 import '../../domain/entities/area.dart';
+import '../../domain/entities/area_draft.dart';
 import '../../domain/repositories/area_repository.dart';
+import '../datasources/area_remote_datasource.dart';
+import '../models/area_model.dart';
+import '../models/area_request_model.dart';
 
 class AreaRepositoryImpl implements AreaRepository {
-  final List<Area> _areas = [
-    Area(
-      id: '1',
-      userId: 'me',
-      name: 'Gmail → OneDrive',
-      isActive: true,
-      actionName: 'mail_with_attachment',
-      reactionName: 'save_to_onedrive',
-    ),
-    Area(
-      id: '2',
-      userId: 'me',
-      name: 'GitHub Issue → Teams',
-      isActive: false,
-      actionName: 'issue_created',
-      reactionName: 'send_teams_message',
-    ),
-  ];
+  final AreaRemoteDataSource _remote;
+
+  AreaRepositoryImpl(this._remote);
 
   @override
   Future<List<Area>> getAreas() async {
-    await Future.delayed(Duration(milliseconds: 500));
-    return _areas;
+    final models = await _remote.listAreas();
+    return models.map((AreaModel model) => model.toEntity()).toList();
   }
 
   @override
-  Future<Area> createArea(Area area) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final newArea = Area(
-      id: _generateId(), 
-      userId: area.userId, 
-      name: area.name,
-      isActive: area.isActive, 
-      actionName: area.actionName, 
-      reactionName: area.reactionName);
-    _areas.add(newArea);
-    return newArea;
+  Future<Area> createArea(AreaDraft draft) async {
+    final request = AreaRequestModel.fromDraft(draft);
+    final model = await _remote.createArea(request);
+    return model.toEntity();
   }
 
   @override
-  Future<Area> updateArea(Area area) async {
-    await Future.delayed(Duration(milliseconds: 300));
-    final index = _areas.indexWhere((a) => a.id == area.id);
-    if (index == -1) throw Exception("Area not found");
-    _areas[index] = area;
-    return area;
+  Future<Area> updateArea(String areaId, AreaDraft draft) async {
+    final request = AreaRequestModel.fromDraft(draft);
+    final model = await _remote.updateArea(areaId, request);
+    return model.toEntity();
   }
 
   @override
-  Future<void> deleteArea(String areaId) async {
-    await Future.delayed(Duration(milliseconds: 300));
-    _areas.removeWhere((a) => a.id == areaId);
-    return;
+  Future<void> deleteArea(String areaId) {
+    return _remote.deleteArea(areaId);
   }
 
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+  @override
+  Future<void> executeArea(String areaId) {
+    return _remote.executeArea(areaId);
   }
 }
