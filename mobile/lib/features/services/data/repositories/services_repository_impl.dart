@@ -25,7 +25,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
       final aboutInfoModel = await remoteDataSource.getAboutInfo();
       return Right(aboutInfoModel.toEntity());
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -46,7 +46,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
 
       return Right(services);
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -66,7 +66,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
       ServiceProviderModel.fromServiceName(service.name).toEntity();
       return Right(serviceProvider);
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -76,41 +76,16 @@ class ServicesRepositoryImpl implements ServicesRepository {
         ComponentKind? kind,
       }) async {
     try {
-      final aboutInfoModel = await remoteDataSource.getAboutInfo();
-      final service = aboutInfoModel.server.services.firstWhere(
-            (s) => s.name.toLowerCase() == serviceId.toLowerCase() ||
-            s.name.toLowerCase().replaceAll('_', '') == serviceId.toLowerCase(),
-        orElse: () => throw Exception('Service not found'),
+      final models = await remoteDataSource.listComponents(
+        kind: kind,
+        provider: serviceId,
+        onlyAvailable: true,
       );
 
-      final List<ServiceComponent> components = [];
-      if (kind == null || kind == ComponentKind.action) {
-        for (var action in service.actions) {
-          final component = ServiceComponentModel.fromAboutComponent(
-            providerId: serviceId,
-            kind: ComponentKind.action,
-            name: action.name,
-            description: action.description,
-          ).toEntity();
-          components.add(component);
-        }
-      }
-
-      if (kind == null || kind == ComponentKind.reaction) {
-        for (var reaction in service.reactions) {
-          final component = ServiceComponentModel.fromAboutComponent(
-            providerId: serviceId,
-            kind: ComponentKind.reaction,
-            name: reaction.name,
-            description: reaction.description,
-          ).toEntity();
-          components.add(component);
-        }
-      }
-
+      final components = models.map((model) => model.toEntity()).toList();
       return Right(components);
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -142,7 +117,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
         },
       );
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -179,7 +154,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
 
       return Right(subscription);
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
   }
 
@@ -191,7 +166,14 @@ class ServicesRepositoryImpl implements ServicesRepository {
       await Future.delayed(const Duration(milliseconds: 500));
       return const Right(true);
     } catch (e) {
-      return Left(NetworkFailure(e.toString()));
+      return Left(_mapError(e));
     }
+  }
+
+  Failure _mapError(Object error) {
+    if (error is Failure) {
+      return error;
+    }
+    return NetworkFailure(error.toString());
   }
 }

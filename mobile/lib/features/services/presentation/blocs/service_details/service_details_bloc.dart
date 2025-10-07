@@ -141,7 +141,7 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
           .where((component) =>
       component.name.toLowerCase().contains(query) ||
           component.displayName.toLowerCase().contains(query) ||
-          component.description.toLowerCase().contains(query))
+          (component.description?.toLowerCase().contains(query) ?? false))
           .toList();
     }
 
