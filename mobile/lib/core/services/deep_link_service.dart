@@ -9,12 +9,16 @@ class DeepLinkService {
 
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
+  bool _initialized = false;
 
-  // Callback pour gérer les URLs OAuth
-  Function(String provider, String code)? onOAuthCallback;
-  Function(String error)? onOAuthError;
+  final List<void Function(String provider, String code, String? state)>
+      _oauthCallbackListeners = [];
+  final List<void Function(String? provider, String error)>
+      _oauthErrorListeners = [];
 
   Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
     try {
       // Listen for incoming deep links
       _linkSubscription = _appLinks.uriLinkStream.listen(
@@ -52,18 +56,25 @@ class DeepLinkService {
         final provider = pathSegments[1]; // google, facebook, apple
         final code = uri.queryParameters['code'];
         final error = uri.queryParameters['error'];
+        final state = uri.queryParameters['state'];
 
         debugPrint('🔄 OAuth callback detected - Provider: $provider');
 
         if (error != null) {
           debugPrint('❌ OAuth error: $error');
-          onOAuthError?.call(error);
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, error);
+          }
         } else if (code != null) {
           debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
-          onOAuthCallback?.call(provider, code);
+          for (final listener in List.of(_oauthCallbackListeners)) {
+            listener(provider, code, state);
+          }
         } else {
           debugPrint('❌ OAuth without code or error');
-          onOAuthError?.call('No authorization code received');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, 'No authorization code received');
+          }
         }
       }
     }
@@ -71,7 +82,28 @@ class DeepLinkService {
 
   void dispose() {
     _linkSubscription?.cancel();
-    onOAuthCallback = null;
-    onOAuthError = null;
+    _oauthCallbackListeners.clear();
+    _oauthErrorListeners.clear();
+    _initialized = false;
+  }
+
+  void addOAuthCallbackListener(
+      void Function(String provider, String code, String? state) listener,) {
+    _oauthCallbackListeners.add(listener);
+  }
+
+  void removeOAuthCallbackListener(
+      void Function(String provider, String code, String? state) listener,) {
+    _oauthCallbackListeners.remove(listener);
+  }
+
+  void addOAuthErrorListener(
+      void Function(String? provider, String error) listener) {
+    _oauthErrorListeners.add(listener);
+  }
+
+  void removeOAuthErrorListener(
+      void Function(String? provider, String error) listener) {
+    _oauthErrorListeners.remove(listener);
   }
 }

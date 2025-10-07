@@ -10,9 +10,14 @@ class GetServiceComponents {
   GetServiceComponents(this.repository);
 
   Future<Either<Failure, List<ServiceComponent>>> call(
-      String serviceId, {
-        ComponentKind? kind,
-      }) async {
-    return await repository.getServiceComponents(serviceId, kind: kind);
+    String serviceId, {
+    ComponentKind? kind,
+    bool onlySubscribed = false,
+  }) async {
+    return repository.getServiceComponents(
+      serviceId,
+      kind: kind,
+      onlySubscribed: onlySubscribed,
+    );
   }
 }

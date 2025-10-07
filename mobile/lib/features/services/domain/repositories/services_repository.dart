@@ -4,6 +4,8 @@ import '../../../../core/error/failures.dart';
 import '../entities/service_provider.dart';
 import '../entities/service_component.dart';
 import '../entities/component_example.dart';
+import '../entities/service_subscription_exchange_result.dart';
+import '../entities/service_subscription_result.dart';
 import '../entities/user_service_subscription.dart';
 import '../entities/about_info.dart';
 import '../entities/service_with_status.dart';
@@ -20,6 +22,7 @@ abstract class ServicesRepository {
   Future<Either<Failure, List<ServiceComponent>>> getServiceComponents(
       String serviceId, {
         ComponentKind? kind,
+        bool onlySubscribed = false,
       });
 
   Future<Either<Failure, List<ComponentExample>>> getComponentExamples(
@@ -30,9 +33,20 @@ abstract class ServicesRepository {
 
   Future<Either<Failure, List<UserServiceSubscription>>> getUserSubscriptions();
 
-  Future<Either<Failure, UserServiceSubscription>> subscribeToService({
+  Future<Either<Failure, ServiceSubscriptionResult>> subscribeToService({
     required String serviceId,
-    required List<String> requestedScopes,
+    List<String> requestedScopes = const [],
+    String? redirectUri,
+    String? state,
+    bool? usePkce,
+  });
+
+  Future<Either<Failure, ServiceSubscriptionExchangeResult>>
+      completeServiceSubscription({
+    required String serviceId,
+    required String code,
+    String? codeVerifier,
+    String? redirectUri,
   });
 
   Future<Either<Failure, bool>> unsubscribeFromService(String subscriptionId);
