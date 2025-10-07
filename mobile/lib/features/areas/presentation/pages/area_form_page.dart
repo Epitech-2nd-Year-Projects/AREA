@@ -156,29 +156,39 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   void _updateActionComponent(ServiceComponent? component) {
+    var changed = false;
     setState(() {
       final previousId = _actionComponentId;
       _actionComponent = component;
       _actionComponentId = component?.id;
-      final changed = _actionComponentId != previousId;
+      changed = _actionComponentId != previousId;
       if (changed) {
         _actionComponentName = component?.displayName;
         _actionParams = {};
       }
     });
+
+    if (changed && component != null) {
+      _primeActionDefaults(component);
+    }
   }
 
   void _updateReactionComponent(ServiceComponent? component) {
+    var changed = false;
     setState(() {
       final previousId = _reactionComponentId;
       _reactionComponent = component;
       _reactionComponentId = component?.id;
-      final changed = _reactionComponentId != previousId;
+      changed = _reactionComponentId != previousId;
       if (changed) {
         _reactionComponentName = component?.displayName;
         _reactionParams = {};
       }
     });
+
+    if (changed && component != null) {
+      _primeReactionDefaults(component);
+    }
   }
 
   void _submit() {
@@ -224,6 +234,32 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     if (value == null) return null;
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Future<void> _primeActionDefaults(ServiceComponent component) async {
+    final cubit = context.read<AreaFormCubit>();
+    final suggestions = await cubit.suggestParametersFor(component);
+    if (!mounted) return;
+    if (_actionComponent?.id != component.id) return;
+    if (_actionParams.isNotEmpty) return;
+    if (suggestions.isEmpty) return;
+
+    setState(() {
+      _actionParams = Map<String, dynamic>.from(suggestions);
+    });
+  }
+
+  Future<void> _primeReactionDefaults(ServiceComponent component) async {
+    final cubit = context.read<AreaFormCubit>();
+    final suggestions = await cubit.suggestParametersFor(component);
+    if (!mounted) return;
+    if (_reactionComponent?.id != component.id) return;
+    if (_reactionParams.isNotEmpty) return;
+    if (suggestions.isEmpty) return;
+
+    setState(() {
+      _reactionParams = Map<String, dynamic>.from(suggestions);
+    });
   }
 
   @override

@@ -9,6 +9,7 @@ import '../entities/service_subscription_result.dart';
 import '../entities/user_service_subscription.dart';
 import '../entities/about_info.dart';
 import '../entities/service_with_status.dart';
+import '../entities/service_identity_summary.dart';
 import '../value_objects/service_category.dart';
 import '../value_objects/component_kind.dart';
 
@@ -58,4 +59,6 @@ abstract class ServicesRepository {
   Future<Either<Failure, List<ServiceWithStatus>>> getServicesWithStatus({
     ServiceCategory? category,
   });
+
+  Future<Either<Failure, List<ServiceIdentitySummary>>> getConnectedIdentities();
 }

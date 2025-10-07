@@ -3,19 +3,19 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/about_info_model.dart';
 import '../models/service_component_model.dart';
+import '../models/identity_summary_model.dart';
 import '../models/subscribe_exchange_response_model.dart';
 import '../models/subscribe_service_response_model.dart';
 import '../../domain/entities/service_subscription_exchange_result.dart';
-import '../../domain/value_objects/component_kind.dart';
 
 abstract class ServicesRemoteDataSource {
   Future<AboutInfoModel> getAboutInfo();
 
   Future<List<ServiceComponentModel>> listComponents({
-    ComponentKind? kind,
-    String? provider,
     bool onlyAvailable,
   });
+
+  Future<List<IdentitySummaryModel>> listIdentities();
 
   Future<SubscribeServiceResponseModel> subscribeToService({
     required String provider,
@@ -54,23 +54,13 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
 
   @override
   Future<List<ServiceComponentModel>> listComponents({
-    ComponentKind? kind,
-    String? provider,
     bool onlyAvailable = false,
   }) async {
     try {
-      final query = <String, dynamic>{};
-      if (kind != null) {
-        query['kind'] = kind.value;
-      }
-      if (provider != null && provider.isNotEmpty) {
-        query['provider'] = provider;
-      }
-
       final endpoint =
           onlyAvailable ? '/v1/components/available' : '/v1/components';
-      final response = await apiClient
-          .get<Map<String, dynamic>>(endpoint, queryParameters: query);
+      final response =
+          await apiClient.get<Map<String, dynamic>>(endpoint);
       final data = response.data;
       if (data == null || data['components'] is! List) {
         throw const NetworkFailure('Invalid components response');
@@ -83,6 +73,26 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
           .toList();
     } catch (e) {
       throw NetworkFailure('Failed to fetch components: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<IdentitySummaryModel>> listIdentities() async {
+    try {
+      final response =
+          await apiClient.get<Map<String, dynamic>>('/v1/identities');
+      final data = response.data;
+      if (data == null || data['identities'] is! List) {
+        throw const NetworkFailure('Invalid identities response');
+      }
+
+      final identities = data['identities'] as List;
+      return identities
+          .whereType<Map<String, dynamic>>()
+          .map(IdentitySummaryModel.fromJson)
+          .toList();
+    } catch (e) {
+      throw NetworkFailure('Failed to fetch identities: ${e.toString()}');
     }
   }
 

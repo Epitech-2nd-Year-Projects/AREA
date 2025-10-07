@@ -8,6 +8,7 @@ import '../../domain/entities/service_subscription_exchange_result.dart';
 import '../../domain/entities/service_subscription_result.dart';
 import '../../domain/entities/service_with_status.dart';
 import '../../domain/entities/user_service_subscription.dart';
+import '../../domain/entities/service_identity_summary.dart';
 import '../../domain/repositories/services_repository.dart';
 import '../../domain/value_objects/component_kind.dart';
 import '../../domain/value_objects/service_category.dart';
@@ -15,6 +16,7 @@ import '../datasources/services_remote_datasource.dart';
 import '../models/about_info_model.dart';
 import '../models/service_component_model.dart';
 import '../models/service_provider_model.dart';
+import '../models/identity_summary_model.dart';
 
 class ServicesRepositoryImpl implements ServicesRepository {
   final ServicesRemoteDataSource remoteDataSource;
@@ -147,6 +149,19 @@ class ServicesRepositoryImpl implements ServicesRepository {
           return Right(servicesWithStatus);
         },
       );
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ServiceIdentitySummary>>>
+      getConnectedIdentities() async {
+    try {
+      final models = await remoteDataSource.listIdentities();
+      final identities =
+          models.map((model) => model.toEntity()).toList();
+      return Right(identities);
     } catch (e) {
       return Left(_mapError(e));
     }
@@ -326,14 +341,43 @@ class ServicesRepositoryImpl implements ServicesRepository {
     ComponentKind? kind,
     required bool onlyAvailable,
   }) async {
-    return await remoteDataSource.listComponents(
-      kind: kind,
-      provider: providerId,
+    final normalizedProvider = _normalizeServiceKey(providerId);
+    final components = await remoteDataSource.listComponents(
       onlyAvailable: onlyAvailable,
     );
+
+    final matches = components.where((component) {
+      if (!_componentBelongsToProvider(component, normalizedProvider)) {
+        return false;
+      }
+      if (kind != null && component.kind != kind) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    return matches;
   }
 
   String _normalizeServiceKey(String value) {
     return value.toLowerCase().replaceAll(' ', '_');
+  }
+
+  bool _componentBelongsToProvider(
+    ServiceComponentModel component,
+    String normalizedProvider,
+  ) {
+    final providerId = _normalizeServiceKey(component.provider.id);
+    final providerName = _normalizeServiceKey(component.provider.name);
+    final providerDisplay = _normalizeServiceKey(component.provider.displayName);
+
+    if (providerId == normalizedProvider ||
+        providerName == normalizedProvider ||
+        providerDisplay == normalizedProvider) {
+      return true;
+    }
+
+    final componentIdPrefix = '${normalizedProvider}_';
+    return component.id.toLowerCase().startsWith(componentIdPrefix);
   }
 }
