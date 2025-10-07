@@ -36,20 +36,17 @@ class AreaRequestModel {
 
 class AreaComponentRequestModel {
   final String componentId;
-  final String? name;
   final Map<String, dynamic> params;
 
   AreaComponentRequestModel({
     required this.componentId,
-    required this.name,
     required this.params,
   });
 
   factory AreaComponentRequestModel.fromDraft(AreaComponentDraft draft) {
     return AreaComponentRequestModel(
       componentId: draft.componentId,
-      name: draft.name,
-      params: draft.params,
+      params: draft.params
     );
   }
 
@@ -57,12 +54,26 @@ class AreaComponentRequestModel {
     final payload = <String, dynamic>{
       'componentId': componentId,
     };
-    if (name != null && name!.trim().isNotEmpty) {
-      payload['name'] = name;
-    }
+
     if (params.isNotEmpty) {
-      payload['params'] = params;
+      final cleanedParams = <String, dynamic>{};
+
+      params.forEach((key, value) {
+        if (value == null || (value is String && value.isEmpty)) {
+          return;
+        }
+
+        if (key == 'frequencyValue' && value is String) {
+          final parsed = int.tryParse(value);
+          cleanedParams[key] = parsed ?? value;
+        } else {
+          cleanedParams[key] = value;
+        }
+      });
+
+      payload['params'] = cleanedParams;
     }
+
     return payload;
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
@@ -42,6 +44,7 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
   @override
   Future<AreaModel> createArea(AreaRequestModel request) async {
     try {
+      print(jsonEncode(request.toJson()));
       final response = await _apiClient.post<Map<String, dynamic>>(
         '/v1/areas',
         data: request.toJson(),
