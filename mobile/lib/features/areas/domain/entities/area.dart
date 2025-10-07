@@ -1,40 +1,61 @@
 import 'package:equatable/equatable.dart';
+import 'area_component_binding.dart';
+import 'area_status.dart';
 
 class Area extends Equatable {
   final String id;
-  final String userId;
   final String name;
-  final bool isActive;
-  final String actionName;
-  final String reactionName;
+  final String? description;
+  final AreaStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final AreaComponentBinding action;
+  final List<AreaComponentBinding> reactions;
 
   const Area({
     required this.id,
-    required this.userId,
     required this.name,
-    required this.isActive,
-    required this.actionName,
-    required this.reactionName,
+    required this.description,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.action,
+    required this.reactions,
   });
+
+  bool get isEnabled => status == AreaStatus.enabled;
 
   Area copyWith({
     String? id,
-    String? userId,
     String? name,
-    bool? isActive,
-    String? actionName,
-    String? reactionName,
+    String? description,
+    AreaStatus? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    AreaComponentBinding? action,
+    List<AreaComponentBinding>? reactions,
   }) {
     return Area(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       name: name ?? this.name,
-      isActive: isActive ?? this.isActive,
-      actionName: actionName ?? this.actionName,
-      reactionName: reactionName ?? this.reactionName,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      action: action ?? this.action,
+      reactions: reactions ?? this.reactions,
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, name, isActive, actionName, reactionName];
+  List<Object?> get props => [
+        id,
+        name,
+        description,
+        status,
+        createdAt,
+        updatedAt,
+        action,
+        reactions,
+      ];
 }

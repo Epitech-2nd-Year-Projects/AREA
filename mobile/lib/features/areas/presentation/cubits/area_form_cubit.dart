@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'area_form_state.dart';
 import '../../domain/entities/area.dart';
+import '../../domain/entities/area_draft.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../../domain/use_cases/create_area.dart';
 import '../../domain/use_cases/update_area.dart';
@@ -133,37 +134,50 @@ class AreaFormCubit extends Cubit<AreaFormState> {
     return cache[providerId] ?? const <ServiceComponent>[];
   }
 
+  ServiceComponent? findCachedComponent(
+    String providerId, {
+    required ComponentKind kind,
+    required String componentId,
+  }) {
+    final components = getCachedComponents(providerId, kind: kind);
+    for (final component in components) {
+      if (component.id == componentId) {
+        return component;
+      }
+    }
+    return null;
+  }
+
   Future<void> submit({
     required String name,
-    required bool isActive,
-    required String actionName,
-    required String reactionName,
+    String? description,
+    required AreaComponentDraft action,
+    required List<AreaComponentDraft> reactions,
   }) async {
+    if (reactions.isEmpty) {
+      emit(const AreaFormError("Select at least one reaction component"));
+      return;
+    }
+
     emit(AreaFormSubmitting());
     try {
+      final draft = AreaDraft(
+        name: name,
+        description: description,
+        action: action,
+        reactions: reactions,
+      );
+
       if (initialArea == null) {
-        final newArea = Area(
-          id: '',
-          userId: 'me', // TODO: injecter l'id utilisateur réel si dispo
-          name: name,
-          isActive: isActive,
-          actionName: actionName,
-          reactionName: reactionName,
-        );
-        final created = await _createArea(newArea);
+        final created = await _createArea(draft);
         emit(AreaFormSuccess(created));
       } else {
-        final updated = initialArea!.copyWith(
-          name: name,
-          isActive: isActive,
-          actionName: actionName,
-          reactionName: reactionName,
-        );
-        final result = await _updateArea(updated);
+        final result = await _updateArea(initialArea!.id, draft);
         emit(AreaFormSuccess(result));
       }
-    } catch (_) {
-      emit(const AreaFormError("Failed to save Area"));
+    } catch (error) {
+      final message = error.toString().replaceFirst('Exception: ', '').trim();
+      emit(AreaFormError(message.isEmpty ? 'Failed to save Area' : message));
     }
   }
 }

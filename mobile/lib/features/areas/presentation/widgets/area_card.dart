@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../domain/entities/area.dart';
+import '../../domain/entities/area_status.dart';
+import '../../domain/entities/area_component_binding.dart';
 
 class AreaCard extends StatelessWidget {
   final Area area;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  
+
   const AreaCard({
     super.key,
     required this.area,
@@ -18,34 +21,10 @@ class AreaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isActive = area.isActive;
-    final Widget statusBadge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.success : AppColors.gray600,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isActive ? Icons.check_circle : Icons.remove_circle,
-            color: Colors.white,
-            size: 14,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            isActive ? 'Active' : 'Inactive',
-            style: AppTypography.labelMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-    
+    final statusBadge = _buildStatusBadge(context, area.status);
+    final actionSummary = _formatComponent(area.action);
+    final reactionSummaries = area.reactions.map(_formatComponent).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getSurfaceColor(context),
@@ -65,30 +44,45 @@ class AreaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  area.name,
-                  style: AppTypography.headlineMedium.copyWith(
-                    color: AppColors.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      area.name,
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (area.description != null && area.description!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: Text(
+                          area.description!,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               statusBadge,
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            _buildActionReactionText(),
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.getTextSecondaryColor(context),
-            ),
-          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildSummaryRow(context, 'Action', actionSummary),
+          const SizedBox(height: AppSpacing.xs),
+          ...reactionSummaries.asMap().entries.map((entry) => Padding(
+                padding: EdgeInsets.only(top: entry.key == 0 ? 0 : AppSpacing.xs),
+                child: _buildSummaryRow(context, entry.key == 0 ? 'Reaction' : 'Reaction ${entry.key + 1}', entry.value),
+              )),
           const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -111,17 +105,78 @@ class AreaCard extends StatelessWidget {
     );
   }
 
-  String _buildActionReactionText() {
-    const actionLabels = {
-      'issue_created': 'Issue created (GitHub)',
-      'mail_with_attachment': 'Email with attachment (Gmail)',
+  Widget _buildStatusBadge(BuildContext context, AreaStatus status) {
+    final isActive = status == AreaStatus.enabled;
+    final color = switch (status) {
+      AreaStatus.enabled => AppColors.success,
+      AreaStatus.disabled => AppColors.gray600,
+      AreaStatus.archived => AppColors.warning,
     };
-    const reactionLabels = {
-      'send_teams_message': 'Send Teams message',
-      'save_to_onedrive': 'Save to OneDrive',
+    final label = switch (status) {
+      AreaStatus.enabled => 'Enabled',
+      AreaStatus.disabled => 'Disabled',
+      AreaStatus.archived => 'Archived',
     };
-    final aLabel = actionLabels[area.actionName] ?? area.actionName;
-    final rLabel = reactionLabels[area.reactionName] ?? area.reactionName;
-    return '$aLabel → $rLabel';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isActive ? Icons.check_circle : Icons.pause_circle_outline,
+            color: Colors.white,
+            size: 14,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTypography.labelMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(BuildContext context, String label, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.getTextSecondaryColor(context),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            description,
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.getTextPrimaryColor(context),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatComponent(AreaComponentBinding binding) {
+    final provider = binding.component.provider.displayName;
+    final componentName = binding.name?.isNotEmpty == true
+        ? binding.name!
+        : binding.component.displayName;
+    return '$provider - $componentName';
   }
 }

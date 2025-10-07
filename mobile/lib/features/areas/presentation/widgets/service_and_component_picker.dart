@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../services/domain/entities/service_component.dart';
 import '../../../services/domain/value_objects/component_kind.dart';
 import '../cubits/area_form_cubit.dart';
 
@@ -18,6 +19,7 @@ class ServiceAndComponentPicker extends StatefulWidget {
 
   final VoidCallback onSelectService;
   final ValueChanged<String?> onComponentChanged;
+  final ValueChanged<ServiceComponent?> onComponentSelected;
 
   const ServiceAndComponentPicker({
     super.key,
@@ -29,6 +31,7 @@ class ServiceAndComponentPicker extends StatefulWidget {
     required this.kind,
     required this.onSelectService,
     required this.onComponentChanged,
+    required this.onComponentSelected,
   });
 
   @override
@@ -37,7 +40,15 @@ class ServiceAndComponentPicker extends StatefulWidget {
 
 class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
   bool _loading = false;
-  List<_Comp> _components = [];
+  List<ServiceComponent> _components = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.providerId != null) {
+      _loadComponents(widget.providerId!);
+    }
+  }
 
   @override
   void didUpdateWidget(covariant ServiceAndComponentPicker oldWidget) {
@@ -49,6 +60,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         widget.onComponentChanged(null);
+        widget.onComponentSelected(null);
 
         if (widget.providerId != null && mounted) {
           _loadComponents(widget.providerId!);
@@ -74,19 +86,29 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     final list = await cubit.getComponentsFor(providerId, kind: kind);
     if (!mounted) return;
 
-    final byId = <String, _Comp>{};
-    for (final c in list) {
-      byId[c.id] = _Comp(id: c.id, label: c.displayName);
-    }
-
-    _components = byId.values.toList();
+    _components = list;
     _loading = false;
 
     if (widget.selectedComponentId != null &&
         !_components.any((e) => e.id == widget.selectedComponentId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onComponentChanged(null);
+        if (mounted) {
+          widget.onComponentChanged(null);
+          widget.onComponentSelected(null);
+        }
       });
+    } else if (widget.selectedComponentId != null) {
+      ServiceComponent? selected;
+      try {
+        selected = _components.firstWhere((c) => c.id == widget.selectedComponentId);
+      } catch (_) {
+        selected = null;
+      }
+      if (selected != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onComponentSelected(selected);
+        });
+      }
     }
 
     setState(() {});
@@ -153,12 +175,23 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                             : null,
                         hint: Text('Choose a ${widget.title.toLowerCase()} component'),
                         items: _components
-                            .map((c) => DropdownMenuItem<String>(
-                                  value: c.id,
-                                  child: Text(c.label, overflow: TextOverflow.ellipsis),
+                            .map((component) => DropdownMenuItem<String>(
+                                  value: component.id,
+                                  child: Text(component.displayName, overflow: TextOverflow.ellipsis),
                                 ))
                             .toList(),
-                        onChanged: widget.onComponentChanged,
+                        onChanged: (value) {
+                          widget.onComponentChanged(value);
+                          if (value == null) {
+                            widget.onComponentSelected(null);
+                          } else {
+                            final component = _components.firstWhere(
+                              (c) => c.id == value,
+                              orElse: () => _components.first,
+                            );
+                            widget.onComponentSelected(component);
+                          }
+                        },
                         validator: (v) => v == null ? 'Select a component' : null,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -207,8 +240,4 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
   }
 }
 
-class _Comp {
-  final String id;
-  final String label;
-  _Comp({required this.id, required this.label});
-}
+

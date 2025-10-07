@@ -4,13 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../domain/entities/area.dart';
+import '../../domain/entities/area_draft.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/area_form_cubit.dart';
 import '../cubits/area_form_state.dart';
 import '../../../services/domain/repositories/services_repository.dart';
+import '../../../services/domain/entities/service_component.dart';
 
 import '../widgets/service_and_component_picker.dart';
 import '../widgets/service_picker_sheet.dart';
+import '../widgets/component_configuration_form.dart';
 
 class AreaFormPage extends StatelessWidget {
   final Area? areaToEdit;
@@ -37,30 +40,61 @@ class _AreaFormScreen extends StatefulWidget {
 class _AreaFormScreenState extends State<_AreaFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _nameCtrl;
-  bool _isActive = true;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _descriptionCtrl;
 
   String? _actionProviderId;
   String? _actionProviderLabel;
   bool? _actionIsSubscribed;
   String? _actionComponentId;
+  ServiceComponent? _actionComponent;
+  String? _actionComponentName;
+  Map<String, dynamic> _actionParams = {};
 
   String? _reactionProviderId;
   String? _reactionProviderLabel;
   bool? _reactionIsSubscribed;
   String? _reactionComponentId;
+  ServiceComponent? _reactionComponent;
+  String? _reactionComponentName;
+  Map<String, dynamic> _reactionParams = {};
 
   @override
   void initState() {
     super.initState();
     final initial = context.read<AreaFormCubit>().initialArea;
     _nameCtrl = TextEditingController(text: initial?.name ?? '');
-    _isActive = initial?.isActive ?? true;
+    _descriptionCtrl =
+        TextEditingController(text: initial?.description ?? '');
+
+    if (initial != null) {
+      final action = initial.action;
+      _actionProviderId = action.component.provider.id;
+      _actionProviderLabel = action.component.provider.displayName;
+      _actionIsSubscribed = true;
+      _actionComponentId = action.component.id;
+      _actionComponent = action.component;
+      _actionComponentName = action.name ?? action.component.displayName;
+      _actionParams = Map<String, dynamic>.from(action.params);
+
+      if (initial.reactions.isNotEmpty) {
+        final reaction = initial.reactions.first;
+        _reactionProviderId = reaction.component.provider.id;
+        _reactionProviderLabel = reaction.component.provider.displayName;
+        _reactionIsSubscribed = true;
+        _reactionComponentId = reaction.component.id;
+        _reactionComponent = reaction.component;
+        _reactionComponentName =
+            reaction.name ?? reaction.component.displayName;
+        _reactionParams = Map<String, dynamic>.from(reaction.params);
+      }
+    }
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _descriptionCtrl.dispose();
     super.dispose();
   }
 
@@ -81,8 +115,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
       _actionProviderId = res.providerId;
       _actionProviderLabel = res.providerName;
       _actionIsSubscribed = res.isSubscribed;
-      _actionComponentId = null;
     });
+    _updateActionComponent(null);
   }
 
   Future<void> _pickReactionService() async {
@@ -102,8 +136,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
       _reactionProviderId = res.providerId;
       _reactionProviderLabel = res.providerName;
       _reactionIsSubscribed = res.isSubscribed;
-      _reactionComponentId = null;
     });
+    _updateReactionComponent(null);
   }
 
   Future<bool> _confirmSubscribe(String serviceName) async {
@@ -119,6 +153,32 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
           ),
         ) ??
         false;
+  }
+
+  void _updateActionComponent(ServiceComponent? component) {
+    setState(() {
+      final previousId = _actionComponentId;
+      _actionComponent = component;
+      _actionComponentId = component?.id;
+      final changed = _actionComponentId != previousId;
+      if (changed) {
+        _actionComponentName = component?.displayName;
+        _actionParams = {};
+      }
+    });
+  }
+
+  void _updateReactionComponent(ServiceComponent? component) {
+    setState(() {
+      final previousId = _reactionComponentId;
+      _reactionComponent = component;
+      _reactionComponentId = component?.id;
+      final changed = _reactionComponentId != previousId;
+      if (changed) {
+        _reactionComponentName = component?.displayName;
+        _reactionParams = {};
+      }
+    });
   }
 
   void _submit() {
@@ -138,12 +198,32 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
       return;
     }
 
+    final actionDraft = AreaComponentDraft(
+      componentId: _actionComponentId!,
+      name: _normalizeName(_actionComponentName),
+      params: Map<String, dynamic>.from(_actionParams),
+    );
+
+    final reactionDraft = AreaComponentDraft(
+      componentId: _reactionComponentId!,
+      name: _normalizeName(_reactionComponentName),
+      params: Map<String, dynamic>.from(_reactionParams),
+    );
+
     context.read<AreaFormCubit>().submit(
           name: _nameCtrl.text.trim(),
-          isActive: _isActive,
-          actionName: _actionComponentId!,
-          reactionName: _reactionComponentId!,
+          description: _descriptionCtrl.text.trim().isEmpty
+              ? null
+              : _descriptionCtrl.text.trim(),
+          action: actionDraft,
+          reactions: [reactionDraft],
         );
+  }
+
+  String? _normalizeName(String? value) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   @override
@@ -180,112 +260,45 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Wrap(
-                            runSpacing: 12,
-                            spacing: 16,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: isWide ? 420 : (isTablet ? 380 : double.infinity),
-                                child: TextFormField(
-                                  controller: _nameCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: 'Name',
-                                    hintText: 'Enter area name',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  validator: (v) =>
-                                      (v == null || v.trim().isEmpty) ? 'Name cannot be empty' : null,
-                                  enabled: !isSubmitting,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('Active'),
-                                  Switch(
-                                    value: _isActive,
-                                    onChanged: isSubmitting ? null : (v) => setState(() => _isActive = v),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildHeaderCard(context, isSubmitting),
                       const SizedBox(height: 16),
-
                       if (isWide)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: ServiceAndComponentPicker(
-                                title: 'Action',
-                                providerId: _actionProviderId,
-                                providerLabel: _actionProviderLabel,
-                                isSubscribed: _actionIsSubscribed,
-                                selectedComponentId: _actionComponentId,
-                                kind: ServiceComponentKind.action,
-                                onSelectService: _pickActionService,
-                                onComponentChanged: (id) => setState(() => _actionComponentId = id),
-                              ),
-                            ),
+                            Expanded(child: _buildActionPicker(isSubmitting)),
                             const SizedBox(width: 16),
-                            Expanded(
-                              child: ServiceAndComponentPicker(
-                                title: 'Reaction',
-                                providerId: _reactionProviderId,
-                                providerLabel: _reactionProviderLabel,
-                                isSubscribed: _reactionIsSubscribed,
-                                selectedComponentId: _reactionComponentId,
-                                kind: ServiceComponentKind.reaction,
-                                onSelectService: _pickReactionService,
-                                onComponentChanged: (id) => setState(() => _reactionComponentId = id),
-                              ),
-                            ),
+                            Expanded(child: _buildReactionPicker(isSubmitting)),
                           ],
                         )
                       else
                         Column(
                           children: [
-                            ServiceAndComponentPicker(
-                              title: 'Action',
-                              providerId: _actionProviderId,
-                              providerLabel: _actionProviderLabel,
-                              isSubscribed: _actionIsSubscribed,
-                              selectedComponentId: _actionComponentId,
-                              kind: ServiceComponentKind.action,
-                              onSelectService: _pickActionService,
-                              onComponentChanged: (id) => setState(() => _actionComponentId = id),
-                            ),
+                            _buildActionPicker(isSubmitting),
                             const SizedBox(height: 16),
-                            ServiceAndComponentPicker(
-                              title: 'Reaction',
-                              providerId: _reactionProviderId,
-                              providerLabel: _reactionProviderLabel,
-                              isSubscribed: _reactionIsSubscribed,
-                              selectedComponentId: _reactionComponentId,
-                              kind: ServiceComponentKind.reaction,
-                              onSelectService: _pickReactionService,
-                              onComponentChanged: (id) => setState(() => _reactionComponentId = id),
-                            ),
+                            _buildReactionPicker(isSubmitting),
                           ],
                         ),
-
+                      const SizedBox(height: 16),
+                      ComponentConfigurationForm(
+                        title: 'Action configuration',
+                        component: _actionComponent,
+                        initialName: _actionComponentName,
+                        initialValues: _actionParams,
+                        enabled: !isSubmitting,
+                        onNameChanged: (value) => _actionComponentName = value,
+                        onParametersChanged: (values) => _actionParams = values,
+                      ),
+                      const SizedBox(height: 16),
+                      ComponentConfigurationForm(
+                        title: 'Reaction configuration',
+                        component: _reactionComponent,
+                        initialName: _reactionComponentName,
+                        initialValues: _reactionParams,
+                        enabled: !isSubmitting,
+                        onNameChanged: (value) => _reactionComponentName = value,
+                        onParametersChanged: (values) => _reactionParams = values,
+                      ),
                       const SizedBox(height: 24),
                       Align(
                         alignment: Alignment.centerRight,
@@ -316,6 +329,89 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeaderCard(BuildContext context, bool isSubmitting) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(
+                labelText: 'Name',
+                hintText: 'Name your automation',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Name cannot be empty'
+                  : null,
+              enabled: !isSubmitting,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Description (optional)',
+                hintText: 'Add context to remember what this automation does',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              enabled: !isSubmitting,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionPicker(bool isSubmitting) {
+    return ServiceAndComponentPicker(
+      title: 'Action',
+      providerId: _actionProviderId,
+      providerLabel: _actionProviderLabel,
+      isSubscribed: _actionIsSubscribed,
+      selectedComponentId: _actionComponentId,
+      kind: ServiceComponentKind.action,
+      onSelectService: isSubmitting ? () {} : _pickActionService,
+      onComponentChanged: (id) {
+        if (id == null) {
+          _updateActionComponent(null);
+        }
+      },
+      onComponentSelected: _updateActionComponent,
+    );
+  }
+
+  Widget _buildReactionPicker(bool isSubmitting) {
+    return ServiceAndComponentPicker(
+      title: 'Reaction',
+      providerId: _reactionProviderId,
+      providerLabel: _reactionProviderLabel,
+      isSubscribed: _reactionIsSubscribed,
+      selectedComponentId: _reactionComponentId,
+      kind: ServiceComponentKind.reaction,
+      onSelectService: isSubmitting ? () {} : _pickReactionService,
+      onComponentChanged: (id) {
+        if (id == null) {
+          _updateReactionComponent(null);
+        }
+      },
+      onComponentSelected: _updateReactionComponent,
     );
   }
 }
