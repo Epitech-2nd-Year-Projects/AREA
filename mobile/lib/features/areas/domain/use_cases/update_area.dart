@@ -1,5 +1,5 @@
-import 'package:area/features/areas/domain/entities/area.dart';
-
+import '../entities/area.dart';
+import '../entities/area_draft.dart';
 import '../repositories/area_repository.dart';
 
 class UpdateArea {
@@ -7,7 +7,7 @@ class UpdateArea {
 
   UpdateArea(this._repository);
 
-  Future<Area> call(Area area) async {
-    return _repository.updateArea(area);
+  Future<Area> call(String areaId, AreaDraft draft) async {
+    return _repository.updateArea(areaId, draft);
   }
 }

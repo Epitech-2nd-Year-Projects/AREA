@@ -30,8 +30,8 @@ class OAuthManager {
     _oauthDataSource = oauthDataSource;
     _deepLinkService = DeepLinkService();
 
-    _deepLinkService.onOAuthCallback = _handleOAuthCallback;
-    _deepLinkService.onOAuthError = _handleOAuthError;
+    _deepLinkService.addOAuthCallbackListener(_handleOAuthCallback);
+    _deepLinkService.addOAuthErrorListener(_handleOAuthError);
 
     _deepLinkService.initialize();
   }
@@ -64,20 +64,20 @@ class OAuthManager {
     }
   }
 
-  void _handleOAuthCallback(String providerStr, String code) async {
+  void _handleOAuthCallback(String providerStr, String code, String? state) async {
     try {
       debugPrint('🔄 Processing OAuth callback: $providerStr');
 
       final provider = _parseProvider(providerStr);
       if (provider == null) {
-        _handleOAuthError('Unsupported provider: $providerStr');
+        _handleOAuthError(providerStr, 'Unsupported provider: $providerStr');
         return;
       }
 
       final data = _flowData[provider];
       if (data == null) {
         debugPrint('⚠️ No OAuth flow data found for $provider');
-        _handleOAuthError('OAuth session expired. Please try again.');
+        _handleOAuthError(providerStr, 'OAuth session expired. Please try again.');
         return;
       }
 
@@ -91,7 +91,7 @@ class OAuthManager {
         code,
         data.codeVerifier,
         data.redirectUri,
-        data.state,
+        data.state ?? state,
       );
 
       debugPrint('✅ OAuth successful for: ${session.user.email}');
@@ -102,11 +102,11 @@ class OAuthManager {
     } catch (e) {
       debugPrint('❌ OAuth callback error: $e');
       _flowData.remove(_parseProvider(providerStr));
-      _handleOAuthError(e.toString());
+      _handleOAuthError(providerStr, e.toString());
     }
   }
 
-  void _handleOAuthError(String error) {
+  void _handleOAuthError(String? provider, String error) {
     debugPrint('❌ OAuth error: $error');
     onError?.call(error);
   }
@@ -125,7 +125,8 @@ class OAuthManager {
   }
 
   void dispose() {
-    _deepLinkService.dispose();
+    _deepLinkService.removeOAuthCallbackListener(_handleOAuthCallback);
+    _deepLinkService.removeOAuthErrorListener(_handleOAuthError);
     _flowData.clear();
     onSuccess = null;
     onError = null;

@@ -1,54 +1,42 @@
 import 'package:equatable/equatable.dart';
 import '../value_objects/component_kind.dart';
+import 'service_provider_summary.dart';
+import 'component_parameter.dart';
 
 class ServiceComponent extends Equatable {
   final String id;
-  final String providerId;
   final ComponentKind kind;
   final String name;
   final String displayName;
-  final String description;
-  final int version;
-  final Map<String, dynamic> inputSchema;
-  final Map<String, dynamic> outputSchema;
+  final String? description;
+  final ServiceProviderSummary provider;
   final Map<String, dynamic> metadata;
-  final bool isEnabled;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final List<ComponentParameter> parameters;
 
   const ServiceComponent({
     required this.id,
-    required this.providerId,
     required this.kind,
     required this.name,
     required this.displayName,
     required this.description,
-    required this.version,
-    required this.inputSchema,
-    required this.outputSchema,
+    required this.provider,
     required this.metadata,
-    required this.isEnabled,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.parameters,
   });
 
   bool get isAction => kind == ComponentKind.action;
   bool get isReaction => kind == ComponentKind.reaction;
+  bool get hasConfigurableParams => parameters.isNotEmpty;
 
   @override
   List<Object?> get props => [
-    id,
-    providerId,
-    kind,
-    name,
-    displayName,
-    description,
-    version,
-    inputSchema,
-    outputSchema,
-    metadata,
-    isEnabled,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        kind,
+        name,
+        displayName,
+        description,
+        provider,
+        metadata,
+        parameters,
+      ];
 }

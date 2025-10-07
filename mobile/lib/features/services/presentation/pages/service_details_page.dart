@@ -61,6 +61,13 @@ class _ServiceDetailsPageContent extends StatelessWidget {
             ),
           );
           context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
+        } else if (subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authorize the service in your browser to finish setup.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } else if (subscriptionState is ServiceUnsubscribed) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -178,7 +185,8 @@ class _ServiceDetailsPageContent extends StatelessWidget {
           child: ServiceSubscriptionButton(
             service: state.service,
             subscription: state.subscription,
-            isLoading: subscriptionState is ServiceSubscriptionLoading,
+            isLoading: subscriptionState is ServiceSubscriptionLoading ||
+                subscriptionState is ServiceSubscriptionAwaitingAuthorization,
             onSubscribe: () {
               context.read<ServiceSubscriptionCubit>().subscribe(
                 serviceId: state.service.id,

@@ -370,7 +370,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            component.description,
+            component.description ?? 'No description provided.',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.getTextSecondaryColor(context),
               height: 1.4,

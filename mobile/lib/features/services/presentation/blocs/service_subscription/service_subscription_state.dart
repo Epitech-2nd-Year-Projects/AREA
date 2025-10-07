@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../domain/entities/service_subscription_result.dart';
 import '../../../domain/entities/user_service_subscription.dart';
 
 abstract class ServiceSubscriptionState extends Equatable {
@@ -11,6 +12,15 @@ abstract class ServiceSubscriptionState extends Equatable {
 class ServiceSubscriptionInitial extends ServiceSubscriptionState {}
 
 class ServiceSubscriptionLoading extends ServiceSubscriptionState {}
+
+class ServiceSubscriptionAwaitingAuthorization extends ServiceSubscriptionState {
+  final ServiceAuthorizationData authorization;
+
+  const ServiceSubscriptionAwaitingAuthorization(this.authorization);
+
+  @override
+  List<Object?> get props => [authorization];
+}
 
 class ServiceSubscriptionSuccess extends ServiceSubscriptionState {
   final UserServiceSubscription subscription;

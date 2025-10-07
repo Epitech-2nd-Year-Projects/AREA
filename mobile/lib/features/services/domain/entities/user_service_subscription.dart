@@ -3,7 +3,7 @@ import '../value_objects/subscription_status.dart';
 
 class UserServiceSubscription extends Equatable {
   final String id;
-  final String userId;
+  final String? userId;
   final String providerId;
   final String? identityId;
   final SubscriptionStatus status;
@@ -13,7 +13,7 @@ class UserServiceSubscription extends Equatable {
 
   const UserServiceSubscription({
     required this.id,
-    required this.userId,
+    this.userId,
     required this.providerId,
     this.identityId,
     required this.status,
