@@ -18,9 +18,8 @@ import (
 	areapostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/area"
 	authpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/auth"
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
+	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
-	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
-	reactionhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
@@ -30,6 +29,7 @@ import (
 	ginhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver/gin"
 	projectlogging "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	projectlogger "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging/zap"
+	cipherpkg "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/cipher"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/password"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
@@ -104,7 +104,11 @@ func run() error {
 	} else {
 		loaders = append(loaders, catalog.DBLoader{DB: db})
 
-		repo := authpostgres.NewRepository(db)
+		tokenCipher, cipherErr := cipherpkg.NewAESCipherFromString(cfg.Security.Encryption.IdentitiesKey)
+		if cipherErr != nil {
+			return fmt.Errorf("auth token cipher: %w", cipherErr)
+		}
+		repo := authpostgres.NewRepository(db, tokenCipher)
 		serviceRepo := servicepostgres.NewRepository(db)
 
 		mailer := buildMailer(cfg, logger)
@@ -156,22 +160,18 @@ func run() error {
 		areaRepo := areapostgres.NewRepository(db)
 		componentRepo := componentpostgres.NewRepository(db)
 		actionRepo := actionpostgres.NewRepository(db)
-
-		httpClient := &http.Client{Timeout: 10 * time.Second}
-		reactionHTTP := &reactionhttp.Executor{
-			Client: httpClient,
-			Logger: logger,
-		}
-
-		reactionHandlers := make([]areaapp.ComponentReactionHandler, 0, 1)
-		if oauthManager != nil {
-			gmailExecutor := gmail.NewExecutor(repo.Identities(), oauthManager, httpClient, nil, logger)
-			reactionHandlers = append(reactionHandlers, gmailExecutor)
-		}
-
-		reactionDispatcher := areaapp.NewCompositeReactionExecutor(reactionHTTP, logger, reactionHandlers...)
+		executionRepo := executionpostgres.NewManager(db)
+		pipeline := areaapp.NewExecutionPipeline(executionRepo, nil)
 		timerProvisioner := areaapp.NewTimerProvisioner(actionRepo, nil)
-		areaService := areaapp.NewService(areaRepo, componentRepo, reactionDispatcher, nil, timerProvisioner)
+		areaService := areaapp.NewService(
+			areaRepo,
+			componentRepo,
+			serviceRepo.Subscriptions(),
+			actionRepo,
+			pipeline,
+			nil,
+			timerProvisioner,
+		)
 
 		areaCookies := areaapp.CookieConfig{
 			Name:     cfg.Security.Sessions.CookieName,
