@@ -25,16 +25,18 @@ type Provider struct {
 
 // Component captures catalog metadata for an action or reaction
 type Component struct {
-	ID          uuid.UUID
-	ProviderID  uuid.UUID
-	Provider    Provider
-	Kind        Kind
-	Name        string
-	DisplayName string
-	Description string
-	Version     int
-	Enabled     bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Metadata    map[string]any
+	ID           uuid.UUID
+	ProviderID   uuid.UUID
+	Provider     Provider
+	Kind         Kind
+	Name         string
+	DisplayName  string
+	Description  string
+	Version      int
+	Enabled      bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Metadata     map[string]any
+	InputSchema  map[string]any
+	OutputSchema map[string]any
 }
