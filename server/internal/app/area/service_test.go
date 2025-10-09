@@ -3,12 +3,15 @@ package area
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	actiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/action"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
+	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
 )
@@ -37,7 +40,8 @@ func TestService_CreateAndList(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, noopExecutor{}, clock, nil)
+	subs := allowAllSubscriptions{}
+	svc := NewService(repo, components, subs, nil, nil, clock, nil)
 
 	userID := uuid.New()
 	area, err := svc.Create(ctx, userID, "Morning digest", "Send me a digest every morning", ActionInput{
@@ -115,7 +119,7 @@ func TestService_CreateValidation(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
+	svc := NewService(repo, components, nil, nil, nil, stubClock{now: time.Now()}, nil)
 
 	tests := []struct {
 		name        string
@@ -152,7 +156,8 @@ func TestService_CreateActionValidation(t *testing.T) {
 			ProviderID: uuid.New(),
 		},
 	}}
-	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
+	subs := allowAllSubscriptions{}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, nil)
 
 	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentRequired) {
@@ -182,7 +187,8 @@ func TestService_CreateReactionValidation(t *testing.T) {
 	components.items[actionID] = componentdomain.Component{ID: actionID, Kind: componentdomain.KindAction, Enabled: true, ProviderID: uuid.New()}
 	reactionID := uuid.New()
 	components.items[reactionID] = componentdomain.Component{ID: reactionID, Kind: componentdomain.KindReaction, Enabled: true, ProviderID: uuid.New()}
-	svc := NewService(repo, components, noopExecutor{}, stubClock{now: time.Now()}, nil)
+	subs := allowAllSubscriptions{}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, nil)
 
 	_, err := svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, nil)
 	if !errors.Is(err, ErrReactionsRequired) {
@@ -206,6 +212,75 @@ func TestService_CreateReactionValidation(t *testing.T) {
 	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: disabledID}})
 	if !errors.Is(err, ErrReactionComponentDisabled) {
 		t.Fatalf("expected ErrReactionComponentDisabled got %v", err)
+	}
+}
+
+func TestService_CreateRequiresSubscription(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	providerID := uuid.New()
+	actionID := uuid.New()
+	reactionID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionID: {
+			ID:         actionID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: providerID,
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: providerID,
+		},
+	}}
+	subs := denyingSubscriptions{}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, nil)
+
+	_, err := svc.Create(ctx, uuid.New(), "Test", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: reactionID}})
+	if !errors.Is(err, ErrProviderSubscriptionMissing) {
+		t.Fatalf("expected ErrProviderSubscriptionMissing got %v", err)
+	}
+}
+
+func TestService_CreateValidatesParams(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	providerID := uuid.New()
+	actionID := uuid.New()
+	reactionID := uuid.New()
+	metadata := map[string]any{
+		"parameters": []any{
+			map[string]any{
+				"key":      "value",
+				"type":     "integer",
+				"required": true,
+			},
+		},
+	}
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionID: {
+			ID:         actionID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Metadata:   metadata,
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Metadata:   metadata,
+		},
+	}}
+	subs := allowAllSubscriptions{}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, nil)
+
+	_, err := svc.Create(ctx, uuid.New(), "Test", "", ActionInput{ComponentID: actionID, Params: map[string]any{"value": "oops"}}, []ReactionInput{{ComponentID: reactionID, Params: map[string]any{"value": 1}}})
+	if !errors.Is(err, ErrComponentParamsInvalid) {
+		t.Fatalf("expected ErrComponentParamsInvalid got %v", err)
 	}
 }
 
@@ -306,10 +381,77 @@ func (m *memoryComponentRepo) List(ctx context.Context, opts outbound.ComponentL
 	return components, nil
 }
 
-type noopExecutor struct{}
+type allowAllSubscriptions struct{}
 
-func (noopExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (allowAllSubscriptions) Create(ctx context.Context, subscription subscriptiondomain.Subscription) (subscriptiondomain.Subscription, error) {
+	return subscription, nil
+}
+
+func (allowAllSubscriptions) Update(ctx context.Context, subscription subscriptiondomain.Subscription) error {
 	return nil
+}
+
+func (allowAllSubscriptions) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) (subscriptiondomain.Subscription, error) {
+	return subscriptiondomain.Subscription{
+		ID:         uuid.New(),
+		UserID:     userID,
+		ProviderID: providerID,
+		Status:     subscriptiondomain.StatusActive,
+	}, nil
+}
+
+func (allowAllSubscriptions) ListByUser(ctx context.Context, userID uuid.UUID) ([]subscriptiondomain.Subscription, error) {
+	return []subscriptiondomain.Subscription{}, nil
+}
+
+type denyingSubscriptions struct{}
+
+func (denyingSubscriptions) Create(ctx context.Context, subscription subscriptiondomain.Subscription) (subscriptiondomain.Subscription, error) {
+	return subscription, nil
+}
+
+func (denyingSubscriptions) Update(ctx context.Context, subscription subscriptiondomain.Subscription) error {
+	return nil
+}
+
+func (denyingSubscriptions) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) (subscriptiondomain.Subscription, error) {
+	return subscriptiondomain.Subscription{}, outbound.ErrNotFound
+}
+
+func (denyingSubscriptions) ListByUser(ctx context.Context, userID uuid.UUID) ([]subscriptiondomain.Subscription, error) {
+	return []subscriptiondomain.Subscription{}, nil
+}
+
+type recordingPipeline struct {
+	inputs []ExecutionInput
+}
+
+func (p *recordingPipeline) Enqueue(ctx context.Context, input ExecutionInput) error {
+	p.inputs = append(p.inputs, input)
+	return nil
+}
+
+type stubActionSourceRepo struct {
+	sources map[uuid.UUID]actiondomain.Source
+}
+
+func (s *stubActionSourceRepo) UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor map[string]any) (actiondomain.Source, error) {
+	return actiondomain.Source{}, fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) ListDueScheduleSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.ScheduleBinding, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {
+	if source, ok := s.sources[componentConfigID]; ok {
+		return source, nil
+	}
+	return actiondomain.Source{}, outbound.ErrNotFound
 }
 
 func TestService_Execute(t *testing.T) {
@@ -330,8 +472,21 @@ func TestService_Execute(t *testing.T) {
 			Provider:   componentdomain.Provider{ID: providerID, Name: "github", DisplayName: "GitHub"},
 		},
 	}}
-	exec := &recordingExecutor{}
-	svc := NewService(repo, components, exec, stubClock{now: time.Now()}, nil)
+
+	actionConfigID := uuid.New()
+	reactionConfigID := uuid.New()
+	actionSourceID := uuid.New()
+	sources := &stubActionSourceRepo{sources: map[uuid.UUID]actiondomain.Source{
+		actionConfigID: {
+			ID:                actionSourceID,
+			ComponentConfigID: actionConfigID,
+			Mode:              actiondomain.ModeSchedule,
+			IsActive:          true,
+		},
+	}}
+	subs := allowAllSubscriptions{}
+	pipeline := &recordingPipeline{}
+	svc := NewService(repo, components, subs, sources, pipeline, stubClock{now: time.Now()}, nil)
 
 	userID := uuid.New()
 	areaID := uuid.New()
@@ -341,37 +496,40 @@ func TestService_Execute(t *testing.T) {
 		Name:   "Test AREA",
 		Status: areadomain.StatusEnabled,
 		Action: &areadomain.Link{
-			Role:   areadomain.LinkRoleAction,
-			Config: componentdomain.Config{ComponentID: actionID},
+			ID:   uuid.New(),
+			Role: areadomain.LinkRoleAction,
+			Config: componentdomain.Config{
+				ID:          actionConfigID,
+				ComponentID: actionID,
+			},
 		},
 		Reactions: []areadomain.Link{{
-			Role:   areadomain.LinkRoleReaction,
-			Config: componentdomain.Config{ComponentID: reactionID},
+			ID:   uuid.New(),
+			Role: areadomain.LinkRoleReaction,
+			Config: componentdomain.Config{
+				ID:          reactionConfigID,
+				ComponentID: reactionID,
+			},
 		}},
 	}
 
 	if err := svc.Execute(ctx, userID, areaID); err != nil {
 		t.Fatalf("Execute returned error: %v", err)
 	}
-	if len(exec.calls) != 1 {
-		t.Fatalf("expected 1 reaction executed, got %d", len(exec.calls))
+	if len(pipeline.inputs) != 1 {
+		t.Fatalf("expected 1 pipeline invocation, got %d", len(pipeline.inputs))
 	}
-	if exec.calls[0].Reaction.Config.ComponentID != reactionID {
-		t.Fatalf("unexpected reaction executed")
+	input := pipeline.inputs[0]
+	if input.SourceID != actionSourceID {
+		t.Fatalf("unexpected source id: %s", input.SourceID)
 	}
-}
-
-type recordingExecutor struct {
-	calls []struct {
-		Area     areadomain.Area
-		Reaction areadomain.Link
+	if input.Area.ID != areaID {
+		t.Fatalf("unexpected area propagated")
 	}
-}
-
-func (r *recordingExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
-	r.calls = append(r.calls, struct {
-		Area     areadomain.Area
-		Reaction areadomain.Link
-	}{Area: area, Reaction: link})
-	return nil
+	if len(input.Area.Reactions) != 1 {
+		t.Fatalf("expected one reaction in pipeline payload")
+	}
+	if input.Area.Reactions[0].Config.ComponentID != reactionID {
+		t.Fatalf("unexpected reaction component propagated")
+	}
 }

@@ -162,6 +162,10 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid area payload"})
 	case errors.Is(err, ErrActionComponentRequired), errors.Is(err, ErrActionComponentInvalid), errors.Is(err, ErrActionComponentDisabled), errors.Is(err, ErrReactionsRequired), errors.Is(err, ErrReactionComponentInvalid), errors.Is(err, ErrReactionComponentDisabled):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component payload"})
+	case errors.Is(err, ErrComponentParamsInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component params"})
+	case errors.Is(err, ErrProviderSubscriptionMissing):
+		c.JSON(http.StatusForbidden, gin.H{"error": "provider subscription required"})
 	case errors.Is(err, outbound.ErrConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": "area conflict"})
 	case errors.Is(err, outbound.ErrNotFound):
