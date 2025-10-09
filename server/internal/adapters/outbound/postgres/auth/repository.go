@@ -11,6 +11,7 @@ import (
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/cipher"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/google/uuid"
@@ -19,12 +20,16 @@ import (
 
 // Repository groups Postgres-backed persistence adapters for authentication concerns
 type Repository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	cipher cipher.Cipher
 }
 
 // NewRepository returns a Repository backed by the provided gorm handle
-func NewRepository(db *gorm.DB) Repository {
-	return Repository{db: db}
+func NewRepository(db *gorm.DB, tokenCipher cipher.Cipher) Repository {
+	if tokenCipher == nil {
+		tokenCipher = cipher.NoopCipher{}
+	}
+	return Repository{db: db, cipher: tokenCipher}
 }
 
 // DB exposes the underlying gorm handle
@@ -53,7 +58,7 @@ func (r Repository) VerificationTokens() outbound.VerificationTokenRepository {
 
 // Identities returns an identity repository implementation
 func (r Repository) Identities() identityport.Repository {
-	return identityRepo{db: r.db}
+	return identityRepo{db: r.db, cipher: r.cipher}
 }
 
 type userRepo struct {
@@ -215,7 +220,58 @@ func isUniqueViolation(err error) bool {
 }
 
 type identityRepo struct {
-	db *gorm.DB
+	db     *gorm.DB
+	cipher cipher.Cipher
+}
+
+func (r identityRepo) encryptTokens(model *identityModel) error {
+	if model == nil || r.cipher == nil {
+		return nil
+	}
+	if strings.TrimSpace(model.AccessToken) != "" {
+		encrypted, err := r.cipher.Encrypt(model.AccessToken)
+		if err != nil {
+			return fmt.Errorf("encrypt access token: %w", err)
+		}
+		model.AccessToken = encrypted
+	}
+	if strings.TrimSpace(model.RefreshToken) != "" {
+		encrypted, err := r.cipher.Encrypt(model.RefreshToken)
+		if err != nil {
+			return fmt.Errorf("encrypt refresh token: %w", err)
+		}
+		model.RefreshToken = encrypted
+	}
+	return nil
+}
+
+func (r identityRepo) decryptTokens(identity *identitydomain.Identity) error {
+	if identity == nil || r.cipher == nil {
+		return nil
+	}
+	if strings.TrimSpace(identity.AccessToken) != "" {
+		plaintext, err := r.cipher.Decrypt(identity.AccessToken)
+		if err != nil {
+			return fmt.Errorf("decrypt access token: %w", err)
+		}
+		identity.AccessToken = plaintext
+	}
+	if strings.TrimSpace(identity.RefreshToken) != "" {
+		plaintext, err := r.cipher.Decrypt(identity.RefreshToken)
+		if err != nil {
+			return fmt.Errorf("decrypt refresh token: %w", err)
+		}
+		identity.RefreshToken = plaintext
+	}
+	return nil
+}
+
+func (r identityRepo) toDomain(model identityModel) (identitydomain.Identity, error) {
+	identity := model.toDomain()
+	if err := r.decryptTokens(&identity); err != nil {
+		return identitydomain.Identity{}, err
+	}
+	return identity, nil
 }
 
 func (r identityRepo) Create(ctx context.Context, identity identitydomain.Identity) (identitydomain.Identity, error) {
@@ -229,19 +285,32 @@ func (r identityRepo) Create(ctx context.Context, identity identitydomain.Identi
 	if model.UpdatedAt.IsZero() {
 		model.UpdatedAt = model.CreatedAt
 	}
+	if err := r.encryptTokens(&model); err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.Create: %w", err)
+	}
 	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
 		if isUniqueViolation(err) {
 			return identitydomain.Identity{}, outbound.ErrConflict
 		}
 		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.Create: %w", err)
 	}
-	return model.toDomain(), nil
+	stored, err := r.toDomain(model)
+	if err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.Create: %w", err)
+	}
+	return stored, nil
 }
 
 func (r identityRepo) Update(ctx context.Context, identity identitydomain.Identity) error {
 	model := identityFromDomain(identity)
 	if model.ID == uuid.Nil {
 		return fmt.Errorf("postgres.auth.identityRepo.Update: missing id")
+	}
+	if model.UpdatedAt.IsZero() {
+		model.UpdatedAt = time.Now().UTC()
+	}
+	if err := r.encryptTokens(&model); err != nil {
+		return fmt.Errorf("postgres.auth.identityRepo.Update: %w", err)
 	}
 	updates := map[string]any{
 		"access_token":  model.AccessToken,
@@ -267,7 +336,11 @@ func (r identityRepo) FindByID(ctx context.Context, id uuid.UUID) (identitydomai
 		}
 		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByID: %w", err)
 	}
-	return model.toDomain(), nil
+	identity, err := r.toDomain(model)
+	if err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByID: %w", err)
+	}
+	return identity, nil
 }
 
 func (r identityRepo) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider string) (identitydomain.Identity, error) {
@@ -280,7 +353,11 @@ func (r identityRepo) FindByUserAndProvider(ctx context.Context, userID uuid.UUI
 		}
 		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByUserAndProvider: %w", err)
 	}
-	return model.toDomain(), nil
+	identity, err := r.toDomain(model)
+	if err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByUserAndProvider: %w", err)
+	}
+	return identity, nil
 }
 
 func (r identityRepo) FindByProviderSubject(ctx context.Context, provider string, subject string) (identitydomain.Identity, error) {
@@ -293,7 +370,11 @@ func (r identityRepo) FindByProviderSubject(ctx context.Context, provider string
 		}
 		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByProviderSubject: %w", err)
 	}
-	return model.toDomain(), nil
+	identity, err := r.toDomain(model)
+	if err != nil {
+		return identitydomain.Identity{}, fmt.Errorf("postgres.auth.identityRepo.FindByProviderSubject: %w", err)
+	}
+	return identity, nil
 }
 
 func (r identityRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]identitydomain.Identity, error) {
@@ -306,7 +387,11 @@ func (r identityRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]ident
 	}
 	identities := make([]identitydomain.Identity, 0, len(models))
 	for _, model := range models {
-		identities = append(identities, model.toDomain())
+		identity, err := r.toDomain(model)
+		if err != nil {
+			return nil, fmt.Errorf("postgres.auth.identityRepo.ListByUser: %w", err)
+		}
+		identities = append(identities, identity)
 	}
 	return identities, nil
 }
