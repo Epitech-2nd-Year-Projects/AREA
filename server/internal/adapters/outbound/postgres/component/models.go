@@ -10,18 +10,20 @@ import (
 )
 
 type componentModel struct {
-	ID          uuid.UUID      `gorm:"column:id;primaryKey"`
-	ProviderID  uuid.UUID      `gorm:"column:provider_id"`
-	Kind        string         `gorm:"column:kind"`
-	Name        string         `gorm:"column:name"`
-	DisplayName string         `gorm:"column:display_name"`
-	Description *string        `gorm:"column:description"`
-	Version     int            `gorm:"column:version"`
-	Metadata    datatypes.JSON `gorm:"column:metadata"`
-	IsEnabled   bool           `gorm:"column:is_enabled"`
-	CreatedAt   time.Time      `gorm:"column:created_at"`
-	UpdatedAt   time.Time      `gorm:"column:updated_at"`
-	Provider    providerModel
+	ID           uuid.UUID      `gorm:"column:id;primaryKey"`
+	ProviderID   uuid.UUID      `gorm:"column:provider_id"`
+	Kind         string         `gorm:"column:kind"`
+	Name         string         `gorm:"column:name"`
+	DisplayName  string         `gorm:"column:display_name"`
+	Description  *string        `gorm:"column:description"`
+	Version      int            `gorm:"column:version"`
+	InputSchema  datatypes.JSON `gorm:"column:input_schema"`
+	OutputSchema datatypes.JSON `gorm:"column:output_schema"`
+	Metadata     datatypes.JSON `gorm:"column:metadata"`
+	IsEnabled    bool           `gorm:"column:is_enabled"`
+	CreatedAt    time.Time      `gorm:"column:created_at"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at"`
+	Provider     providerModel
 }
 
 func (componentModel) TableName() string { return "service_components" }
@@ -53,6 +55,18 @@ func (m componentModel) toDomain() componentdomain.Component {
 		var metadata map[string]any
 		if err := json.Unmarshal(m.Metadata, &metadata); err == nil {
 			component.Metadata = metadata
+		}
+	}
+	if len(m.InputSchema) > 0 {
+		var schema map[string]any
+		if err := json.Unmarshal(m.InputSchema, &schema); err == nil {
+			component.InputSchema = schema
+		}
+	}
+	if len(m.OutputSchema) > 0 {
+		var schema map[string]any
+		if err := json.Unmarshal(m.OutputSchema, &schema); err == nil {
+			component.OutputSchema = schema
 		}
 	}
 	component.Provider = componentdomain.Provider{
