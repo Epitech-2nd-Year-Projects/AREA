@@ -18,6 +18,8 @@ class ServiceSubscriptionAwaitingAuthorization extends ServiceSubscriptionState 
 
   const ServiceSubscriptionAwaitingAuthorization(this.authorization);
 
+  String get authorizationUrl => authorization.authorizationUrl;
+
   @override
   List<Object?> get props => [authorization];
 }

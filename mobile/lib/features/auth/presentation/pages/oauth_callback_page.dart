@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../blocs/auth_bloc.dart';
+import '../blocs/auth_event.dart';
+import '../blocs/auth_state.dart';
 
 class OAuthCallbackPage extends StatefulWidget {
   final String provider;
   final String? code;
   final String? error;
+  final String? returnTo;
 
   const OAuthCallbackPage({
     super.key,
     required this.provider,
     this.code,
     this.error,
+    this.returnTo,
   });
 
   @override
@@ -21,77 +27,188 @@ class OAuthCallbackPage extends StatefulWidget {
 }
 
 class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
+  bool _hasNavigated = false;
+  bool _isProcessing = false;
+
   @override
   void initState() {
     super.initState();
-
-    // Cette page ne devrait normalement plus être utilisée
-    // car le deep linking gère automatiquement le callback
-    // Mais on la garde au cas où pour fallback
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleFallback();
+      _processCallback();
     });
+  }
+
+  Future<void> _processCallback() async {
+    if (_isProcessing || _hasNavigated) return;
+
+    if (widget.error != null) {
+      _navigateToLogin();
+      return;
+    }
+
+    if (widget.code == null) {
+      _navigateToLogin();
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+
+    context.read<AuthBloc>().add(AppStarted());
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    final authState = context.read<AuthBloc>().state;
+
+    if (authState is Authenticated) {
+      _navigateAfterSuccess();
+    } else {
+      _navigateToLogin();
+    }
+  }
+
+  void _navigateAfterSuccess() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+
+    if (widget.returnTo != null && widget.returnTo!.isNotEmpty) {
+      context.go(widget.returnTo!);
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
+  void _navigateToLogin() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    context.go('/login');
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    if (widget.error != null) {
+      return _buildErrorState(context);
+    }
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    strokeWidth: 3,
-                  ),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (_hasNavigated) return;
+
+        if (state is Authenticated) {
+          _navigateAfterSuccess();
+        } else if (state is AuthError) {
+          _navigateToLogin();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: _buildLoadingState(context),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  strokeWidth: 3,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                'Processing sign in...',
-                style: AppTypography.headlineMedium.copyWith(
-                  color: AppColors.getTextPrimaryColor(context),
-                ),
-                textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'Completing sign in...',
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'You\'ll be redirected shortly',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.getTextSecondaryColor(context),
-                ),
-                textAlign: TextAlign.center,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Please wait while we authenticate you',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.getTextSecondaryColor(context),
               ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _handleFallback() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        if (widget.error != null) {
-          context.go('/login');
-        } else {
-          context.go('/login');
-        }
-      }
-    });
+  Widget _buildErrorState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.error,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'Authentication failed',
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              widget.error ?? 'An unknown error occurred',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.getTextSecondaryColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton(
+              onPressed: () => context.go('/login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
+                ),
+              ),
+              child: const Text('Back to Login'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

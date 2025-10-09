@@ -38,7 +38,7 @@ class AuthRouter {
           builder: (context, state) => const ServicesListPage(),
           routes: [
             GoRoute(
-              path: '/:serviceId',
+              path: ':serviceId',
               builder: (context, state) {
                 final serviceId = state.pathParameters['serviceId']!;
                 return ServiceDetailsPage(serviceId: serviceId);
@@ -47,25 +47,25 @@ class AuthRouter {
           ],
         ),
         GoRoute(
-              name: 'areas',
-              path: '/areas',
-              builder: (_, __) => const AreasPage(),
-              routes: [
-                GoRoute(
-                  name: 'area-new',
-                  path: 'new',
-                  builder: (_, __) => const AreaFormPage(),
-                ),
-                GoRoute(
-                  name: 'area-edit',
-                  path: 'edit',
-                  builder: (context, state) {
-                    final area = state.extra as Area;
-                    return AreaFormPage(areaToEdit: area);
-                  },
-                ),
-              ],
+          name: 'areas',
+          path: '/areas',
+          builder: (_, __) => const AreasPage(),
+          routes: [
+            GoRoute(
+              name: 'area-new',
+              path: 'new',
+              builder: (_, __) => const AreaFormPage(),
             ),
+            GoRoute(
+              name: 'area-edit',
+              path: 'edit',
+              builder: (context, state) {
+                final area = state.extra as Area;
+                return AreaFormPage(areaToEdit: area);
+              },
+            ),
+          ],
+        ),
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
@@ -78,6 +78,26 @@ class AuthRouter {
           ],
         ),
       ],
+    ),
+
+    GoRoute(
+      path: '/oauth/:provider/callback',
+      builder: (context, state) {
+        final provider = state.pathParameters['provider']!;
+        final code = state.uri.queryParameters['code'];
+        final error = state.uri.queryParameters['error'];
+        final returnTo = state.uri.queryParameters['returnTo'];
+
+        return BlocProvider(
+          create: (context) => sl<AuthBloc>(),
+          child: OAuthCallbackPage(
+            provider: provider,
+            code: code,
+            error: error,
+            returnTo: returnTo,
+          ),
+        );
+      },
     ),
 
     GoRoute(
@@ -105,23 +125,6 @@ class AuthRouter {
         create: (context) => AuthBloc(sl()),
         child: const RegisterPage(),
       ),
-    ),
-    GoRoute(
-      path: '/oauth/callback/:provider',
-      builder: (context, state) {
-        final provider = state.pathParameters['provider']!;
-        final code = state.uri.queryParameters['code'];
-        final error = state.uri.queryParameters['error'];
-
-        return BlocProvider(
-          create: (context) => AuthBloc(sl()),
-          child: OAuthCallbackPage(
-            provider: provider,
-            code: code,
-            error: error,
-          ),
-        );
-      },
     ),
 
     GoRoute(

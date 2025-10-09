@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
@@ -51,7 +52,7 @@ class _ServiceDetailsPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ServiceSubscriptionCubit, ServiceSubscriptionState>(
-      listener: (context, subscriptionState) {
+      listener: (context, subscriptionState) async {
         if (subscriptionState is ServiceSubscriptionSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -62,12 +63,29 @@ class _ServiceDetailsPageContent extends StatelessWidget {
           );
           context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
         } else if (subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authorize the service in your browser to finish setup.'),
-              behavior: SnackBarBehavior.floating,
-            ),
+          final currentPath = '/services/$serviceId';
+          final authUrl = subscriptionState.authorizationUrl;
+
+          final uri = Uri.parse(authUrl);
+          final modifiedUri = uri.replace(
+            queryParameters: {
+              ...uri.queryParameters,
+              'returnTo': currentPath,
+            },
           );
+
+          final url = modifiedUri;
+          if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Could not launch authorization'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
         } else if (subscriptionState is ServiceUnsubscribed) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
