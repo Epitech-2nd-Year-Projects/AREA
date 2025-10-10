@@ -165,6 +165,9 @@ type mockActionSourceRepo struct {
 		componentConfigID uuid.UUID
 		cursor            map[string]any
 	}
+	findCalls    []uuid.UUID
+	findResponse actiondomain.Source
+	findErr      error
 }
 
 func (m *mockActionSourceRepo) UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor map[string]any) (actiondomain.Source, error) {
@@ -191,18 +194,32 @@ func (m *mockActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceI
 	return nil
 }
 
+func (m *mockActionSourceRepo) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {
+	m.findCalls = append(m.findCalls, componentConfigID)
+	if m.findErr != nil {
+		return actiondomain.Source{}, m.findErr
+	}
+	resp := m.findResponse
+	if resp.Cursor != nil {
+		resp.Cursor = cloneMap(resp.Cursor)
+	}
+	return resp, nil
+}
+
 type stubAreaExecutor struct {
 	calls []struct {
-		userID uuid.UUID
-		areaID uuid.UUID
+		userID  uuid.UUID
+		areaID  uuid.UUID
+		options ExecutionOptions
 	}
 	err error
 }
 
-func (s *stubAreaExecutor) Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error {
+func (s *stubAreaExecutor) ExecuteWithOptions(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts ExecutionOptions) error {
 	s.calls = append(s.calls, struct {
-		userID uuid.UUID
-		areaID uuid.UUID
-	}{userID: userID, areaID: areaID})
+		userID  uuid.UUID
+		areaID  uuid.UUID
+		options ExecutionOptions
+	}{userID: userID, areaID: areaID, options: opts})
 	return s.err
 }
