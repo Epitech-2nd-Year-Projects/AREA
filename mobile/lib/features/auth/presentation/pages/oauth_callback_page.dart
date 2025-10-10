@@ -61,7 +61,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
 
     context.read<AuthBloc>().add(AppStarted());
 
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
@@ -77,7 +77,6 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
   void _navigateAfterSuccess() {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
-
     if (widget.returnTo != null && widget.returnTo!.isNotEmpty) {
       context.go(widget.returnTo!);
     } else {
@@ -88,7 +87,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
   void _navigateToLogin() {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
-    context.go('/login');
+    context.go('/');
   }
 
   @override
