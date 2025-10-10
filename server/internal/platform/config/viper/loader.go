@@ -309,6 +309,12 @@ func assignSecuritySecrets(cfg *SecurityConfig) error {
 		cfg.Password.Pepper = secret
 	}
 
+	if secret, err := resolveEnv(cfg.Encryption.IdentitiesKeyEnv, true); err != nil {
+		return fmt.Errorf("security.encryption.identitiesKeyEnv: %w", err)
+	} else if secret != "" {
+		cfg.Encryption.IdentitiesKey = secret
+	}
+
 	return nil
 }
 

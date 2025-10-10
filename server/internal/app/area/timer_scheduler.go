@@ -12,7 +12,7 @@ import (
 
 // AreaExecutor represents the subset of Service required by the scheduler
 type AreaExecutor interface {
-	Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error
+	ExecuteWithOptions(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts ExecutionOptions) error
 }
 
 // TimerScheduler polls scheduled actions and triggers the associated areas
@@ -119,7 +119,11 @@ func (s *TimerScheduler) executeBinding(ctx context.Context, binding actiondomai
 		return
 	}
 
-	execErr := s.executor.Execute(ctx, binding.UserID, binding.AreaID)
+	execErr := s.executor.ExecuteWithOptions(ctx, binding.UserID, binding.AreaID, ExecutionOptions{
+		SourceID:   binding.Source.ID,
+		Payload:    cloneMap(binding.Source.Cursor),
+		OccurredAt: now,
+	})
 	if execErr != nil {
 		s.log().Error("timer execution failed", zap.Error(execErr), zap.String("area_id", binding.AreaID.String()))
 	}

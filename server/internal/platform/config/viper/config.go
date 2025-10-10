@@ -162,6 +162,7 @@ type SecurityConfig struct {
 	Password     PasswordConfig     `mapstructure:"password"`
 	Sessions     SessionConfig      `mapstructure:"sessions"`
 	Verification VerificationConfig `mapstructure:"verification"`
+	Encryption   EncryptionConfig   `mapstructure:"encryption"`
 }
 
 // JWTConfig defines JWT token lifetimes and secrets
@@ -196,6 +197,12 @@ type SessionConfig struct {
 // VerificationConfig tunes email verification semantics
 type VerificationConfig struct {
 	TokenTTL time.Duration `mapstructure:"tokenTTL"`
+}
+
+// EncryptionConfig stores secrets used for encrypting persisted credentials
+type EncryptionConfig struct {
+	IdentitiesKeyEnv string `mapstructure:"identitiesKeyEnv"`
+	IdentitiesKey    string `mapstructure:"-"`
 }
 
 // ServicesCatalogConfig configures service discovery bootstrap

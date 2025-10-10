@@ -161,6 +161,12 @@ func (s *OAuthService) BeginSubscription(ctx context.Context, user userdomain.Us
 			return SubscriptionInitResult{}, ensureErr
 		}
 		return SubscriptionInitResult{Subscription: &subscription}, nil
+	case servicedomain.OAuthTypeAPIKey:
+		subscription, ensureErr := s.ensureSubscription(ctx, user.ID, providerRecord, nil, nil, now)
+		if ensureErr != nil {
+			return SubscriptionInitResult{}, ensureErr
+		}
+		return SubscriptionInitResult{Subscription: &subscription}, nil
 	case servicedomain.OAuthTypeOAuth2:
 		prov, _, resolveErr := s.resolveProvider(normalized)
 		if resolveErr != nil {

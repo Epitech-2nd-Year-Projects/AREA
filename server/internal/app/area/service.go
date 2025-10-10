@@ -2,6 +2,7 @@ package area
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
+	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
 )
@@ -25,26 +27,30 @@ func (systemClock) Now() time.Time { return time.Now() }
 
 // Service orchestrates creation and retrieval of AREA automations
 type Service struct {
-	repo        outbound.AreaRepository
-	components  outbound.ComponentRepository
-	clock       Clock
-	executor    outbound.ReactionExecutor
-	provisioner ActionProvisioner
+	repo          outbound.AreaRepository
+	components    outbound.ComponentRepository
+	subscriptions outbound.SubscriptionRepository
+	sources       outbound.ActionSourceRepository
+	pipeline      ExecutionPipeline
+	clock         Clock
+	provisioner   ActionProvisioner
 }
 
 // Validation errors returned by the service
 var (
-	ErrNameRequired              = errors.New("area: name required")
-	ErrNameTooLong               = errors.New("area: name exceeds limit")
-	ErrDescriptionTooLong        = errors.New("area: description exceeds limit")
-	ErrActionComponentRequired   = errors.New("area: action component required")
-	ErrActionComponentInvalid    = errors.New("area: action component invalid")
-	ErrActionComponentDisabled   = errors.New("area: action component disabled")
-	ErrReactionsRequired         = errors.New("area: at least one reaction required")
-	ErrReactionComponentInvalid  = errors.New("area: reaction component invalid")
-	ErrReactionComponentDisabled = errors.New("area: reaction component disabled")
-	ErrAreaNotOwned              = errors.New("area: not owner")
-	ErrAreaMisconfigured         = errors.New("area: misconfigured")
+	ErrNameRequired                = errors.New("area: name required")
+	ErrNameTooLong                 = errors.New("area: name exceeds limit")
+	ErrDescriptionTooLong          = errors.New("area: description exceeds limit")
+	ErrActionComponentRequired     = errors.New("area: action component required")
+	ErrActionComponentInvalid      = errors.New("area: action component invalid")
+	ErrActionComponentDisabled     = errors.New("area: action component disabled")
+	ErrReactionsRequired           = errors.New("area: at least one reaction required")
+	ErrReactionComponentInvalid    = errors.New("area: reaction component invalid")
+	ErrReactionComponentDisabled   = errors.New("area: reaction component disabled")
+	ErrAreaNotOwned                = errors.New("area: not owner")
+	ErrAreaMisconfigured           = errors.New("area: misconfigured")
+	ErrProviderSubscriptionMissing = errors.New("area: provider subscription missing")
+	ErrComponentParamsInvalid      = errors.New("area: component params invalid")
 )
 
 const (
@@ -58,11 +64,19 @@ type ActionProvisioner interface {
 }
 
 // NewService builds a Service bound to the provided repository
-func NewService(repo outbound.AreaRepository, components outbound.ComponentRepository, executor outbound.ReactionExecutor, clock Clock, provisioner ActionProvisioner) *Service {
+func NewService(repo outbound.AreaRepository, components outbound.ComponentRepository, subscriptions outbound.SubscriptionRepository, sources outbound.ActionSourceRepository, pipeline ExecutionPipeline, clock Clock, provisioner ActionProvisioner) *Service {
 	if clock == nil {
 		clock = systemClock{}
 	}
-	return &Service{repo: repo, components: components, executor: executor, clock: clock, provisioner: provisioner}
+	return &Service{
+		repo:          repo,
+		components:    components,
+		subscriptions: subscriptions,
+		sources:       sources,
+		pipeline:      pipeline,
+		clock:         clock,
+		provisioner:   provisioner,
+	}
 }
 
 // ActionInput carries action configuration used when creating an AREA
@@ -77,6 +91,14 @@ type ReactionInput struct {
 	ComponentID uuid.UUID
 	Name        string
 	Params      map[string]any
+}
+
+// ExecutionOptions control how an AREA execution is enqueued
+type ExecutionOptions struct {
+	SourceID    uuid.UUID
+	Payload     map[string]any
+	Fingerprint string
+	OccurredAt  time.Time
 }
 
 // Create registers a new automation owned by the given user
@@ -118,6 +140,9 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 	if !component.Enabled {
 		return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrActionComponentDisabled)
 	}
+	if err := s.ensureProviderSubscription(ctx, userID, component.ProviderID); err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Create: ensure action subscription: %w", err)
+	}
 
 	if len(reactions) == 0 {
 		return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionsRequired)
@@ -147,12 +172,18 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 		if !component.Enabled {
 			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", ErrReactionComponentDisabled)
 		}
+		if err := s.ensureProviderSubscription(ctx, userID, component.ProviderID); err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: ensure reaction subscription: %w", err)
+		}
 		reactionModels = append(reactionModels, component)
 	}
 
 	params := action.Params
 	if params == nil {
 		params = map[string]any{}
+	}
+	if err := s.validateComponentParams(component, params); err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", err)
 	}
 
 	now := s.clock.Now().UTC()
@@ -193,6 +224,9 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 			params = map[string]any{}
 		}
 		component := reactionModels[idx]
+		if err := s.validateComponentParams(component, params); err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Create: %w", err)
+		}
 		reactionConfig := componentdomain.Config{
 			UserID:      userID,
 			ComponentID: component.ID,
@@ -240,14 +274,20 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, des
 	return stored, nil
 }
 
-// Execute triggers all reactions for the specified area owned by the user
+// Execute enqueues jobs for the specified area owned by the user
 func (s *Service) Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error {
+	return s.ExecuteWithOptions(ctx, userID, areaID, ExecutionOptions{})
+}
+
+// ExecuteWithOptions enqueues jobs for the specified area, allowing source overrides
+func (s *Service) ExecuteWithOptions(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts ExecutionOptions) error {
 	if s.repo == nil {
 		return fmt.Errorf("area.Service.Execute: repository unavailable")
 	}
-	if s.executor == nil {
-		return fmt.Errorf("area.Service.Execute: executor unavailable")
+	if s.pipeline == nil {
+		return fmt.Errorf("area.Service.Execute: pipeline unavailable")
 	}
+
 	area, err := s.repo.FindByID(ctx, areaID)
 	if err != nil {
 		return fmt.Errorf("area.Service.Execute: repo.FindByID: %w", err)
@@ -258,15 +298,38 @@ func (s *Service) Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUI
 	if area.Action == nil || len(area.Reactions) == 0 {
 		return fmt.Errorf("area.Service.Execute: %w", ErrAreaMisconfigured)
 	}
-	areaWithComponents, err := s.populateComponents(ctx, []areadomain.Area{area})
+
+	enriched, err := s.populateComponents(ctx, []areadomain.Area{area})
 	if err != nil {
 		return err
 	}
-	area = areaWithComponents[0]
-	for _, reaction := range area.Reactions {
-		if err := s.executor.ExecuteReaction(ctx, area, reaction); err != nil {
-			return fmt.Errorf("area.Service.Execute: execute reaction: %w", err)
+	if len(enriched) == 0 {
+		return fmt.Errorf("area.Service.Execute: area enrichment failed")
+	}
+	area = enriched[0]
+
+	sourceID := opts.SourceID
+	if sourceID == uuid.Nil {
+		sourceID, err = s.resolveSourceID(ctx, area)
+		if err != nil {
+			return fmt.Errorf("area.Service.Execute: resolve source: %w", err)
 		}
+	}
+
+	payload := opts.Payload
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	err = s.pipeline.Enqueue(ctx, ExecutionInput{
+		Area:        area,
+		SourceID:    sourceID,
+		Payload:     payload,
+		Fingerprint: opts.Fingerprint,
+		OccurredAt:  opts.OccurredAt,
+	})
+	if err != nil {
+		return fmt.Errorf("area.Service.Execute: enqueue pipeline: %w", err)
 	}
 	return nil
 }
@@ -356,4 +419,247 @@ func (s *Service) populateComponents(ctx context.Context, areas []areadomain.Are
 		}
 	}
 	return areas, nil
+}
+
+func (s *Service) resolveSourceID(ctx context.Context, area areadomain.Area) (uuid.UUID, error) {
+	if s.sources == nil {
+		return uuid.Nil, fmt.Errorf("area.Service.resolveSourceID: source repository unavailable")
+	}
+	if area.Action == nil || area.Action.Config.ID == uuid.Nil {
+		return uuid.Nil, fmt.Errorf("area.Service.resolveSourceID: action config missing")
+	}
+
+	source, err := s.sources.FindByComponentConfig(ctx, area.Action.Config.ID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return source.ID, nil
+}
+
+func (s *Service) ensureProviderSubscription(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) error {
+	if s.subscriptions == nil {
+		return fmt.Errorf("area.Service.ensureProviderSubscription: subscriptions repository unavailable")
+	}
+	if providerID == uuid.Nil {
+		return fmt.Errorf("area.Service.ensureProviderSubscription: provider id missing")
+	}
+	subscription, err := s.subscriptions.FindByUserAndProvider(ctx, userID, providerID)
+	if err != nil {
+		if errors.Is(err, outbound.ErrNotFound) {
+			return ErrProviderSubscriptionMissing
+		}
+		return fmt.Errorf("area.Service.ensureProviderSubscription: subscriptions.FindByUserAndProvider: %w", err)
+	}
+	if subscription.Status != subscriptiondomain.StatusActive {
+		return ErrProviderSubscriptionMissing
+	}
+	return nil
+}
+
+func (s *Service) validateComponentParams(component componentdomain.Component, params map[string]any) error {
+	if err := validateParamsAgainstMetadata(component.Metadata, params); err != nil {
+		return fmt.Errorf("%w: %v", ErrComponentParamsInvalid, err)
+	}
+	return nil
+}
+
+type parameterSpec struct {
+	Key      string
+	Type     string
+	Required bool
+	Options  []string
+	Minimum  *float64
+	Maximum  *float64
+}
+
+func validateParamsAgainstMetadata(metadata map[string]any, params map[string]any) error {
+	specs, err := extractParameterSpecs(metadata)
+	if err != nil {
+		return err
+	}
+	for _, spec := range specs {
+		value, present := params[spec.Key]
+		if !present {
+			if spec.Required {
+				return fmt.Errorf("missing required parameter %q", spec.Key)
+			}
+			continue
+		}
+		if err := spec.validate(value); err != nil {
+			return fmt.Errorf("parameter %q invalid: %w", spec.Key, err)
+		}
+	}
+	return nil
+}
+
+func extractParameterSpecs(metadata map[string]any) ([]parameterSpec, error) {
+	if len(metadata) == 0 {
+		return nil, nil
+	}
+	raw, ok := metadata["parameters"]
+	if !ok {
+		return nil, nil
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("metadata parameters malformed")
+	}
+	specs := make([]parameterSpec, 0, len(items))
+	for _, item := range items {
+		obj, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		spec := parameterSpec{}
+		if key, ok := obj["key"].(string); ok {
+			spec.Key = strings.TrimSpace(key)
+		}
+		if spec.Key == "" {
+			continue
+		}
+		if typ, ok := obj["type"].(string); ok {
+			spec.Type = strings.ToLower(strings.TrimSpace(typ))
+		}
+		if required, ok := obj["required"].(bool); ok {
+			spec.Required = required
+		}
+		if options, ok := obj["options"].([]any); ok {
+			spec.Options = parseOptionValues(options)
+		}
+		if min, ok := numberValue(obj["minimum"]); ok {
+			spec.Minimum = &min
+		}
+		if max, ok := numberValue(obj["maximum"]); ok {
+			spec.Maximum = &max
+		}
+		specs = append(specs, spec)
+	}
+	return specs, nil
+}
+
+func parseOptionValues(options []any) []string {
+	values := make([]string, 0, len(options))
+	for _, option := range options {
+		switch v := option.(type) {
+		case string:
+			values = append(values, strings.TrimSpace(v))
+		case map[string]any:
+			if raw, ok := v["value"].(string); ok {
+				values = append(values, strings.TrimSpace(raw))
+			}
+		}
+	}
+	return values
+}
+
+func numberValue(value any) (float64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case json.Number:
+		if f, err := v.Float64(); err == nil {
+			return f, true
+		}
+	}
+	return 0, false
+}
+
+func (spec parameterSpec) validate(value any) error {
+	switch spec.Type {
+	case "integer":
+		val, ok := numberValue(value)
+		if !ok || val != float64(int64(val)) {
+			return fmt.Errorf("expected integer")
+		}
+		if spec.Minimum != nil && val < *spec.Minimum {
+			return fmt.Errorf("must be >= %.0f", *spec.Minimum)
+		}
+		if spec.Maximum != nil && val > *spec.Maximum {
+			return fmt.Errorf("must be <= %.0f", *spec.Maximum)
+		}
+	case "number":
+		if _, ok := numberValue(value); !ok {
+			return fmt.Errorf("expected number")
+		}
+	case "boolean":
+		if _, ok := value.(bool); !ok {
+			return fmt.Errorf("expected boolean")
+		}
+	case "array", "emaillist":
+		if !isArrayValue(value) && !isStringValue(value) {
+			return fmt.Errorf("expected array")
+		}
+		if strings.EqualFold(spec.Type, "emaillist") && isArrayValue(value) {
+			if err := ensureArrayElementsString(value); err != nil {
+				return err
+			}
+		}
+	case "enum":
+		str, ok := toStringValue(value)
+		if !ok {
+			return fmt.Errorf("expected string")
+		}
+		if len(spec.Options) > 0 && !containsString(spec.Options, str) {
+			return fmt.Errorf("invalid option")
+		}
+	default:
+		if !isStringValue(value) {
+			return fmt.Errorf("expected string")
+		}
+	}
+	return nil
+}
+
+func isArrayValue(value any) bool {
+	switch value.(type) {
+	case []any, []string:
+		return true
+	default:
+		return false
+	}
+}
+
+func ensureArrayElementsString(value any) error {
+	switch items := value.(type) {
+	case []any:
+		for _, item := range items {
+			if _, ok := item.(string); !ok {
+				return fmt.Errorf("expected array of strings")
+			}
+		}
+	case []string:
+		return nil
+	default:
+		return fmt.Errorf("expected array of strings")
+	}
+	return nil
+}
+
+func isStringValue(value any) bool {
+	_, ok := value.(string)
+	return ok
+}
+
+func toStringValue(value any) (string, bool) {
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v), true
+	default:
+		return "", false
+	}
+}
+
+func containsString(items []string, target string) bool {
+	for _, item := range items {
+		if strings.EqualFold(item, target) {
+			return true
+		}
+	}
+	return false
 }

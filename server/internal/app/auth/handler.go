@@ -63,7 +63,12 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusAccepted, openapi.RegisterUserResponse{ExpiresAt: result.VerificationExpires})
+	expiresAt := result.VerificationExpires.UTC()
+	response := openapi.RegisterUserResponse{
+		ExpiresAt: expiresAt,
+		UserId:    result.User.ID.String(),
+	}
+	c.JSON(http.StatusAccepted, response)
 }
 
 // VerifyEmail handles POST /v1/auth/verify
@@ -95,7 +100,8 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 	}
 
 	h.setSessionCookie(c, result.CookieName, result.Session)
-	c.JSON(http.StatusOK, openapi.AuthSessionResponse{User: toOpenAPIUser(result.User)})
+	response := toAuthSessionResponse(result.User, result.Session)
+	c.JSON(http.StatusOK, response)
 }
 
 // Login handles POST /v1/auth/login
@@ -122,7 +128,8 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	h.setSessionCookie(c, result.CookieName, result.Session)
-	c.JSON(http.StatusOK, openapi.AuthSessionResponse{User: toOpenAPIUser(result.User)})
+	response := toAuthSessionResponse(result.User, result.Session)
+	c.JSON(http.StatusOK, response)
 }
 
 // Logout handles POST /v1/auth/logout
@@ -130,13 +137,17 @@ func (h *Handler) Logout(c *gin.Context) {
 	sessionID := h.sessionIDFromCookie(c)
 	if sessionID == uuid.Nil {
 		h.clearSessionCookie(c)
-		c.Status(http.StatusNoContent)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
 		return
 	}
 
 	if err := h.service.Logout(c.Request.Context(), sessionID); err != nil {
 		h.clearSessionCookie(c)
-		c.Status(http.StatusNoContent)
+		if errors.Is(err, ErrSessionNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoke session"})
 		return
 	}
 
@@ -278,7 +289,8 @@ func (h *Handler) ExchangeOAuth(c *gin.Context, provider string) {
 	}
 
 	h.setSessionCookie(c, result.CookieName, result.Session)
-	c.JSON(http.StatusOK, openapi.AuthSessionResponse{User: toOpenAPIUser(result.User)})
+	response := toAuthSessionResponse(result.User, result.Session)
+	c.JSON(http.StatusOK, response)
 }
 
 // SubscribeService handles POST /v1/services/{provider}/subscribe
@@ -491,6 +503,16 @@ func toOpenAPIUser(u userdomain.User) openapi.User {
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
 		LastLoginAt: u.LastLoginAt,
+	}
+}
+
+func toAuthSessionResponse(user userdomain.User, session sessiondomain.Session) openapi.AuthSessionResponse {
+	expiresAt := session.ExpiresAt.UTC()
+	tokenType := "session"
+	return openapi.AuthSessionResponse{
+		User:      toOpenAPIUser(user),
+		ExpiresAt: &expiresAt,
+		TokenType: &tokenType,
 	}
 }
 

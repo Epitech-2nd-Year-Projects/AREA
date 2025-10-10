@@ -166,3 +166,25 @@ func (r Repository) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID
 	}
 	return nil
 }
+
+// FindByComponentConfig retrieves the action source associated with the component configuration
+func (r Repository) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {
+	if r.db == nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.FindByComponentConfig: nil db handle")
+	}
+	if componentConfigID == uuid.Nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.FindByComponentConfig: missing component config id")
+	}
+
+	var model sourceModel
+	if err := r.db.WithContext(ctx).
+		Where("component_config_id = ?", componentConfigID).
+		Order("created_at ASC").
+		Take(&model).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return actiondomain.Source{}, outbound.ErrNotFound
+		}
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.FindByComponentConfig: %w", err)
+	}
+	return model.toDomain(), nil
+}

@@ -128,6 +128,9 @@ var _defaultConfig = Config{
 		Verification: VerificationConfig{
 			TokenTTL: 48 * time.Hour,
 		},
+		Encryption: EncryptionConfig{
+			IdentitiesKeyEnv: "IDENTITY_ENCRYPTION_KEY",
+		},
 	},
 	ServicesCatalog: ServicesCatalogConfig{
 		RefreshInterval: 5 * time.Minute,
