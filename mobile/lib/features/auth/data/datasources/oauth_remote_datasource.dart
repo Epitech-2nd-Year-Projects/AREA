@@ -39,9 +39,7 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
       final providerSlug = provider.slug;
 
       final Map<String, dynamic> requestData = {};
-      if (redirectUri != null) {
-        requestData['redirectUri'] = redirectUri;
-      }
+      requestData['redirectUri'] = redirectUri;
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         '/v1/oauth/$providerSlug/authorize',

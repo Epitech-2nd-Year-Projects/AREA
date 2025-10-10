@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/user.dart';
 import '../../domain/use_cases/logout_user.dart';
 import '../../domain/use_cases/get_current_user.dart';
 import '../../domain/repositories/auth_repository.dart';
