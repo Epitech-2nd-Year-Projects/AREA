@@ -1,3 +1,4 @@
+import 'package:area/core/network/api_config.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/api_client.dart';
@@ -105,6 +106,7 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
     bool? usePkce,
   }) async {
     try {
+      redirectUri = ApiConfig.getServiceCallbackUrl(provider);
       final payload = <String, dynamic>{};
       if (scopes != null && scopes.isNotEmpty) {
         payload['scopes'] = scopes;
