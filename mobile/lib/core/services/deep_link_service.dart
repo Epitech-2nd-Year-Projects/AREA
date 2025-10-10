@@ -76,6 +76,39 @@ class DeepLinkService {
         }
       }
     }
+    if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
+      final pathSegments = uri.pathSegments;
+
+      if (pathSegments.length >= 3 &&
+          pathSegments[0] == 'services' &&
+          pathSegments[2] == 'callback') {
+
+        final provider = pathSegments[1];
+        final code = uri.queryParameters['code'];
+        final error = uri.queryParameters['error'];
+        final state = uri.queryParameters['state'];
+        final returnTo = uri.queryParameters['returnTo'];
+
+        debugPrint('🔄 OAuth callback detected - Provider: $provider');
+
+        if (error != null) {
+          debugPrint('❌ OAuth error: $error');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, error);
+          }
+        } else if (code != null) {
+          debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
+          for (final listener in List.of(_oauthCallbackListeners)) {
+            listener(provider, code, state, returnTo);
+          }
+        } else {
+          debugPrint('❌ OAuth without code or error');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, 'No authorization code received');
+          }
+        }
+      }
+    }
   }
 
   void dispose() {

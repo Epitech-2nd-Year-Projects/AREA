@@ -109,7 +109,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider) async {
+  Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider, String? redirectUri) async {
     try {
       final response = await _oauthDataSource.startOAuthFlow(provider, null);
       return OAuthRedirectUrl(response.authorizationUrl);

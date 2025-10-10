@@ -16,7 +16,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _getCurrentUser = GetCurrentUser(repository);
 
     on<AppStarted>(_onAppStarted);
-    add(AppStarted());
     on<UserLoggedIn>(_onUserLoggedIn);
     on<UserLoggedOut>(_onUserLoggedOut);
     on<SessionExpired>(_onSessionExpired);
