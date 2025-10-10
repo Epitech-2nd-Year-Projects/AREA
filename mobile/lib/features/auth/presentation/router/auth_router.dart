@@ -101,6 +101,26 @@ class AuthRouter {
     ),
 
     GoRoute(
+      path: '/services/:provider/callback',
+      builder: (context, state) {
+        final provider = state.pathParameters['provider']!;
+        final code = state.uri.queryParameters['code'];
+        final error = state.uri.queryParameters['error'];
+        final returnTo = state.uri.queryParameters['returnTo'] ?? '/services/$provider';
+
+        return BlocProvider(
+          create: (context) => sl<AuthBloc>(),
+          child: OAuthCallbackPage(
+            provider: provider,
+            code: code,
+            error: error,
+            returnTo: returnTo,
+          ),
+        );
+      },
+    ),
+
+    GoRoute(
       path: '/login',
       builder: (context, state) => BlocProvider(
         create: (context) => AuthBloc(sl()),
