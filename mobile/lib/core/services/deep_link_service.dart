@@ -11,16 +11,15 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSubscription;
   bool _initialized = false;
 
-  final List<void Function(String provider, String code, String? state)>
-      _oauthCallbackListeners = [];
+  final List<void Function(String provider, String code, String? state, String? returnTo)>
+  _oauthCallbackListeners = [];
   final List<void Function(String? provider, String error)>
-      _oauthErrorListeners = [];
+  _oauthErrorListeners = [];
 
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
     try {
-      // Listen for incoming deep links
       _linkSubscription = _appLinks.uriLinkStream.listen(
             (Uri uri) {
           debugPrint('🔗 Deep link received: $uri');
@@ -31,7 +30,6 @@ class DeepLinkService {
         },
       );
 
-      // Check if there's an initial link when app launches
       final Uri? initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         debugPrint('🚀 Initial deep link: $initialUri');
@@ -45,7 +43,6 @@ class DeepLinkService {
   void _handleDeepLink(Uri uri) {
     debugPrint('🔍 Processing deep link: ${uri.toString()}');
 
-    // Check if it's an OAuth callback
     if (uri.path.startsWith('/oauth/') && uri.path.contains('/callback')) {
       final pathSegments = uri.pathSegments;
 
@@ -53,10 +50,11 @@ class DeepLinkService {
           pathSegments[0] == 'oauth' &&
           pathSegments[2] == 'callback') {
 
-        final provider = pathSegments[1]; // google, facebook, apple
+        final provider = pathSegments[1];
         final code = uri.queryParameters['code'];
         final error = uri.queryParameters['error'];
         final state = uri.queryParameters['state'];
+        final returnTo = uri.queryParameters['returnTo'];
 
         debugPrint('🔄 OAuth callback detected - Provider: $provider');
 
@@ -68,7 +66,40 @@ class DeepLinkService {
         } else if (code != null) {
           debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
           for (final listener in List.of(_oauthCallbackListeners)) {
-            listener(provider, code, state);
+            listener(provider, code, state, returnTo);
+          }
+        } else {
+          debugPrint('❌ OAuth without code or error');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, 'No authorization code received');
+          }
+        }
+      }
+    }
+    if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
+      final pathSegments = uri.pathSegments;
+
+      if (pathSegments.length >= 3 &&
+          pathSegments[0] == 'services' &&
+          pathSegments[2] == 'callback') {
+
+        final provider = pathSegments[1];
+        final code = uri.queryParameters['code'];
+        final error = uri.queryParameters['error'];
+        final state = uri.queryParameters['state'];
+        final returnTo = uri.queryParameters['returnTo'];
+
+        debugPrint('🔄 OAuth callback detected - Provider: $provider');
+
+        if (error != null) {
+          debugPrint('❌ OAuth error: $error');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, error);
+          }
+        } else if (code != null) {
+          debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
+          for (final listener in List.of(_oauthCallbackListeners)) {
+            listener(provider, code, state, returnTo);
           }
         } else {
           debugPrint('❌ OAuth without code or error');
@@ -88,12 +119,12 @@ class DeepLinkService {
   }
 
   void addOAuthCallbackListener(
-      void Function(String provider, String code, String? state) listener,) {
+      void Function(String provider, String code, String? state, String? returnTo) listener,) {
     _oauthCallbackListeners.add(listener);
   }
 
   void removeOAuthCallbackListener(
-      void Function(String provider, String code, String? state) listener,) {
+      void Function(String provider, String code, String? state, String? returnTo) listener,) {
     _oauthCallbackListeners.remove(listener);
   }
 

@@ -36,7 +36,7 @@ class OAuthManager {
     _deepLinkService.initialize();
   }
 
-  Future<String> startOAuth(OAuthProvider provider) async {
+  Future<String> startOAuth(OAuthProvider provider, {String? returnTo}) async {
     try {
       debugPrint('🚀 Starting OAuth for $provider');
 
@@ -49,22 +49,40 @@ class OAuthManager {
         codeVerifier: response.codeVerifier,
         redirectUri: redirectUri,
         state: response.state,
+        returnTo: returnTo,
       );
 
       debugPrint('📝 Stored OAuth data for $provider');
       debugPrint('   - code_verifier: ${response.codeVerifier != null ? "✓" : "✗"}');
       debugPrint('   - redirect_uri: $redirectUri');
       debugPrint('   - state: ${response.state}');
+      debugPrint('   - returnTo: $returnTo');
 
+      String finalUrl = response.authorizationUrl;
+      if (returnTo != null) {
+        final authUri = Uri.parse(response.authorizationUrl);
+        final modifiedUri = authUri.replace(
+          queryParameters: {
+            ...authUri.queryParameters,
+            'returnTo': returnTo,
+          },
+        );
+        finalUrl = modifiedUri.toString();
+      }
 
-      return response.authorizationUrl;
+      return finalUrl;
     } catch (e) {
       debugPrint('❌ OAuth start error: $e');
       rethrow;
     }
   }
 
-  void _handleOAuthCallback(String providerStr, String code, String? state) async {
+  void _handleOAuthCallback(
+      String providerStr,
+      String code,
+      String? state,
+      String? returnTo,
+      ) async {
     try {
       debugPrint('🔄 Processing OAuth callback: $providerStr');
 
@@ -137,10 +155,12 @@ class _OAuthFlowData {
   final String? codeVerifier;
   final String? redirectUri;
   final String? state;
+  final String? returnTo;
 
   _OAuthFlowData({
     this.codeVerifier,
     this.redirectUri,
     this.state,
+    this.returnTo,
   });
 }

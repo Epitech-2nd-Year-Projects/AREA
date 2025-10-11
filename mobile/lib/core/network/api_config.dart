@@ -9,4 +9,14 @@ class ApiConfig {
     };
 
     static const bool enableLogging = true;
+
+    static const String callbackBaseUrl = "http://localhost:8080";
+
+    static String getOAuthCallbackUrl(String provider) {
+      return "$callbackBaseUrl/oauth/$provider/callback";
+    }
+
+    static String getServiceCallbackUrl(String provider) {
+      return "$callbackBaseUrl/services/$provider/callback";
+    }
 }

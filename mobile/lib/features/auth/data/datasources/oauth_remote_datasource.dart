@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_config.dart';
 import '../../../../core/network/exceptions/network_exceptions.dart';
 import '../../domain/entities/oauth_provider.dart';
 import '../../domain/exceptions/oauth_exceptions.dart';
@@ -34,12 +35,11 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
       String? redirectUri,
       ) async {
     try {
-      final providerSlug = _getProviderSlug(provider);
+      redirectUri = ApiConfig.getOAuthCallbackUrl(provider.slug);
+      final providerSlug = provider.slug;
 
       final Map<String, dynamic> requestData = {};
-      if (redirectUri != null) {
-        requestData['redirectUri'] = redirectUri;
-      }
+      requestData['redirectUri'] = redirectUri;
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         '/v1/oauth/$providerSlug/authorize',

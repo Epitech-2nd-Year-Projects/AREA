@@ -20,10 +20,10 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
   final Map<String, _PendingSubscriptionAuthorization> _pendingAuthorizations = {};
 
   ServiceSubscriptionCubit(
-    ServicesRepository repository, {
-    DeepLinkService? deepLinkService,
-    Random? random,
-  })  : _deepLinkService = deepLinkService ?? DeepLinkService(),
+      ServicesRepository repository, {
+        DeepLinkService? deepLinkService,
+        Random? random,
+      })  : _deepLinkService = deepLinkService ?? DeepLinkService(),
         _random = _createRandom(random),
         super(ServiceSubscriptionInitial()) {
     unawaited(_deepLinkService.initialize());
@@ -52,10 +52,10 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     );
 
     await result.fold(
-      (failure) async {
+          (failure) async {
         emit(ServiceSubscriptionError(_mapFailureToMessage(failure)));
       },
-      (subscriptionResult) async {
+          (subscriptionResult) async {
         await _handleSubscriptionResult(
           normalizedProvider,
           subscriptionResult,
@@ -70,15 +70,15 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     final result = await _unsubscribeFromService(subscriptionId);
 
     result.fold(
-      (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
-      (_) => emit(ServiceUnsubscribed()),
+          (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
+          (_) => emit(ServiceUnsubscribed()),
     );
   }
 
   Future<void> _handleSubscriptionResult(
-    String provider,
-    ServiceSubscriptionResult result,
-  ) async {
+      String provider,
+      ServiceSubscriptionResult result,
+      ) async {
     if (result.requiresAuthorization) {
       final authorization = result.authorization;
       if (authorization == null) {
@@ -126,7 +126,12 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     emit(const ServiceSubscriptionError('Subscription flow did not return a result.'));
   }
 
-  void _handleOAuthCallback(String provider, String code, String? state) async {
+  void _handleOAuthCallback(
+      String provider,
+      String code,
+      String? state,
+      String? returnTo,
+      ) async {
     final normalizedProvider = _normalizeProvider(provider);
     final pending = _pendingAuthorizations[normalizedProvider];
     if (pending == null) {
@@ -149,8 +154,8 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     _pendingAuthorizations.remove(normalizedProvider);
 
     exchange.fold(
-      (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
-      (result) => emit(ServiceSubscriptionSuccess(result.subscription)),
+          (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
+          (result) => emit(ServiceSubscriptionSuccess(result.subscription)),
     );
   }
 
