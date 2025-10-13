@@ -38,9 +38,20 @@ func (h *recordingHandler) Supports(component *componentdomain.Component) bool {
 	return component != nil
 }
 
-func (h *recordingHandler) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (h *recordingHandler) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	h.called = true
-	return nil
+	status := 200
+	return outbound.ReactionResult{
+		Endpoint: "test-endpoint",
+		Request: map[string]any{
+			"foo": "bar",
+		},
+		Response: map[string]any{
+			"status": "ok",
+		},
+		StatusCode: &status,
+		Duration:   5 * time.Millisecond,
+	}, nil
 }
 
 func (s *singleReservationQueue) Enqueue(ctx context.Context, msg queueport.JobMessage) error {
@@ -112,6 +123,18 @@ func (s *stubJobRepository) Claim(ctx context.Context, id uuid.UUID, worker stri
 	jobCopy.LockedAt = &lockedAt
 	s.job = jobCopy
 	return jobCopy, nil
+}
+
+type stubLogRepository struct {
+	logs []jobdomain.DeliveryLog
+	mu   sync.Mutex
+}
+
+func (s *stubLogRepository) Create(ctx context.Context, log jobdomain.DeliveryLog) (jobdomain.DeliveryLog, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.logs = append(s.logs, log)
+	return log, nil
 }
 
 type stubAreaRepository struct {
@@ -270,8 +293,9 @@ func TestWorkerProcessesJob(t *testing.T) {
 
 	handler := &recordingHandler{}
 	reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, handler)
+	logRepo := &stubLogRepository{}
 
-	worker := NewWorker(queue, jobRepo, service, reactionExecutor, logger, WithClock(fixedClock{now: now}), WithPollTimeout(10*time.Millisecond))
+	worker := NewWorker(queue, jobRepo, logRepo, service, reactionExecutor, logger, WithClock(fixedClock{now: now}), WithPollTimeout(10*time.Millisecond))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -291,5 +315,8 @@ func TestWorkerProcessesJob(t *testing.T) {
 	}
 	if !handler.called {
 		t.Fatalf("expected reaction handler to be executed")
+	}
+	if len(logRepo.logs) != 1 {
+		t.Fatalf("expected one delivery log entry, got %d", len(logRepo.logs))
 	}
 }

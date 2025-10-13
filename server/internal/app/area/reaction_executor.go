@@ -13,7 +13,7 @@ import (
 // ComponentReactionHandler dispatches reactions for specific components
 type ComponentReactionHandler interface {
 	Supports(component *componentdomain.Component) bool
-	Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) error
+	Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error)
 }
 
 // CompositeReactionExecutor routes reaction execution across component-specific handlers
@@ -32,7 +32,7 @@ func NewCompositeReactionExecutor(fallback outbound.ReactionExecutor, logger *za
 }
 
 // ExecuteReaction dispatches the reaction to the first supporting handler or fallback
-func (c *CompositeReactionExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (c *CompositeReactionExecutor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	component := link.Config.Component
 	for _, handler := range c.handlers {
 		if handler != nil && handler.Supports(component) {
@@ -46,5 +46,5 @@ func (c *CompositeReactionExecutor) ExecuteReaction(ctx context.Context, area ar
 	if component != nil {
 		name = component.Name
 	}
-	return fmt.Errorf("area.CompositeReactionExecutor: component %q unsupported", name)
+	return outbound.ReactionResult{}, fmt.Errorf("area.CompositeReactionExecutor: component %q unsupported", name)
 }

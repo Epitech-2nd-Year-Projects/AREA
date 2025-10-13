@@ -249,7 +249,8 @@ func run() error {
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
 
 		jobRepo := executionpostgres.NewJobRepository(db)
-		jobWorker = automation.NewWorker(jobQueue, jobRepo, areaService, reactionExecutor, logger)
+		logRepo := executionpostgres.NewDeliveryLogRepository(db)
+		jobWorker = automation.NewWorker(jobQueue, jobRepo, logRepo, areaService, reactionExecutor, logger)
 
 		sqlDB, err := db.DB()
 		if err != nil {
