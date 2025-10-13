@@ -7,7 +7,6 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Injector.setup();
-
   runApp(
     BlocProvider<AuthBloc>(
       create: (_) => sl<AuthBloc>(),

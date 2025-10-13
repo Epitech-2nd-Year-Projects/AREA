@@ -53,10 +53,6 @@ class OAuthManager {
       );
 
       debugPrint('📝 Stored OAuth data for $provider');
-      debugPrint('   - code_verifier: ${response.codeVerifier != null ? "✓" : "✗"}');
-      debugPrint('   - redirect_uri: $redirectUri');
-      debugPrint('   - state: ${response.state}');
-      debugPrint('   - returnTo: $returnTo');
 
       String finalUrl = response.authorizationUrl;
       if (returnTo != null) {
@@ -100,9 +96,6 @@ class OAuthManager {
       }
 
       debugPrint('🔑 Using stored OAuth data:');
-      debugPrint('   - code_verifier: ${data.codeVerifier != null ? "✓" : "✗"}');
-      debugPrint('   - redirect_uri: ${data.redirectUri}');
-      debugPrint('   - state: ${data.state}');
 
       final session = await _completeOAuthLogin(
         provider,
