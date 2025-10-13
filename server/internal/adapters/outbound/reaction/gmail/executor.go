@@ -14,6 +14,7 @@ import (
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -75,50 +76,58 @@ func (e *Executor) Supports(component *componentdomain.Component) bool {
 }
 
 // Execute delivers the Gmail reaction payload for the provided area
-func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	if !e.Supports(link.Config.Component) {
-		return fmt.Errorf("gmail.Executor: unsupported component")
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: unsupported component")
 	}
 	if e.identities == nil || e.providers == nil {
-		return fmt.Errorf("gmail.Executor: resolver not configured")
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: resolver not configured")
 	}
 
 	cfg, err := parseMessageConfig(link.Config.Params)
 	if err != nil {
-		return fmt.Errorf("gmail.Executor: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: %w", err)
 	}
 
 	identity, err := e.identities.FindByID(ctx, cfg.identityID)
 	if err != nil {
-		return fmt.Errorf("gmail.Executor: identity lookup: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: identity lookup: %w", err)
 	}
 	if identity.UserID != area.UserID {
-		return fmt.Errorf("gmail.Executor: identity not owned by user")
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: identity not owned by user")
 	}
 
 	identity, accessToken, err := e.ensureAccessToken(ctx, identity, false)
 	if err != nil {
-		return err
+		return outbound.ReactionResult{}, err
 	}
 
 	payload, err := buildRawMessage(cfg)
 	if err != nil {
-		return fmt.Errorf("gmail.Executor: build payload: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: build payload: %w", err)
 	}
 
-	unauthorized, err := e.sendMessage(ctx, accessToken, payload)
+	requestInfo := map[string]any{
+		"to":      append([]string(nil), cfg.to...),
+		"cc":      append([]string(nil), cfg.cc...),
+		"bcc":     append([]string(nil), cfg.bcc...),
+		"subject": cfg.subject,
+		"payload": string(payload),
+	}
+
+	result, unauthorized, err := e.sendMessage(ctx, accessToken, payload, requestInfo)
 	if err != nil && unauthorized {
 		identity, accessToken, err = e.ensureAccessToken(ctx, identity, true)
 		if err != nil {
-			return err
+			return outbound.ReactionResult{}, err
 		}
-		unauthorized, err = e.sendMessage(ctx, accessToken, payload)
+		result, unauthorized, err = e.sendMessage(ctx, accessToken, payload, requestInfo)
 	}
 	if err != nil {
-		return err
+		return result, err
 	}
 	if unauthorized {
-		return fmt.Errorf("gmail.Executor: unauthorized after refresh")
+		return result, fmt.Errorf("gmail.Executor: unauthorized after refresh")
 	}
 
 	e.logger.Info("gmail reaction delivered",
@@ -126,7 +135,7 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 		zap.String("identity_id", identity.ID.String()),
 		zap.Int("recipient_count", len(cfg.to)+len(cfg.cc)+len(cfg.bcc)),
 	)
-	return nil
+	return result, nil
 }
 
 func (e *Executor) ensureAccessToken(ctx context.Context, identity identitydomain.Identity, force bool) (identitydomain.Identity, string, error) {
@@ -167,29 +176,47 @@ func (e *Executor) ensureAccessToken(ctx context.Context, identity identitydomai
 	return updated, updated.AccessToken, nil
 }
 
-func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload []byte) (bool, error) {
+func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload []byte, request map[string]any) (outbound.ReactionResult, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, gmailAPIEndpoint, bytes.NewReader(payload))
 	if err != nil {
-		return false, fmt.Errorf("gmail.Executor: build request: %w", err)
+		return outbound.ReactionResult{}, false, fmt.Errorf("gmail.Executor: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
+	start := time.Now()
 	resp, err := e.http.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("gmail.Executor: request failed: %w", err)
+		return outbound.ReactionResult{}, false, fmt.Errorf("gmail.Executor: request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
+	duration := time.Since(start)
+
+	responseHeaders := map[string][]string{}
+	for key, values := range resp.Header {
+		responseHeaders[key] = append([]string(nil), values...)
+	}
+
+	result := outbound.ReactionResult{
+		Endpoint: gmailAPIEndpoint,
+		Request:  cloneMap(request),
+		Response: map[string]any{
+			"body":    strings.TrimSpace(string(body)),
+			"headers": responseHeaders,
+		},
+		StatusCode: &resp.StatusCode,
+		Duration:   duration,
+	}
 
 	switch {
 	case resp.StatusCode == http.StatusUnauthorized:
-		return true, fmt.Errorf("gmail.Executor: unauthorized: %s", strings.TrimSpace(string(body)))
+		return result, true, fmt.Errorf("gmail.Executor: unauthorized: %s", strings.TrimSpace(string(body)))
 	case resp.StatusCode >= 400:
-		return false, fmt.Errorf("gmail.Executor: api error %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		return result, false, fmt.Errorf("gmail.Executor: api error %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	default:
-		return false, nil
+		return result, false, nil
 	}
 }
 
@@ -198,6 +225,24 @@ func (e *Executor) now() time.Time {
 		return time.Now().UTC()
 	}
 	return e.clock.Now().UTC()
+}
+
+func cloneMap(source map[string]any) map[string]any {
+	if len(source) == 0 {
+		return map[string]any{}
+	}
+	result := make(map[string]any, len(source))
+	for key, value := range source {
+		switch v := value.(type) {
+		case []string:
+			result[key] = append([]string(nil), v...)
+		case map[string]any:
+			result[key] = cloneMap(v)
+		default:
+			result[key] = v
+		}
+	}
+	return result
 }
 
 func buildRawMessage(cfg messageConfig) ([]byte, error) {
@@ -393,5 +438,5 @@ func (systemClock) Now() time.Time { return time.Now().UTC() }
 // Ensure Executor satisfies the ComponentReactionHandler contract
 var _ interface {
 	Supports(*componentdomain.Component) bool
-	Execute(context.Context, areadomain.Area, areadomain.Link) error
+	Execute(context.Context, areadomain.Area, areadomain.Link) (outbound.ReactionResult, error)
 } = (*Executor)(nil)

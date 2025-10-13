@@ -60,8 +60,12 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 		},
 	}}
 
-	if err := exec.Execute(context.Background(), area, link); err != nil {
+	result, err := exec.Execute(context.Background(), area, link)
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Endpoint != gmailAPIEndpoint {
+		t.Fatalf("unexpected endpoint %s", result.Endpoint)
 	}
 	if len(client.authHeaders) != 1 {
 		t.Fatalf("expected one request")
@@ -123,7 +127,7 @@ func TestExecutorExecuteRefreshOnUnauthorized(t *testing.T) {
 		},
 	}}
 
-	if err := exec.Execute(context.Background(), area, link); err != nil {
+	if _, err := exec.Execute(context.Background(), area, link); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if repo.updated == nil || repo.updated.AccessToken != "new-access" {
