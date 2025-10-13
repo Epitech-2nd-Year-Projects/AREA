@@ -177,6 +177,9 @@ func (w *Worker) processReservation(ctx context.Context, reservation queueport.R
 
 	result, reactionLink, execErr := w.executeJob(ctx, job)
 	if execErr != nil {
+		if w.scheduleRetry(ctx, reservation, &job, reactionLink, result, execErr, now) {
+			return nil
+		}
 		job.Status = jobdomain.StatusFailed
 		errStr := execErr.Error()
 		job.Error = &errStr
@@ -288,6 +291,40 @@ func (w *Worker) now() time.Time {
 		return time.Now().UTC()
 	}
 	return w.clock.Now().UTC()
+}
+
+func (w *Worker) scheduleRetry(ctx context.Context, reservation queueport.Reservation, job *jobdomain.Job, link areadomain.Link, result outbound.ReactionResult, execErr error, now time.Time) bool {
+	if reservation == nil || job == nil {
+		return false
+	}
+	policy := link.RetryPolicy
+	if policy == nil {
+		return false
+	}
+	if !policy.ShouldRetry(job.Attempt) {
+		return false
+	}
+	delay := policy.Delay(job.Attempt)
+	if delay <= 0 {
+		delay = time.Second
+	}
+	job.Status = jobdomain.StatusRetrying
+	errStr := execErr.Error()
+	job.Error = &errStr
+	job.LockedBy = nil
+	job.LockedAt = nil
+	job.RunAt = now.Add(delay)
+	job.UpdatedAt = now
+	if err := w.jobs.Update(ctx, *job); err != nil {
+		w.logger.Error("retry update failed", zap.Error(err), zap.String("job_id", job.ID.String()))
+		return false
+	}
+	w.recordDeliveryLog(ctx, *job, link, result, execErr)
+	if err := reservation.Requeue(ctx, delay); err != nil {
+		w.logger.Error("retry requeue failed", zap.Error(err), zap.String("job_id", job.ID.String()))
+		return false
+	}
+	return true
 }
 
 func parseUUIDField(payload map[string]any, key string) (uuid.UUID, error) {
