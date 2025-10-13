@@ -20,8 +20,11 @@ import (
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
 	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
+	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
+	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
+	automation "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/automation"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
@@ -29,10 +32,12 @@ import (
 	ginhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver/gin"
 	projectlogging "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	projectlogger "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging/zap"
+	redisqueue "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/queue/redis"
 	cipherpkg "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/cipher"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/security/password"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
+	queueport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/queue"
 	"go.uber.org/zap"
 )
 
@@ -95,6 +100,8 @@ func run() error {
 		areaHandler      *areaapp.Handler
 		componentHandler *componentapp.Handler
 		timerScheduler   *areaapp.TimerScheduler
+		jobQueue         queueport.JobQueue
+		jobWorker        *automation.Worker
 	)
 
 	dbCtx := context.Background()
@@ -161,7 +168,30 @@ func run() error {
 		componentRepo := componentpostgres.NewRepository(db)
 		actionRepo := actionpostgres.NewRepository(db)
 		executionRepo := executionpostgres.NewManager(db)
-		pipeline := areaapp.NewExecutionPipeline(executionRepo, nil)
+		if jobQueue == nil {
+			switch strings.ToLower(strings.TrimSpace(cfg.Queue.Driver)) {
+			case "", "redis":
+				queueKey := strings.TrimSpace(cfg.Queue.Redis.Stream)
+				if queueKey == "" {
+					return fmt.Errorf("redis queue stream missing")
+				}
+				redisCfg := redisqueue.Config{
+					Addr:          cfg.Queue.Redis.Addr,
+					Password:      cfg.Queue.Redis.Password,
+					DB:            cfg.Queue.Redis.DB,
+					QueueKey:      queueKey,
+					ProcessingKey: queueKey + ":processing",
+				}
+				queue, queueErr := redisqueue.New(dbCtx, redisCfg, logger)
+				if queueErr != nil {
+					return fmt.Errorf("redisqueue.New: %w", queueErr)
+				}
+				jobQueue = queue
+			default:
+				return fmt.Errorf("unsupported queue driver %q", cfg.Queue.Driver)
+			}
+		}
+		pipeline := areaapp.NewExecutionPipeline(executionRepo, nil, jobQueue)
 		timerProvisioner := areaapp.NewTimerProvisioner(actionRepo, nil)
 		areaService := areaapp.NewService(
 			areaRepo,
@@ -197,6 +227,30 @@ func run() error {
 		)
 
 		timerScheduler = areaapp.NewTimerScheduler(actionRepo, areaService, nil, areaapp.WithTimerLogger(logger))
+
+		reactionHandlers := []areaapp.ComponentReactionHandler{
+			httpreaction.Executor{
+				Client: &http.Client{Timeout: 15 * time.Second},
+				Logger: logger,
+			},
+		}
+		if oauthManager != nil {
+			gmailExecutor := gmailexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gmailExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gmailExecutor)
+			}
+		}
+		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
+
+		jobRepo := executionpostgres.NewJobRepository(db)
+		jobWorker = automation.NewWorker(jobQueue, jobRepo, areaService, reactionExecutor, logger)
+
 		sqlDB, err := db.DB()
 		if err != nil {
 			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
@@ -228,6 +282,9 @@ func run() error {
 
 	if timerScheduler != nil {
 		go timerScheduler.Run(ctx)
+	}
+	if jobWorker != nil {
+		go jobWorker.Run(ctx)
 	}
 
 	logger.Info("starting http server",
