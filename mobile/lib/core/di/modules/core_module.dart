@@ -1,5 +1,4 @@
 import 'package:get_it/get_it.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../storage/cache_manager.dart';
 import '../../storage/local_prefs_manager.dart';
 import '../../storage/secure_storage_manager.dart';
