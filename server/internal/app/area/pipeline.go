@@ -9,6 +9,7 @@ import (
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	jobdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/job"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
+	queueport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/queue"
 	"github.com/google/uuid"
 )
 
@@ -28,16 +29,18 @@ type ExecutionPipeline interface {
 
 type dbExecutionPipeline struct {
 	executions outbound.ExecutionRepository
+	queue      queueport.JobProducer
 	clock      Clock
 }
 
 // NewExecutionPipeline builds a pipeline backed by the provided execution repository
-func NewExecutionPipeline(repo outbound.ExecutionRepository, clock Clock) ExecutionPipeline {
+func NewExecutionPipeline(repo outbound.ExecutionRepository, clock Clock, producer queueport.JobProducer) ExecutionPipeline {
 	if clock == nil {
 		clock = systemClock{}
 	}
 	return &dbExecutionPipeline{
 		executions: repo,
+		queue:      producer,
 		clock:      clock,
 	}
 }
@@ -113,12 +116,26 @@ func (p *dbExecutionPipeline) Enqueue(ctx context.Context, input ExecutionInput)
 	if err != nil {
 		return fmt.Errorf("area.ExecutionPipeline.Enqueue: %w", err)
 	}
+	if p.queue == nil {
+		return fmt.Errorf("area.ExecutionPipeline.Enqueue: queue unavailable")
+	}
+	for _, job := range jobs {
+		msg := queueport.JobMessage{
+			JobID: job.ID,
+			RunAt: job.RunAt,
+		}
+		if err := p.queue.Enqueue(ctx, msg); err != nil {
+			return fmt.Errorf("area.ExecutionPipeline.Enqueue: queue enqueue: %w", err)
+		}
+	}
 	return nil
 }
 
 func buildJobInputPayload(area areadomain.Area, reaction areadomain.Link, eventPayload map[string]any) map[string]any {
 	payload := map[string]any{
 		"areaId":       area.ID.String(),
+		"userId":       area.UserID.String(),
+		"areaName":     area.Name,
 		"reactionId":   reaction.ID.String(),
 		"componentId":  reaction.Config.ComponentID.String(),
 		"params":       cloneMap(reaction.Config.Params),
