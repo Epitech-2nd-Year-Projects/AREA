@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/di/injection.dart';
+import '../../../../core/di/injector.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../auth/presentation/blocs/auth_bloc.dart';

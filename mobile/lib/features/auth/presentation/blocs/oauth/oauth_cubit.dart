@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../../core/di/injection.dart';
+import '../../../../../core/di/injector.dart';
 import '../../../../../core/services/oauth_manager.dart';
 import '../../../domain/entities/oauth_provider.dart';
 import 'oauth_state.dart';

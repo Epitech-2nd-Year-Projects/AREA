@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/di/injection.dart';
+import '../../../../core/di/injector.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../services/domain/use_cases/get_services_with_status.dart';
 import '../../../services/domain/entities/service_with_status.dart';
