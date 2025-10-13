@@ -2,6 +2,7 @@ package automation
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ func (f fixedClock) Now() time.Time {
 
 type recordingHandler struct {
 	called bool
+	err    error
 }
 
 func (h *recordingHandler) Supports(component *componentdomain.Component) bool {
@@ -41,6 +43,9 @@ func (h *recordingHandler) Supports(component *componentdomain.Component) bool {
 func (h *recordingHandler) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	h.called = true
 	status := 200
+	if h.err != nil {
+		status = 500
+	}
 	return outbound.ReactionResult{
 		Endpoint: "test-endpoint",
 		Request: map[string]any{
@@ -51,7 +56,7 @@ func (h *recordingHandler) Execute(ctx context.Context, area areadomain.Area, li
 		},
 		StatusCode: &status,
 		Duration:   5 * time.Millisecond,
-	}, nil
+	}, h.err
 }
 
 func (s *singleReservationQueue) Enqueue(ctx context.Context, msg queueport.JobMessage) error {
@@ -72,6 +77,8 @@ func (s *singleReservationQueue) Reserve(ctx context.Context, timeout time.Durat
 type testReservation struct {
 	msg   queueport.JobMessage
 	acked bool
+	retry bool
+	delay time.Duration
 	mu    sync.Mutex
 }
 
@@ -87,6 +94,11 @@ func (r *testReservation) Ack(ctx context.Context) error {
 }
 
 func (r *testReservation) Requeue(ctx context.Context, delay time.Duration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.retry = true
+	r.delay = delay
+	r.msg.RunAt = time.Now().Add(delay)
 	return nil
 }
 
@@ -108,6 +120,7 @@ func (s *stubJobRepository) Update(ctx context.Context, job jobdomain.Job) error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.updated = job
+	s.job = job
 	return nil
 }
 
@@ -318,5 +331,149 @@ func TestWorkerProcessesJob(t *testing.T) {
 	}
 	if len(logRepo.logs) != 1 {
 		t.Fatalf("expected one delivery log entry, got %d", len(logRepo.logs))
+	}
+}
+
+func TestWorkerRetriesJob(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Unix(1720000000, 0).UTC()
+	jobID := uuid.New()
+	areaID := uuid.New()
+	userID := uuid.New()
+	reactionID := uuid.New()
+	providerID := uuid.New()
+	componentID := uuid.New()
+
+	component := componentdomain.Component{
+		ID:        componentID,
+		Name:      "http_request",
+		Provider:  componentdomain.Provider{ID: providerID, Name: "http"},
+		Kind:      componentdomain.KindReaction,
+		Enabled:   true,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	retryPolicy := &areadomain.RetryPolicy{
+		MaxRetries: 2,
+		Strategy:   areadomain.RetryStrategyConstant,
+		BaseDelay:  500 * time.Millisecond,
+		MaxDelay:   2 * time.Second,
+	}
+
+	reactionLink := areadomain.Link{
+		ID:   reactionID,
+		Role: areadomain.LinkRoleReaction,
+		Config: componentdomain.Config{
+			ID:          uuid.New(),
+			ComponentID: componentID,
+			Component:   &component,
+			Params: map[string]any{
+				"url": "https://example.com",
+			},
+			Active:    true,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		RetryPolicy: retryPolicy,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	areaModel := areadomain.Area{
+		ID:     areaID,
+		UserID: userID,
+		Name:   "Retry area",
+		Action: &areadomain.Link{
+			ID:   uuid.New(),
+			Role: areadomain.LinkRoleAction,
+			Config: componentdomain.Config{
+				ID:          uuid.New(),
+				ComponentID: uuid.New(),
+				Component: &componentdomain.Component{
+					ID:       uuid.New(),
+					Name:     "timer_interval",
+					Provider: componentdomain.Provider{Name: "scheduler"},
+					Kind:     componentdomain.KindAction,
+					Enabled:  true,
+				},
+				Params:    map[string]any{},
+				Active:    true,
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		Reactions: []areadomain.Link{reactionLink},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	areaRepo := stubAreaRepository{area: areaModel}
+	componentRepo := stubComponentRepository{components: map[uuid.UUID]componentdomain.Component{
+		componentID: component,
+	}}
+	subsRepo := stubSubscriptionRepository{}
+	service := areaapp.NewService(areaRepo, componentRepo, subsRepo, nil, nil, fixedClock{now: now}, nil)
+
+	job := jobdomain.Job{
+		ID: jobID,
+		InputPayload: map[string]any{
+			"areaId":        areaID.String(),
+			"userId":        userID.String(),
+			"reactionId":    reactionID.String(),
+			"componentName": component.Name,
+			"provider":      component.Provider.Name,
+			"providerId":    providerID.String(),
+			"params": map[string]any{
+				"url": "https://example.com",
+			},
+		},
+		RunAt:  now,
+		Status: jobdomain.StatusQueued,
+	}
+
+	jobRepo := &stubJobRepository{job: job}
+	reservation := &testReservation{msg: queueport.JobMessage{JobID: jobID}}
+	queue := &singleReservationQueue{reservation: reservation}
+	handler := &recordingHandler{err: errors.New("boom")}
+	reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, handler)
+	logRepo := &stubLogRepository{}
+
+	worker := NewWorker(queue, jobRepo, logRepo, service, reactionExecutor, logger, WithClock(fixedClock{now: now}), WithPollTimeout(10*time.Millisecond))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go worker.Run(ctx)
+
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+	time.Sleep(10 * time.Millisecond)
+
+	jobRepo.mu.Lock()
+	updated := jobRepo.updated
+	jobRepo.mu.Unlock()
+
+	if updated.Status != jobdomain.StatusRetrying {
+		t.Fatalf("expected job status retrying, got %s", updated.Status)
+	}
+	expectedDelay := retryPolicy.Delay(updated.Attempt)
+	if updated.RunAt.Sub(now) != expectedDelay {
+		t.Fatalf("unexpected runAt delay: got %v want %v", updated.RunAt.Sub(now), expectedDelay)
+	}
+
+	if !reservation.retry {
+		t.Fatalf("expected reservation to be requeued")
+	}
+	if reservation.delay != expectedDelay {
+		t.Fatalf("expected delay %v, got %v", expectedDelay, reservation.delay)
+	}
+
+	if len(logRepo.logs) != 1 {
+		t.Fatalf("expected one delivery log, got %d", len(logRepo.logs))
+	}
+	if logRepo.logs[0].StatusCode == nil || *logRepo.logs[0].StatusCode != 500 {
+		t.Fatalf("expected delivery log status 500")
 	}
 }
