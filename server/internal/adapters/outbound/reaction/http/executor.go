@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"go.uber.org/zap"
 )
 
@@ -30,15 +32,15 @@ func (e Executor) Supports(component *componentdomain.Component) bool {
 }
 
 // Execute dispatches the reaction for supported components
-func (e Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (e Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	return e.ExecuteReaction(ctx, area, link)
 }
 
 // ExecuteReaction sends an HTTP request when the reaction component is supported
-func (e Executor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (e Executor) ExecuteReaction(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	component := link.Config.Component
 	if component == nil {
-		return fmt.Errorf("reaction.http: component metadata missing")
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: component metadata missing")
 	}
 	name := strings.ToLower(component.Name)
 	switch name {
@@ -47,15 +49,15 @@ func (e Executor) ExecuteReaction(ctx context.Context, area areadomain.Area, lin
 	default:
 		logger := e.logger()
 		logger.Warn("unsupported reaction component", zap.String("component", component.Name))
-		return fmt.Errorf("reaction.http: component %s unsupported", component.Name)
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: component %s unsupported", component.Name)
 	}
 }
 
-func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	params := link.Config.Params
 	url := stringParam(params, "url", "endpoint")
 	if url == "" {
-		return fmt.Errorf("reaction.http: params.url required")
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: params.url required")
 	}
 	method := strings.ToUpper(stringParam(params, "method"))
 	if method == "" {
@@ -64,12 +66,12 @@ func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, lin
 
 	bodyBytes, contentType, err := e.buildBody(area, link, params)
 	if err != nil {
-		return err
+		return outbound.ReactionResult{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
 	if err != nil {
-		return fmt.Errorf("reaction.http: new request: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: new request: %w", err)
 	}
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
@@ -78,13 +80,44 @@ func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, lin
 		req.Header.Set(key, value)
 	}
 
+	start := time.Now()
 	resp, err := e.client().Do(req)
 	if err != nil {
-		return fmt.Errorf("reaction.http: request failed: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	respBody, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return outbound.ReactionResult{}, fmt.Errorf("reaction.http: read response: %w", readErr)
+	}
+	duration := time.Since(start)
+
+	requestHeaders := map[string][]string{}
+	for key, values := range req.Header {
+		requestHeaders[key] = append([]string(nil), values...)
+	}
+	responseHeaders := map[string][]string{}
+	for key, values := range resp.Header {
+		responseHeaders[key] = append([]string(nil), values...)
+	}
+
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("reaction.http: received status %d", resp.StatusCode)
+		return outbound.ReactionResult{
+			Endpoint: url,
+			Request: map[string]any{
+				"method":  method,
+				"url":     url,
+				"headers": requestHeaders,
+				"body":    string(bodyBytes),
+			},
+			Response: map[string]any{
+				"body":    string(respBody),
+				"headers": responseHeaders,
+			},
+			StatusCode: &resp.StatusCode,
+			Duration:   duration,
+		}, fmt.Errorf("reaction.http: received status %d", resp.StatusCode)
 	}
 
 	e.logger().Info("reaction delivered",
@@ -94,7 +127,21 @@ func (e Executor) execHTTPRequest(ctx context.Context, area areadomain.Area, lin
 		zap.String("endpoint", url),
 		zap.Int("status", resp.StatusCode),
 	)
-	return nil
+	return outbound.ReactionResult{
+		Endpoint: url,
+		Request: map[string]any{
+			"method":  method,
+			"url":     url,
+			"headers": requestHeaders,
+			"body":    string(bodyBytes),
+		},
+		Response: map[string]any{
+			"body":    string(respBody),
+			"headers": responseHeaders,
+		},
+		StatusCode: &resp.StatusCode,
+		Duration:   duration,
+	}, nil
 }
 
 func (e Executor) client() *http.Client {
