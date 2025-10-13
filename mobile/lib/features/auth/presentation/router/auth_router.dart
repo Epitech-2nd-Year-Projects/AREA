@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/di/injection.dart';
+import '../../../../core/di/injector.dart';
 import '../../../../core/navigation/app_navigation.dart';
 import '../../../areas/presentation/pages/areas_page.dart';
 import '../../../areas/presentation/pages/area_form_page.dart';

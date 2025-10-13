@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/di/injection.dart';
+import '../../../../core/di/injector.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/areas_cubit.dart';
 import '../cubits/areas_state.dart';
