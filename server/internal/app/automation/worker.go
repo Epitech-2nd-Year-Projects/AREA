@@ -30,6 +30,7 @@ func (systemClock) Now() time.Time { return time.Now().UTC() }
 type Worker struct {
 	queue       queueport.JobQueue
 	jobs        outbound.JobRepository
+	logs        outbound.DeliveryLogRepository
 	areas       *area.Service
 	executor    *area.CompositeReactionExecutor
 	logger      *zap.Logger
@@ -79,7 +80,7 @@ func WithClock(clock Clock) Option {
 }
 
 // NewWorker assembles a job worker from its dependencies
-func NewWorker(queue queueport.JobQueue, jobs outbound.JobRepository, areas *area.Service, executor *area.CompositeReactionExecutor, logger *zap.Logger, opts ...Option) *Worker {
+func NewWorker(queue queueport.JobQueue, jobs outbound.JobRepository, logs outbound.DeliveryLogRepository, areas *area.Service, executor *area.CompositeReactionExecutor, logger *zap.Logger, opts ...Option) *Worker {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -87,6 +88,7 @@ func NewWorker(queue queueport.JobQueue, jobs outbound.JobRepository, areas *are
 	worker := &Worker{
 		queue:       queue,
 		jobs:        jobs,
+		logs:        logs,
 		areas:       areas,
 		executor:    executor,
 		logger:      logger,
@@ -173,20 +175,22 @@ func (w *Worker) processReservation(ctx context.Context, reservation queueport.R
 		return fmt.Errorf("automation.Worker.processReservation: claim job: %w", err)
 	}
 
-	if err := w.executeJob(ctx, job); err != nil {
+	result, reactionLink, execErr := w.executeJob(ctx, job)
+	if execErr != nil {
 		job.Status = jobdomain.StatusFailed
-		errStr := err.Error()
+		errStr := execErr.Error()
 		job.Error = &errStr
 		job.LockedBy = nil
 		job.LockedAt = nil
 		job.UpdatedAt = now
 		if updateErr := w.jobs.Update(ctx, job); updateErr != nil {
-			return fmt.Errorf("automation.Worker.processReservation: update failed job: %w (original error: %v)", updateErr, err)
+			return fmt.Errorf("automation.Worker.processReservation: update failed job: %w (original error: %v)", updateErr, execErr)
 		}
+		w.recordDeliveryLog(ctx, job, reactionLink, result, execErr)
 		if ackErr := reservation.Ack(ctx); ackErr != nil {
 			return fmt.Errorf("automation.Worker.processReservation: ack failed job: %w", ackErr)
 		}
-		return err
+		return execErr
 	}
 
 	job.Status = jobdomain.StatusSucceeded
@@ -203,37 +207,38 @@ func (w *Worker) processReservation(ctx context.Context, reservation queueport.R
 		}
 		return fmt.Errorf("automation.Worker.processReservation: update succeeded job: %w", err)
 	}
+	w.recordDeliveryLog(ctx, job, reactionLink, result, nil)
 	if err := reservation.Ack(ctx); err != nil {
 		return fmt.Errorf("automation.Worker.processReservation: ack succeeded job: %w", err)
 	}
 	return nil
 }
 
-func (w *Worker) executeJob(ctx context.Context, job jobdomain.Job) error {
+func (w *Worker) executeJob(ctx context.Context, job jobdomain.Job) (outbound.ReactionResult, areadomain.Link, error) {
 	if w.executor == nil {
-		return fmt.Errorf("automation.Worker.executeJob: executor unavailable")
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: executor unavailable")
 	}
 	if w.areas == nil {
-		return fmt.Errorf("automation.Worker.executeJob: area service unavailable")
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: area service unavailable")
 	}
 
 	payload := job.InputPayload
 	areaID, err := parseUUIDField(payload, "areaId")
 	if err != nil {
-		return fmt.Errorf("automation.Worker.executeJob: %w", err)
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: %w", err)
 	}
 	userID, err := parseUUIDField(payload, "userId")
 	if err != nil {
-		return fmt.Errorf("automation.Worker.executeJob: %w", err)
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: %w", err)
 	}
 	reactionID, err := parseUUIDField(payload, "reactionId")
 	if err != nil {
-		return fmt.Errorf("automation.Worker.executeJob: %w", err)
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: %w", err)
 	}
 
 	areaModel, err := w.areas.Get(ctx, userID, areaID)
 	if err != nil {
-		return fmt.Errorf("automation.Worker.executeJob: load area: %w", err)
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: load area: %w", err)
 	}
 	var reactionLink *areadomain.Link
 	for idx := range areaModel.Reactions {
@@ -243,11 +248,12 @@ func (w *Worker) executeJob(ctx context.Context, job jobdomain.Job) error {
 		}
 	}
 	if reactionLink == nil {
-		return fmt.Errorf("automation.Worker.executeJob: reaction %s not found for area %s", reactionID, areaID)
+		return outbound.ReactionResult{}, areadomain.Link{}, fmt.Errorf("automation.Worker.executeJob: reaction %s not found for area %s", reactionID, areaID)
 	}
-	if reactionLink.Config.Component == nil {
+	reactionCopy := *reactionLink
+	if reactionCopy.Config.Component == nil {
 		component := componentdomain.Component{
-			ID: reactionLink.Config.ComponentID,
+			ID: reactionCopy.Config.ComponentID,
 		}
 		if name, ok := stringField(payload, "componentName"); ok {
 			component.Name = name
@@ -260,15 +266,21 @@ func (w *Worker) executeJob(ctx context.Context, job jobdomain.Job) error {
 				component.Provider.ID = parsed
 			}
 		}
-		reactionCopy := *reactionLink
 		reactionCopy.Config.Component = &component
-		reactionLink = &reactionCopy
 	}
 
-	if err := w.executor.ExecuteReaction(ctx, areaModel, *reactionLink); err != nil {
-		return fmt.Errorf("automation.Worker.executeJob: execute reaction: %w", err)
+	started := w.now()
+	result, err := w.executor.ExecuteReaction(ctx, areaModel, reactionCopy)
+	if result.Endpoint == "" && reactionCopy.Config.Component != nil {
+		result.Endpoint = reactionCopy.Config.Component.Name
 	}
-	return nil
+	if result.Duration <= 0 {
+		result.Duration = w.now().Sub(started)
+	}
+	if err != nil {
+		return result, reactionCopy, fmt.Errorf("automation.Worker.executeJob: execute reaction: %w", err)
+	}
+	return result, reactionCopy, nil
 }
 
 func (w *Worker) now() time.Time {
@@ -304,4 +316,70 @@ func stringField(payload map[string]any, key string) (string, bool) {
 	default:
 		return fmt.Sprintf("%v", v), true
 	}
+}
+
+func (w *Worker) recordDeliveryLog(ctx context.Context, job jobdomain.Job, link areadomain.Link, result outbound.ReactionResult, execErr error) {
+	if w.logs == nil {
+		return
+	}
+
+	endpoint := strings.TrimSpace(result.Endpoint)
+	if endpoint == "" && link.Config.Component != nil {
+		endpoint = strings.TrimSpace(link.Config.Component.Name)
+	}
+
+	request := cloneMapAny(result.Request)
+	if request == nil {
+		request = map[string]any{}
+	}
+	if link.Config.Component != nil {
+		request["componentId"] = link.Config.ComponentID.String()
+		request["componentName"] = link.Config.Component.Name
+		request["provider"] = link.Config.Component.Provider.Name
+	}
+	response := cloneMapAny(result.Response)
+	if response == nil {
+		response = map[string]any{}
+	}
+	if execErr != nil {
+		response["error"] = execErr.Error()
+	}
+
+	var durationPtr *int
+	if result.Duration > 0 {
+		dur := int(result.Duration / time.Millisecond)
+		durationPtr = &dur
+	}
+
+	logEntry := jobdomain.DeliveryLog{
+		JobID:      job.ID,
+		Endpoint:   endpoint,
+		Request:    request,
+		Response:   response,
+		StatusCode: result.StatusCode,
+		DurationMS: durationPtr,
+		CreatedAt:  w.now(),
+	}
+
+	if _, err := w.logs.Create(ctx, logEntry); err != nil {
+		w.logger.Warn("delivery log persistence failed", zap.Error(err), zap.String("job_id", job.ID.String()))
+	}
+}
+
+func cloneMapAny(src map[string]any) map[string]any {
+	if len(src) == 0 {
+		return nil
+	}
+	clone := make(map[string]any, len(src))
+	for key, value := range src {
+		switch v := value.(type) {
+		case []string:
+			clone[key] = append([]string(nil), v...)
+		case map[string]any:
+			clone[key] = cloneMapAny(v)
+		default:
+			clone[key] = v
+		}
+	}
+	return clone
 }
