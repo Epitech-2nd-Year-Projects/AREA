@@ -2,7 +2,9 @@ package execution
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	actiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/action"
@@ -255,6 +257,46 @@ func (r JobRepository) Update(ctx context.Context, job jobdomain.Job) error {
 		return fmt.Errorf("postgres.execution.JobRepository.Update: %w", err)
 	}
 	return nil
+}
+
+// Claim transitions a queued job into the running state for the specified worker
+func (r JobRepository) Claim(ctx context.Context, id uuid.UUID, worker string, now time.Time) (jobdomain.Job, error) {
+	if r.db == nil {
+		return jobdomain.Job{}, fmt.Errorf("postgres.execution.JobRepository.Claim: nil db handle")
+	}
+	if id == uuid.Nil {
+		return jobdomain.Job{}, fmt.Errorf("postgres.execution.JobRepository.Claim: missing id")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+
+	var model jobModel
+	query := `
+UPDATE jobs
+SET status = ?, locked_by = ?, locked_at = ?, attempt = attempt + 1, updated_at = ?
+WHERE id = ? AND status IN ('queued','retrying')
+RETURNING *`
+	lockedBy := sql.NullString{String: strings.TrimSpace(worker)}
+	if lockedBy.String != "" {
+		lockedBy.Valid = true
+	}
+
+	if err := r.db.WithContext(ctx).
+		Raw(query,
+			string(jobdomain.StatusRunning),
+			lockedBy,
+			now.UTC(),
+			now.UTC(),
+			id,
+		).
+		Scan(&model).Error; err != nil {
+		return jobdomain.Job{}, fmt.Errorf("postgres.execution.JobRepository.Claim: update: %w", err)
+	}
+	if model.ID == uuid.Nil {
+		return jobdomain.Job{}, outbound.ErrNotFound
+	}
+	return model.toDomain(), nil
 }
 
 // DeliveryLogRepository persists delivery logs using Postgres

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,20 @@ import (
 type Executor struct {
 	Client *http.Client
 	Logger *zap.Logger
+}
+
+// Supports reports whether the executor can handle the provided component
+func (e Executor) Supports(component *componentdomain.Component) bool {
+	if component == nil {
+		return false
+	}
+	name := strings.ToLower(component.Name)
+	return name == "http_webhook" || name == "http_request"
+}
+
+// Execute dispatches the reaction for supported components
+func (e Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) error {
+	return e.ExecuteReaction(ctx, area, link)
 }
 
 // ExecuteReaction sends an HTTP request when the reaction component is supported
