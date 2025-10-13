@@ -91,7 +91,7 @@ func areaFromDomain(area areadomain.Area) areaModel {
 }
 
 func linkFromDomain(link areadomain.Link) areaLinkModel {
-	return areaLinkModel{
+	model := areaLinkModel{
 		ID:                link.ID,
 		AreaID:            link.AreaID,
 		Role:              string(link.Role),
@@ -100,6 +100,12 @@ func linkFromDomain(link areadomain.Link) areaLinkModel {
 		CreatedAt:         link.CreatedAt,
 		UpdatedAt:         link.UpdatedAt,
 	}
+	if link.RetryPolicy != nil {
+		if payload, err := encodeRetryPolicy(*link.RetryPolicy); err == nil {
+			model.RetryPolicy = payload
+		}
+	}
+	return model
 }
 
 func (m areaLinkModel) toDomain() (areadomain.Link, error) {
@@ -107,7 +113,7 @@ func (m areaLinkModel) toDomain() (areadomain.Link, error) {
 	if err != nil {
 		return areadomain.Link{}, err
 	}
-	return areadomain.Link{
+	link := areadomain.Link{
 		ID:        m.ID,
 		AreaID:    m.AreaID,
 		Role:      areadomain.LinkRole(m.Role),
@@ -115,7 +121,13 @@ func (m areaLinkModel) toDomain() (areadomain.Link, error) {
 		Config:    config,
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
-	}, nil
+	}
+	if policy, err := decodeRetryPolicy(m.RetryPolicy); err != nil {
+		return areadomain.Link{}, err
+	} else {
+		link.RetryPolicy = policy
+	}
+	return link, nil
 }
 
 func configFromDomain(cfg componentdomain.Config) (componentConfigModel, error) {
@@ -166,4 +178,49 @@ func (m componentConfigModel) toDomain() (componentdomain.Config, error) {
 		config.Name = *m.Name
 	}
 	return config, nil
+}
+
+func decodeRetryPolicy(raw []byte) (*areadomain.RetryPolicy, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var payload struct {
+		MaxRetries int `json:"max_retries"`
+		Backoff    struct {
+			Strategy string `json:"strategy"`
+			BaseMS   int    `json:"base_ms"`
+			MaxMS    int    `json:"max_ms"`
+		} `json:"backoff"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, err
+	}
+	policy := &areadomain.RetryPolicy{
+		MaxRetries: payload.MaxRetries,
+		Strategy:   areadomain.RetryStrategy(strings.ToLower(payload.Backoff.Strategy)),
+		BaseDelay:  time.Duration(payload.Backoff.BaseMS) * time.Millisecond,
+		MaxDelay:   time.Duration(payload.Backoff.MaxMS) * time.Millisecond,
+	}
+	return policy, nil
+}
+
+func encodeRetryPolicy(policy areadomain.RetryPolicy) ([]byte, error) {
+	payload := struct {
+		MaxRetries int `json:"max_retries"`
+		Backoff    struct {
+			Strategy string `json:"strategy"`
+			BaseMS   int    `json:"base_ms"`
+			MaxMS    int    `json:"max_ms"`
+		} `json:"backoff"`
+	}{
+		MaxRetries: policy.MaxRetries,
+	}
+	payload.Backoff.Strategy = strings.ToLower(string(policy.Strategy))
+	if policy.BaseDelay > 0 {
+		payload.Backoff.BaseMS = int(policy.BaseDelay / time.Millisecond)
+	}
+	if policy.MaxDelay > 0 {
+		payload.Backoff.MaxMS = int(policy.MaxDelay / time.Millisecond)
+	}
+	return json.Marshal(payload)
 }
