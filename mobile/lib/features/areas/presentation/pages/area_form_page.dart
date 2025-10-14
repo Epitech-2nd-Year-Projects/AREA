@@ -148,8 +148,19 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
             title: const Text('Not subscribed'),
             content: Text('You are not subscribed to "$serviceName". Subscribe now?'),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-              FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Go to Services')),
+              TextButton(onPressed: () => Navigator.of(ctx).pop(false),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                  ),
+                  child: const Text('Go to Services')),
             ],
           ),
         ) ??
