@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/design_system/app_colors.dart';
 import '../../../services/domain/entities/service_component.dart';
 import '../../../services/domain/value_objects/component_kind.dart';
 import '../cubits/area_form_cubit.dart';
@@ -120,9 +121,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
 
     return Card(
       elevation: 0,
+      color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        side: BorderSide(color: AppColors.getBorderColor(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -143,7 +145,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Theme.of(context).dividerColor),
               ),
-              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.15),
+              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .15),
               leading: const Icon(Icons.apps),
               title: Text(
                 widget.providerLabel ?? 'Select ${widget.title.toLowerCase()} service',

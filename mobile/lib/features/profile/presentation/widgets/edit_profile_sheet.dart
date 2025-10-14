@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/design_system/app_colors.dart';
 import '../cubits/profile_state.dart';
 import '../cubits/profile_cubit.dart';
 
@@ -58,6 +59,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(false),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                    ),
                   ),
                 ],
               ),
@@ -114,6 +119,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         )
                       : const Icon(Icons.save_outlined),
                   label: const Text('Save'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),

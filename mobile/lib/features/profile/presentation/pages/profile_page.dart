@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../services/domain/repositories/services_repository.dart';
@@ -67,9 +68,10 @@ class _ProfileView extends StatelessWidget {
                             children: [
                               Card(
                                 elevation: 0,
+                                color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: Theme.of(context).dividerColor),
+                                  side: BorderSide(color: AppColors.getBorderColor(context)),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
@@ -123,6 +125,10 @@ class _ProfileView extends StatelessWidget {
                                         },
                                         icon: const Icon(Icons.edit),
                                         label: const Text('Edit'),
+                                        style: FilledButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: AppColors.white,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -131,9 +137,10 @@ class _ProfileView extends StatelessWidget {
                               const SizedBox(height: 16),
                               Card(
                                 elevation: 0,
+                                color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: Theme.of(context).dividerColor),
+                                  side: BorderSide(color: AppColors.getBorderColor(context)),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
@@ -169,9 +176,10 @@ class _ProfileView extends StatelessWidget {
                               const SizedBox(height: 8),
                               Card(
                                 elevation: 0,
+                                color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: Theme.of(context).dividerColor),
+                                  side: BorderSide(color: AppColors.getBorderColor(context)),
                                 ),
                                 child: Column(
                                   children: ListTile.divideTiles(

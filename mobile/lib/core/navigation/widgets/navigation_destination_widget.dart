@@ -17,8 +17,6 @@ class NavigationDestinationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -29,7 +27,7 @@ class NavigationDestinationWidget extends StatelessWidget {
             isSelected ? item.selectedIcon : item.icon,
             size: 26,
             color: isSelected
-                ? theme.colorScheme.primary
+                ? AppColors.primary
                 : AppColors.getTextSecondaryColor(context),
           ),
           const SizedBox(height: 4),
@@ -37,7 +35,7 @@ class NavigationDestinationWidget extends StatelessWidget {
             item.label,
             style: AppTypography.labelMedium.copyWith(
               color: isSelected
-                  ? theme.colorScheme.primary
+                  ? AppColors.primary
                   : AppColors.getTextSecondaryColor(context),
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),

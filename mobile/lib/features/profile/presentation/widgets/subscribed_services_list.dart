@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/design_system/app_colors.dart';
 import '../../../services/domain/entities/service_with_status.dart';
 
 class SubscribedServicesList extends StatelessWidget {
@@ -14,9 +15,10 @@ class SubscribedServicesList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
+      color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor),
+        side: BorderSide(color: AppColors.getBorderColor(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -79,17 +81,21 @@ class _EmptySubscriptions extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: AppColors.getSurfaceColor(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             children: [
               const Text('No subscribed services yet.'),
               const SizedBox(height: 8),
-              OutlinedButton.icon(
+              FilledButton.icon(
                 onPressed: () => context.push('/services'),
                 icon: const Icon(Icons.explore_outlined),
                 label: const Text('Discover services'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                ),
               ),
             ],
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/areas_cubit.dart';
@@ -97,6 +98,8 @@ class _AreasScreen extends StatelessWidget {
         onPressed: () => _openCreate(context),
         icon: const Icon(Icons.add),
         label: const Text('New'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
       ),
     );
   }

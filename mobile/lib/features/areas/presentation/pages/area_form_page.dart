@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
 import '../../domain/entities/area.dart';
 import '../../domain/entities/area_draft.dart';
@@ -147,8 +148,19 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
             title: const Text('Not subscribed'),
             content: Text('You are not subscribed to "$serviceName". Subscribe now?'),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-              FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Go to Services')),
+              TextButton(onPressed: () => Navigator.of(ctx).pop(false),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                  ),
+                  child: const Text('Go to Services')),
             ],
           ),
         ) ??
@@ -345,6 +357,10 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                               : const Icon(Icons.save),
                           label: Text(isEdit ? 'Save' : 'Create'),
                           onPressed: isSubmitting ? null : _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -369,12 +385,17 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Widget _buildHeaderCard(BuildContext context, bool isSubmitting) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: AppColors.getBorderColor(context), width: 2),
+    );
     return Card(
       elevation: 0,
+      color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant,
+          color: AppColors.getBorderColor(context),
         ),
       ),
       child: Padding(
@@ -387,9 +408,14 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
               decoration: InputDecoration(
                 labelText: 'Name',
                 hintText: 'Name your automation',
-                border: OutlineInputBorder(
+                border: border,
+                enabledBorder: border,
+                focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
                 ),
+                errorBorder: border,
+                focusedErrorBorder: border,
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Name cannot be empty'
@@ -403,9 +429,14 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
               decoration: InputDecoration(
                 labelText: 'Description (optional)',
                 hintText: 'Add context to remember what this automation does',
-                border: OutlineInputBorder(
+                border: border,
+                enabledBorder: border,
+                focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
                 ),
+                errorBorder: border,
+                focusedErrorBorder: border,
               ),
               enabled: !isSubmitting,
             ),

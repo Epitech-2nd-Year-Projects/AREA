@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/app_colors.dart';
 import '../../../services/domain/entities/component_parameter.dart';
 import '../../../services/domain/entities/service_component.dart';
 
@@ -161,9 +162,10 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
 
     return Card(
       elevation: 0,
+      color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        side: BorderSide(color: AppColors.getBorderColor(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
