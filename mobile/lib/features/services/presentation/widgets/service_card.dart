@@ -116,23 +116,26 @@ class ServiceCard extends StatelessWidget {
   }
 
   Widget _buildCategory(BuildContext context, double fontSize) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: _getCategoryColor().withValues(alpha: 0.12),
+        color: _getCategoryColor(isDark).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getCategoryColor().withValues(alpha: 0.3),
+          color: _getCategoryColor(isDark).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Text(
         service.provider.category.displayName,
         style: AppTypography.labelLarge.copyWith(
-          color: _getCategoryColor(),
+          color: _getCategoryColor(isDark),
           fontWeight: FontWeight.w700,
           fontSize: fontSize,
         ),
@@ -143,63 +146,20 @@ class ServiceCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSubscriptionIndicator() {
-    if (!service.isSubscribed) {
-      return const SizedBox(height: 20);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.success,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.check_circle,
-            color: Colors.white,
-            size: 14,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            'Subscribed',
-            style: AppTypography.labelMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getCategoryColor() {
+  Color _getCategoryColor(bool isDark) {
     switch (service.provider.category) {
       case ServiceCategory.social:
-        return const Color(0xFF1877F2); // Facebook Blue
+        return AppColors.social;
       case ServiceCategory.productivity:
-        return const Color(0xFF34A853); // Google Green
+        return AppColors.productivity;
       case ServiceCategory.communication:
-        return const Color(0xFFFF6B35); // Orange
+        return AppColors.communication;
       case ServiceCategory.storage:
-        return const Color(0xFF0F9D58); // Drive Green
+        return AppColors.storage;
       case ServiceCategory.automation:
-        return const Color(0xFF9C27B0); // Purple
+        return AppColors.automation;
       case ServiceCategory.other:
-        return AppColors.gray600;
+        return isDark ? AppColors.otherDark : AppColors.otherWhite;
     }
   }
 }

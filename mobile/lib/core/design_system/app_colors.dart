@@ -26,7 +26,7 @@ class AppColors {
   static const Color darkBorder = Color(0xFF475569);
   static const Color darkDivider = Color(0xFF334155);
 
-  // Neutral palette (still useful for specific cases)
+  // Neutral palette
   static const Color white = Color(0xFFFFFFFF);
   static const Color gray50 = Color(0xFFF9FAFB);
   static const Color gray100 = Color(0xFFF3F4F6);
@@ -47,6 +47,16 @@ class AppColors {
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
+
+  // Service Category Colors
+  static const Color social = Color(0xFF1877F2);
+  static const Color productivity = Color(0xFF34A853);
+  static const Color communication = Color(0xFFFF6B35);
+  static const Color storage = Color(0xFF0F9D58);
+  static const Color automation = Color(0xFF9C27B0);
+  static const Color otherDark = AppColors.gray600;
+  static const Color otherWhite = AppColors.white;
+
 
   // Theme-aware color getters
   static Color getBackgroundColor(BuildContext context) {
