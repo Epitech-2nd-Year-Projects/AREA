@@ -13,7 +13,7 @@ class AppColors {
   static const Color lightTextPrimary = Color(0xFF111827);
   static const Color lightTextSecondary = Color(0xFF4B5563);
   static const Color lightTextTertiary = Color(0xFF9CA3AF);
-  static const Color lightBorder = Color(0xFFE5E7EB);
+  static const Color lightBorder = Color(0xFFC2CAD6);
   static const Color lightDivider = Color(0xFFE5E7EB);
 
   // Dark theme colors
@@ -54,8 +54,8 @@ class AppColors {
   static const Color communication = Color(0xFFFF6B35);
   static const Color storage = Color(0xFF0F9D58);
   static const Color automation = Color(0xFF9C27B0);
-  static const Color otherDark = AppColors.gray600;
-  static const Color otherWhite = AppColors.white;
+  static const Color otherDark = AppColors.white;
+  static const Color otherWhite = AppColors.gray600;
 
 
   // Theme-aware color getters

@@ -29,7 +29,7 @@ class AppBottomNavigationBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.05),
+            color: theme.shadowColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -53,7 +53,7 @@ class AppBottomNavigationBar extends StatelessWidget {
                 return Expanded(
                   child: NavigationDestinationWidget(
                     item: item,
-                    isSelected: isSelected,     // ← c’est ça qui change le style
+                    isSelected: isSelected,
                     onTap: () => onDestinationSelected(index),
                   ),
                 );

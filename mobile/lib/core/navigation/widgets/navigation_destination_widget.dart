@@ -29,7 +29,7 @@ class NavigationDestinationWidget extends StatelessWidget {
             isSelected ? item.selectedIcon : item.icon,
             size: 26,
             color: isSelected
-                ? theme.colorScheme.primary
+                ? AppColors.primary
                 : AppColors.getTextSecondaryColor(context),
           ),
           const SizedBox(height: 4),
@@ -37,7 +37,7 @@ class NavigationDestinationWidget extends StatelessWidget {
             item.label,
             style: AppTypography.labelMedium.copyWith(
               color: isSelected
-                  ? theme.colorScheme.primary
+                  ? AppColors.primary
                   : AppColors.getTextSecondaryColor(context),
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
