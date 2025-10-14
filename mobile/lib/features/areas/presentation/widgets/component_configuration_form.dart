@@ -32,7 +32,6 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
   final Map<String, TextEditingController> _textControllers = {};
   final Map<String, dynamic> _values = {};
   TextEditingController? _nameController;
-  String? _componentId;
 
   @override
   void initState() {

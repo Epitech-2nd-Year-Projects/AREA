@@ -145,7 +145,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Theme.of(context).dividerColor),
               ),
-              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.15),
+              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .15),
               leading: const Icon(Icons.apps),
               title: Text(
                 widget.providerLabel ?? 'Select ${widget.title.toLowerCase()} service',
