@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:flutter/foundation.dart';
 import 'di_modules.dart';
 import 'modules/core_module.dart';
 import 'modules/network_module.dart';
@@ -23,5 +24,11 @@ class Injector {
     for (final module in _modules) {
       await module.register(sl);
     }
+  }
+  @visibleForTesting
+  static void setTestModules(List<DIModule> testModules) {
+    _modules
+      ..clear()
+      ..addAll(testModules);
   }
 }
