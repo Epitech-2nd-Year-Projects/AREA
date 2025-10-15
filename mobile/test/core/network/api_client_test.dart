@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:area/core/network/api_client.dart';
 import 'package:area/core/network/interceptors/error_interceptor.dart';
 import 'package:area/core/network/interceptors/logging_interceptor.dart';
