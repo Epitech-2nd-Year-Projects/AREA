@@ -72,6 +72,8 @@ class DeepLinkService {
 
   void _handleAreaScheme(Uri uri) {
     final pathSegments = uri.pathSegments;
+    debugPrint('🔗 _handleAreaScheme: ${uri.toString()}');
+    debugPrint('   pathSegments: $pathSegments');
 
     if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
       final type = pathSegments[0];
@@ -81,39 +83,49 @@ class DeepLinkService {
       final state = uri.queryParameters['state'];
       final returnTo = uri.queryParameters['returnTo'];
 
-      debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
+      debugPrint('🔄 Custom scheme callback:');
+      debugPrint('   Type: $type');
+      debugPrint('   Provider: $provider');
+      debugPrint('   Code: ${code?.substring(0, 10)}...');
+      debugPrint('   Error: $error');
 
       if (type == 'services') {
         if (error != null) {
+          debugPrint('❌ Service error: $error');
           for (final listener in List.of(_serviceErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
+          debugPrint('✅ Service code received');
           for (final listener in List.of(_serviceCallbackListeners)) {
             listener(provider, code, state);
           }
         }
 
         if (_router != null && code != null) {
-          _router!.go(
-            '/services/$provider/callback?code=$code${state != null ? '&state=$state' : ''}',
-          );
+          final location =
+              '/services/$provider/callback?code=$code${state != null ? '&state=$state' : ''}';
+          debugPrint('🚀 Navigating to: $location');
+          _router!.go(location);
         }
       } else {
         if (error != null) {
+          debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
+          debugPrint('✅ OAuth code received');
           for (final listener in List.of(_oauthCallbackListeners)) {
             listener(provider, code, state, returnTo);
           }
         }
 
         if (_router != null && code != null) {
-          _router!.go(
-            '/oauth/$provider/callback?code=$code${state != null ? '&state=$state' : ''}${returnTo != null ? '&returnTo=$returnTo' : ''}',
-          );
+          final location =
+              '/oauth/$provider/callback?code=$code${state != null ? '&state=$state' : ''}${returnTo != null ? '&returnTo=$returnTo' : ''}';
+          debugPrint('🚀 Navigating to: $location');
+          _router!.go(location);
         }
       }
     }

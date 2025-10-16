@@ -9,10 +9,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Injector.setup();
 
+  var deepLinkService = DeepLinkService();
+  await deepLinkService.initialize();
   runApp(
     BlocProvider<AuthBloc>(
       create: (_) => sl<AuthBloc>(),
-      child: const MyApp(),
+      child: MyApp(deepLinkService: deepLinkService),
     ),
   );
 }
