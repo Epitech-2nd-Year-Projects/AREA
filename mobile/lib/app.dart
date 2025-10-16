@@ -150,13 +150,22 @@ class MyApp extends StatelessWidget {
       initialLocation: '/',
       redirect: (context, state) {
         final uri = state.uri;
+
         if (uri.scheme == 'area') {
           debugPrint('🔄 Redirecting area:// URI: $uri');
 
-          if (uri.pathSegments.length >= 3 &&
-              uri.pathSegments[2] == 'callback') {
-            final type = uri.pathSegments[0];
-            final provider = uri.pathSegments[1];
+          final pathSegments = [
+            if (uri.host.isNotEmpty) uri.host,
+            ...uri.pathSegments,
+          ];
+
+          debugPrint('📍 Host: ${uri.host}');
+          debugPrint('📍 Segments: $pathSegments');
+
+          if (pathSegments.length >= 3 &&
+              pathSegments[2] == 'callback') {
+            final type = pathSegments[0];
+            final provider = pathSegments[1];
 
             final queryParams = Map<String, String>.from(uri.queryParameters);
             final query = queryParams.entries
