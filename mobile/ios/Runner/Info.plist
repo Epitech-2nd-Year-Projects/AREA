@@ -69,7 +69,28 @@
     </array>
     <key>com.apple.developer.associated-domains</key>
     <array>
-      <string>applinks:tonapp.com</string>
+      <string>applinks:yourapp.com</string>
     </array>
+    <key>CFBundleURLTypes</key>
+    	<array>
+    		<dict>
+    			<key>CFBundleTypeRole</key>
+    			<string>Editor</string>
+    			<key>CFBundleURLSchemes</key>
+    			<array>
+    				<string>area</string>
+    			</array>
+    			<key>CFBundleURLName</key>
+    			<string>com.yourcompany.area</string>
+    		</dict>
+    	</array>
+
+    	<key>NSAppTransportSecurity</key>
+    	<dict>
+    		<key>NSAllowsLocalNetworking</key>
+    		<true/>
+    		<key>NSAllowsArbitraryLoadsInWebContent</key>
+    		<true/>
+    	</dict>
 </dict>
 </plist>

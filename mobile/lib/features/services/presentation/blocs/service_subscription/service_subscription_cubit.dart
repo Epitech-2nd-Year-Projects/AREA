@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/error/failures.dart';
 import '../../../../../core/services/deep_link_service.dart';
+import '../../../../../core/services/local_oauth_server.dart';
 import '../../../domain/entities/service_subscription_result.dart';
 import '../../../domain/repositories/services_repository.dart';
 import '../../../domain/use_cases/complete_service_subscription.dart';
@@ -95,6 +97,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         state: authorization.state,
       );
 
+      final localServer = LocalOAuthServer();
+      await localServer.start().catchError((e) {
+        debugPrint('⚠️ Could not start local server: $e');
+      });
+
       final launchUri = Uri.tryParse(authorization.authorizationUrl);
       if (launchUri == null) {
         _pendingAuthorizations.remove(provider);
@@ -142,6 +149,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return;
     }
 
+    if (isClosed) {
+      debugPrint('⚠️ Cubit is closed, ignoring callback');
+      return;
+    }
+
     emit(ServiceSubscriptionLoading());
 
     final exchange = await _completeServiceSubscription(
@@ -153,6 +165,12 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
 
     _pendingAuthorizations.remove(normalizedProvider);
 
+    if (!isClosed) {
+      exchange.fold(
+            (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
+            (result) => emit(ServiceSubscriptionSuccess(result.subscription)),
+      );
+    }
     exchange.fold(
           (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
           (result) => emit(ServiceSubscriptionSuccess(result.subscription)),
