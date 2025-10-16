@@ -148,6 +148,32 @@ class MyApp extends StatelessWidget {
     return GoRouter(
       navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
+      redirect: (context, state) {
+        final uri = state.uri;
+        if (uri.scheme == 'area') {
+          debugPrint('🔄 Redirecting area:// URI: $uri');
+
+          if (uri.pathSegments.length >= 3 &&
+              uri.pathSegments[2] == 'callback') {
+            final type = uri.pathSegments[0];
+            final provider = uri.pathSegments[1];
+
+            final queryParams = Map<String, String>.from(uri.queryParameters);
+            final query = queryParams.entries
+                .map((e) =>
+            '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+                .join('&');
+
+            final newRoute =
+                '/$type/$provider/callback${query.isNotEmpty ? '?$query' : ''}';
+
+            debugPrint('✅ Converted to: $newRoute');
+            return newRoute;
+          }
+        }
+
+        return null;
+      },
       routes: AuthRouter.routes,
     );
   }

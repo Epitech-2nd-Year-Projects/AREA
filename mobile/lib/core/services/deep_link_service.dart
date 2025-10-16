@@ -25,7 +25,6 @@ class DeepLinkService {
   final List<void Function(String? provider, String error)>
   _serviceErrorListeners = [];
 
-  // ⭐ NOUVEAU: Setter pour router
   void setRouter(GoRouter router) {
     _router = router;
   }
@@ -84,7 +83,6 @@ class DeepLinkService {
       debugPrint('   Error: $error');
 
       if (type == 'services') {
-        // ⭐ NOUVEAU: Appeler le listener AVANT de naviguer
         if (error != null) {
           debugPrint('❌ Service error: $error');
           for (final listener in List.of(_serviceErrorListeners)) {
@@ -97,9 +95,7 @@ class DeepLinkService {
           }
         }
 
-        // ⭐ NOUVEAU: NE PAS naviguer via GoRouter, laisser le listener gérer
       } else {
-        // OAuth
         if (error != null) {
           debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {
