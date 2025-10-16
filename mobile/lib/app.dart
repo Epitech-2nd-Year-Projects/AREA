@@ -149,6 +149,14 @@ class MyApp extends StatelessWidget {
       navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
       routes: AuthRouter.routes,
+      errorBuilder: (context, state) {
+        debugPrint('❌ GoRouter error: ${state.error}');
+        return Scaffold(
+          body: Center(
+            child: Text('Page not found: ${state.uri}'),
+          ),
+        );
+      },
     );
   }
 }

@@ -72,6 +72,19 @@
       <string>applinks:yourapp.com</string>
     </array>
     <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLName</key>
+        <string>com.area.oauth</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>area</string>
+        </array>
+      </dict>
+    </array>
+    <key>CFBundleURLTypes</key>
     	<array>
     		<dict>
     			<key>CFBundleTypeRole</key>
