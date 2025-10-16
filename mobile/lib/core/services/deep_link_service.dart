@@ -110,6 +110,8 @@ class DeepLinkService {
       }
     }
   }
+  @visibleForTesting
+  void handleDeepLinkForTest(Uri uri) => _handleDeepLink(uri);
 
   void dispose() {
     _linkSubscription?.cancel();

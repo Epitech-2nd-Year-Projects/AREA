@@ -4,6 +4,8 @@ import 'exceptions/storage_exceptions.dart';
 class LocalPrefsManager {
     SharedPreferences? _prefs;
 
+    set prefsForTest(SharedPreferences prefs) => _prefs = prefs;
+
     Future<void> init() async {
       _prefs = await SharedPreferences.getInstance();
     }
