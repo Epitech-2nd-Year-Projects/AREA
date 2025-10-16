@@ -9,8 +9,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Injector.setup();
 
-  final deepLinkService = DeepLinkService();
-  await deepLinkService.initialize();
   runApp(
     BlocProvider<AuthBloc>(
       create: (_) => sl<AuthBloc>(),
