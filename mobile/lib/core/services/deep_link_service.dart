@@ -25,15 +25,13 @@ class DeepLinkService {
   final List<void Function(String? provider, String error)>
   _serviceErrorListeners = [];
 
+  // ⭐ NOUVEAU: Setter pour router
   void setRouter(GoRouter router) {
     _router = router;
   }
 
   Future<void> initialize() async {
-    if (_initialized) {
-      debugPrint('⚠️ DeepLinkService already initialized');
-      return;
-    }
+    if (_initialized) return;
     _initialized = true;
 
     try {
