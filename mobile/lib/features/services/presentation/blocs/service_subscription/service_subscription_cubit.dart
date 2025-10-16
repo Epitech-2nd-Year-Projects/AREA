@@ -150,7 +150,6 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     emit(const ServiceSubscriptionError('Subscription flow did not return a result.'));
   }
 
-  // ⭐ NOUVEAU: Callback pour les services
   void _handleServiceCallback(
       String provider,
       String code,
@@ -159,24 +158,16 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     debugPrint('🔄 Service callback received for $provider');
 
     final normalizedProvider = _normalizeProvider(provider);
-    final pending = _manager.getPendingSubscription(normalizedProvider);
-
-    if (pending == null) {
-      debugPrint('⚠️ No pending subscription found');
-      return;
-    }
 
     if (isClosed) {
-      debugPrint('⚠️ Cubit is closed');
+      debugPrint('⚠️ Cubit is closed, storing callback in manager');
       return;
     }
 
     emit(ServiceSubscriptionLoading());
 
-    // Obtenir le repository depuis l'injector
     final repository = sl<ServicesRepository>();
 
-    // Compléter la subscription
     await _manager.completeSubscription(
       serviceId: normalizedProvider,
       code: code,

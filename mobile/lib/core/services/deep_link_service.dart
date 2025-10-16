@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();
@@ -12,6 +13,8 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSubscription;
   bool _initialized = false;
 
+  GoRouter? _router;
+
   final List<void Function(String provider, String code, String? state, String? returnTo)>
   _oauthCallbackListeners = [];
   final List<void Function(String? provider, String error)>
@@ -21,6 +24,11 @@ class DeepLinkService {
   _serviceCallbackListeners = [];
   final List<void Function(String? provider, String error)>
   _serviceErrorListeners = [];
+
+  // ⭐ NOUVEAU: Setter pour router
+  void setRouter(GoRouter router) {
+    _router = router;
+  }
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -72,27 +80,33 @@ class DeepLinkService {
       final returnTo = uri.queryParameters['returnTo'];
 
       debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
+      debugPrint('   Code: ${code?.substring(0, 10)}...');
+      debugPrint('   Error: $error');
 
       if (type == 'services') {
+        // ⭐ NOUVEAU: Appeler le listener AVANT de naviguer
         if (error != null) {
           debugPrint('❌ Service error: $error');
           for (final listener in List.of(_serviceErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
-          debugPrint('✅ Service code received');
+          debugPrint('✅ Service code received - notifying listeners');
           for (final listener in List.of(_serviceCallbackListeners)) {
             listener(provider, code, state);
           }
         }
+
+        // ⭐ NOUVEAU: NE PAS naviguer via GoRouter, laisser le listener gérer
       } else {
+        // OAuth
         if (error != null) {
           debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
-          debugPrint('✅ OAuth code received');
+          debugPrint('✅ OAuth code received - notifying listeners');
           for (final listener in List.of(_oauthCallbackListeners)) {
             listener(provider, code, state, returnTo);
           }
@@ -193,51 +207,43 @@ class DeepLinkService {
 
   void addOAuthCallbackListener(
       void Function(String provider, String code, String? state, String? returnTo)
-      listener,
-      ) {
+      listener) {
     _oauthCallbackListeners.add(listener);
   }
 
   void removeOAuthCallbackListener(
       void Function(String provider, String code, String? state, String? returnTo)
-      listener,
-      ) {
+      listener) {
     _oauthCallbackListeners.remove(listener);
   }
 
   void addOAuthErrorListener(
-      void Function(String? provider, String error) listener,
-      ) {
+      void Function(String? provider, String error) listener) {
     _oauthErrorListeners.add(listener);
   }
 
   void removeOAuthErrorListener(
-      void Function(String? provider, String error) listener,
-      ) {
+      void Function(String? provider, String error) listener) {
     _oauthErrorListeners.remove(listener);
   }
 
   void addServiceCallbackListener(
-      void Function(String provider, String code, String? state) listener,
-      ) {
+      void Function(String provider, String code, String? state) listener) {
     _serviceCallbackListeners.add(listener);
   }
 
   void removeServiceCallbackListener(
-      void Function(String provider, String code, String? state) listener,
-      ) {
+      void Function(String provider, String code, String? state) listener) {
     _serviceCallbackListeners.remove(listener);
   }
 
   void addServiceErrorListener(
-      void Function(String? provider, String error) listener,
-      ) {
+      void Function(String? provider, String error) listener) {
     _serviceErrorListeners.add(listener);
   }
 
   void removeServiceErrorListener(
-      void Function(String? provider, String error) listener,
-      ) {
+      void Function(String? provider, String error) listener) {
     _serviceErrorListeners.remove(listener);
   }
 }
