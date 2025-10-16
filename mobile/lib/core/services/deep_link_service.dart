@@ -17,6 +17,11 @@ class DeepLinkService {
   final List<void Function(String? provider, String error)>
   _oauthErrorListeners = [];
 
+  final List<void Function(String provider, String code, String? state)>
+  _serviceCallbackListeners = [];
+  final List<void Function(String? provider, String error)>
+  _serviceErrorListeners = [];
+
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
@@ -59,7 +64,7 @@ class DeepLinkService {
     final pathSegments = uri.pathSegments;
 
     if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
-      final type = pathSegments[0]; // 'oauth' ou 'services'
+      final type = pathSegments[0];
       final provider = pathSegments[1];
       final code = uri.queryParameters['code'];
       final error = uri.queryParameters['error'];
@@ -68,15 +73,29 @@ class DeepLinkService {
 
       debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
 
-      if (error != null) {
-        debugPrint('❌ OAuth error: $error');
-        for (final listener in List.of(_oauthErrorListeners)) {
-          listener(provider, error);
+      if (type == 'services') {
+        if (error != null) {
+          debugPrint('❌ Service error: $error');
+          for (final listener in List.of(_serviceErrorListeners)) {
+            listener(provider, error);
+          }
+        } else if (code != null) {
+          debugPrint('✅ Service code received');
+          for (final listener in List.of(_serviceCallbackListeners)) {
+            listener(provider, code, state);
+          }
         }
-      } else if (code != null) {
-        debugPrint('✅ OAuth code received');
-        for (final listener in List.of(_oauthCallbackListeners)) {
-          listener(provider, code, state, returnTo);
+      } else {
+        if (error != null) {
+          debugPrint('❌ OAuth error: $error');
+          for (final listener in List.of(_oauthErrorListeners)) {
+            listener(provider, error);
+          }
+        } else if (code != null) {
+          debugPrint('✅ OAuth code received');
+          for (final listener in List.of(_oauthCallbackListeners)) {
+            listener(provider, code, state, returnTo);
+          }
         }
       }
     }
@@ -86,7 +105,7 @@ class DeepLinkService {
     if (uri.path.startsWith('/oauth/') && uri.path.contains('/callback')) {
       _processOAuthCallback(uri, 'oauth');
     } else if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
-      _processOAuthCallback(uri, 'services');
+      _processServiceCallback(uri, 'services');
     }
   }
 
@@ -125,6 +144,40 @@ class DeepLinkService {
     }
   }
 
+  void _processServiceCallback(Uri uri, String type) {
+    final pathSegments = uri.pathSegments;
+
+    if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
+      final provider = pathSegments[1];
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+      final state = uri.queryParameters['state'];
+
+      if (code != null && _processedCodes.contains(code)) {
+        debugPrint('⏭️ Ignoring duplicate service callback');
+        return;
+      }
+
+      if (code != null) {
+        _processedCodes.add(code);
+      }
+
+      debugPrint('🔄 HTTP service callback - Provider: $provider');
+
+      if (error != null) {
+        debugPrint('❌ Service error: $error');
+        for (final listener in List.of(_serviceErrorListeners)) {
+          listener(provider, error);
+        }
+      } else if (code != null) {
+        debugPrint('✅ Service code received');
+        for (final listener in List.of(_serviceCallbackListeners)) {
+          listener(provider, code, state);
+        }
+      }
+    }
+  }
+
   @visibleForTesting
   void handleDeepLinkForTest(Uri uri) => _handleDeepLink(uri);
 
@@ -132,6 +185,8 @@ class DeepLinkService {
     _linkSubscription?.cancel();
     _oauthCallbackListeners.clear();
     _oauthErrorListeners.clear();
+    _serviceCallbackListeners.clear();
+    _serviceErrorListeners.clear();
     _processedCodes.clear();
     _initialized = false;
   }
@@ -160,5 +215,29 @@ class DeepLinkService {
       void Function(String? provider, String error) listener,
       ) {
     _oauthErrorListeners.remove(listener);
+  }
+
+  void addServiceCallbackListener(
+      void Function(String provider, String code, String? state) listener,
+      ) {
+    _serviceCallbackListeners.add(listener);
+  }
+
+  void removeServiceCallbackListener(
+      void Function(String provider, String code, String? state) listener,
+      ) {
+    _serviceCallbackListeners.remove(listener);
+  }
+
+  void addServiceErrorListener(
+      void Function(String? provider, String error) listener,
+      ) {
+    _serviceErrorListeners.add(listener);
+  }
+
+  void removeServiceErrorListener(
+      void Function(String? provider, String error) listener,
+      ) {
+    _serviceErrorListeners.remove(listener);
   }
 }

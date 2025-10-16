@@ -92,7 +92,6 @@ class LocalOAuthServer {
     _callbackCompleter?.complete(callbackData);
     _callbackCompleter = null;
 
-    // Page HTML qui redirige vers l'app via custom scheme
     final callbackType = isService ? 'services' : 'oauth';
     final customSchemeUrl = _buildCustomSchemeUrl(
       callbackType,
@@ -176,15 +175,12 @@ class LocalOAuthServer {
   </div>
   
   <script>
-    // Tenter de rediriger immédiatement
     window.location.href = '$customSchemeUrl';
     
-    // Fallback : tenter de fermer après 2 secondes
     setTimeout(function() {
       window.close();
     }, 2000);
     
-    // Pour iOS : tenter d'ouvrir l'app via custom scheme plusieurs fois
     let attempts = 0;
     const maxAttempts = 3;
     const interval = setInterval(function() {

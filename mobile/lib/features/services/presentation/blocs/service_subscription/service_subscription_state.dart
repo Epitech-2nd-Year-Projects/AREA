@@ -25,7 +25,7 @@ class ServiceSubscriptionAwaitingAuthorization extends ServiceSubscriptionState 
 }
 
 class ServiceSubscriptionSuccess extends ServiceSubscriptionState {
-  final UserServiceSubscription subscription;
+  final UserServiceSubscription? subscription;
 
   const ServiceSubscriptionSuccess(this.subscription);
 
