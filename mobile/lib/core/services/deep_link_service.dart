@@ -82,38 +82,36 @@ class DeepLinkService {
       final returnTo = uri.queryParameters['returnTo'];
 
       debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
+      debugPrint('   Code: ${code?.substring(0, 10)}...');
+      debugPrint('   Error: $error');
 
       if (type == 'services') {
+        // ⭐ NOUVEAU: Appeler le listener AVANT de naviguer
         if (error != null) {
+          debugPrint('❌ Service error: $error');
           for (final listener in List.of(_serviceErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
+          debugPrint('✅ Service code received - notifying listeners');
           for (final listener in List.of(_serviceCallbackListeners)) {
             listener(provider, code, state);
           }
         }
 
-        if (_router != null && code != null) {
-          _router!.go(
-            '/services/$provider/callback?code=$code${state != null ? '&state=$state' : ''}',
-          );
-        }
+        // ⭐ NOUVEAU: NE PAS naviguer via GoRouter, laisser le listener gérer
       } else {
+        // OAuth
         if (error != null) {
+          debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
+          debugPrint('✅ OAuth code received - notifying listeners');
           for (final listener in List.of(_oauthCallbackListeners)) {
             listener(provider, code, state, returnTo);
           }
-        }
-
-        if (_router != null && code != null) {
-          _router!.go(
-            '/oauth/$provider/callback?code=$code${state != null ? '&state=$state' : ''}${returnTo != null ? '&returnTo=$returnTo' : ''}',
-          );
         }
       }
     }

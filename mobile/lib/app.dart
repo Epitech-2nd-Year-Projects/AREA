@@ -3,26 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'core/design_system/app_colors.dart';
 import 'core/design_system/app_typography.dart';
 import 'core/navigation/app_navigation.dart';
-import 'core/services/deep_link_service.dart';
 import 'features/auth/presentation/router/auth_router.dart';
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  late final GoRouter _router;
-
-  @override
-  void initState() {
-    super.initState();
-    _router = _buildRouter();
-
-    DeepLinkService().setRouter(_router);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,29 +16,7 @@ class _MyAppState extends State<MyApp> {
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
-      routerConfig: _router,
-    );
-  }
-
-  GoRouter _buildRouter() {
-    return GoRouter(
-      navigatorKey: AppNavigation.navigatorKey,
-      initialLocation: '/',
-      routes: AuthRouter.routes,
-      redirect: (context, state) {
-        if (state.uri.toString().startsWith('area://')) {
-          return null;
-        }
-        return null;
-      },
-      errorBuilder: (context, state) {
-        debugPrint('❌ GoRouter error: ${state.error}');
-        return Scaffold(
-          body: Center(
-            child: Text('Page not found: ${state.uri}'),
-          ),
-        );
-      },
+      routerConfig: _buildRouter(),
     );
   }
 
@@ -179,6 +141,22 @@ class _MyAppState extends State<MyApp> {
           shadowColor: Colors.transparent,
         ),
       ),
+    );
+  }
+
+  GoRouter _buildRouter() {
+    return GoRouter(
+      navigatorKey: AppNavigation.navigatorKey,
+      initialLocation: '/',
+      routes: AuthRouter.routes,
+      errorBuilder: (context, state) {
+        debugPrint('❌ GoRouter error: ${state.error}');
+        return Scaffold(
+          body: Center(
+            child: Text('Page not found: ${state.uri}'),
+          ),
+        );
+      },
     );
   }
 }
