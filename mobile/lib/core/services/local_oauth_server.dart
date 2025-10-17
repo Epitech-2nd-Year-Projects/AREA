@@ -11,7 +11,8 @@ class LocalOAuthServer {
   LocalOAuthServer._internal();
 
   HttpServer? _server;
-  Completer<OAuthCallbackData>? _callbackCompleter;
+
+  final List<Completer<OAuthCallbackData>> _callbackCompleters = [];
   bool _isRunning = false;
 
   Future<void> start() async {
@@ -47,13 +48,21 @@ class LocalOAuthServer {
     await _server?.close(force: true);
     _server = null;
     _isRunning = false;
-    _callbackCompleter = null;
+
+    for (final completer in _callbackCompleters) {
+      if (!completer.isCompleted) {
+        completer.completeError('Server stopped');
+      }
+    }
+    _callbackCompleters.clear();
+
     debugPrint('🛑 Local OAuth server stopped');
   }
 
   Future<OAuthCallbackData> waitForCallback() {
-    _callbackCompleter = Completer<OAuthCallbackData>();
-    return _callbackCompleter!.future;
+    final completer = Completer<OAuthCallbackData>();
+    _callbackCompleters.add(completer);
+    return completer.future;
   }
 
   Response _handleOAuthCallback(Request request, String provider) {
@@ -75,7 +84,7 @@ class LocalOAuthServer {
     final state = params['state'];
     final returnTo = params['returnTo'];
 
-    debugPrint('🔄 Callback received for $provider');
+    debugPrint('🔄 Callback received for $provider (isService: $isService)');
     debugPrint('   Code: ${code?.substring(0, 10)}...');
     debugPrint('   Error: $error');
     debugPrint('   State: $state');
@@ -89,8 +98,14 @@ class LocalOAuthServer {
       isService: isService,
     );
 
-    _callbackCompleter?.complete(callbackData);
-    _callbackCompleter = null;
+    final completersToComplete = List.of(_callbackCompleters);
+    _callbackCompleters.clear();
+
+    for (final completer in completersToComplete) {
+      if (!completer.isCompleted) {
+        completer.complete(callbackData);
+      }
+    }
 
     final callbackType = isService ? 'services' : 'oauth';
     final customSchemeUrl = _buildCustomSchemeUrl(

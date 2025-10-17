@@ -84,7 +84,6 @@ class DeepLinkService {
       debugPrint('   Error: $error');
 
       if (type == 'services') {
-        // ⭐ NOUVEAU: Appeler le listener AVANT de naviguer
         if (error != null) {
           debugPrint('❌ Service error: $error');
           for (final listener in List.of(_serviceErrorListeners)) {
@@ -96,10 +95,7 @@ class DeepLinkService {
             listener(provider, code, state);
           }
         }
-
-        // ⭐ NOUVEAU: NE PAS naviguer via GoRouter, laisser le listener gérer
       } else {
-        // OAuth
         if (error != null) {
           debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {

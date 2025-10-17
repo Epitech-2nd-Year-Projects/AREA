@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/di/injector.dart';
 import '../../../../../core/error/failures.dart';
 import '../../../../../core/services/deep_link_service.dart';
@@ -34,9 +33,6 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     unawaited(_deepLinkService.initialize());
     _subscribeToService = SubscribeToService(repository);
     _unsubscribeFromService = UnsubscribeFromService(repository);
-
-    _deepLinkService.addServiceCallbackListener(_handleServiceCallback);
-    _deepLinkService.addServiceErrorListener(_handleServiceError);
 
     _setupManager(repository);
   }
@@ -124,6 +120,18 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         debugPrint('⚠️ Could not start local server: $e');
       });
 
+      _localServer.waitForCallback().then((callbackData) {
+        debugPrint('📥 Received service callback from local server');
+        if (callbackData.hasError) {
+          _handleServiceError(callbackData.provider, callbackData.error!);
+        } else if (callbackData.hasCode && callbackData.isService) {
+          _handleServiceCallback(callbackData.provider, callbackData.code!, callbackData.state);
+        }
+      }).catchError((e) {
+        debugPrint('❌ Error waiting for service callback: $e');
+        _handleServiceError(provider, e.toString());
+      });
+
       emit(ServiceSubscriptionAwaitingAuthorization(authorization));
       return;
     }
@@ -151,10 +159,6 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       debugPrint('⚠️ Cubit is closed, ignoring callback');
       return;
     }
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    if (isClosed) return;
 
     emit(ServiceSubscriptionLoading());
 
@@ -219,8 +223,6 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
 
   @override
   Future<void> close() {
-    _deepLinkService.removeServiceCallbackListener(_handleServiceCallback);
-    _deepLinkService.removeServiceErrorListener(_handleServiceError);
     _manager.dispose();
     return super.close();
   }
@@ -235,18 +237,4 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return Random();
     }
   }
-}
-
-class _PendingSubscriptionAuthorization {
-  final String provider;
-  final String? codeVerifier;
-  final String? redirectUri;
-  final String? state;
-
-  const _PendingSubscriptionAuthorization({
-    required this.provider,
-    this.codeVerifier,
-    this.redirectUri,
-    this.state,
-  });
 }
