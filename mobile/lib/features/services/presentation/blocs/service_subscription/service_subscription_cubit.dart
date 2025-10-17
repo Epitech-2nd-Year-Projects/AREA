@@ -55,6 +55,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     };
   }
 
+  @override
+  void emit(ServiceSubscriptionState state) {
+    super.emit(state);
+  }
+
   Future<void> subscribe({
     required String serviceId,
     List<String>? requestedScopes,
@@ -108,7 +113,6 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         return;
       }
 
-      // Stocker les données pour le callback
       _manager.setupSubscription(
         serviceId: provider,
         codeVerifier: authorization.codeVerifier,
@@ -116,26 +120,9 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         state: authorization.state,
       );
 
-      // Démarrer le serveur local
       await _localServer.start().catchError((e) {
         debugPrint('⚠️ Could not start local server: $e');
       });
-
-      final launchUri = Uri.tryParse(authorization.authorizationUrl);
-      if (launchUri == null) {
-        emit(const ServiceSubscriptionError('Invalid authorization URL provided.'));
-        return;
-      }
-
-      final launched = await launchUrl(
-        launchUri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!launched) {
-        emit(const ServiceSubscriptionError('Unable to open authorization screen.'));
-        return;
-      }
 
       emit(ServiceSubscriptionAwaitingAuthorization(authorization));
       return;
@@ -147,7 +134,8 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return;
     }
 
-    emit(const ServiceSubscriptionError('Subscription flow did not return a result.'));
+    emit(const ServiceSubscriptionError(
+        'Subscription flow did not return a result.'));
   }
 
   void _handleServiceCallback(
@@ -160,13 +148,27 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     final normalizedProvider = _normalizeProvider(provider);
 
     if (isClosed) {
-      debugPrint('⚠️ Cubit is closed, storing callback in manager');
+      debugPrint('⚠️ Cubit is closed, ignoring callback');
       return;
     }
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (isClosed) return;
 
     emit(ServiceSubscriptionLoading());
 
     final repository = sl<ServicesRepository>();
+
+    final pending = _manager.getPendingSubscription(normalizedProvider);
+    if (pending == null) {
+      debugPrint('❌ No pending subscription found for $normalizedProvider');
+      emit(const ServiceSubscriptionError(
+          'Subscription session expired or not initialized'));
+      return;
+    }
+
+    debugPrint('✅ Found pending subscription, completing...');
 
     await _manager.completeSubscription(
       serviceId: normalizedProvider,

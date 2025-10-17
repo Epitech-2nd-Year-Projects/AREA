@@ -42,7 +42,7 @@ class ServiceDetailsPage extends StatelessWidget {
   }
 }
 
-class _ServiceDetailsPageContent extends StatelessWidget {
+class _ServiceDetailsPageContent extends StatefulWidget {
   final String serviceId;
 
   const _ServiceDetailsPageContent({
@@ -50,59 +50,40 @@ class _ServiceDetailsPageContent extends StatelessWidget {
   });
 
   @override
+  State<_ServiceDetailsPageContent> createState() =>
+      _ServiceDetailsPageContentState();
+}
+
+class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> {
+  bool _isLaunchingUrl = false;
+
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<ServiceSubscriptionCubit, ServiceSubscriptionState>(
       listener: (context, subscriptionState) async {
         if (subscriptionState is ServiceSubscriptionSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully subscribed to service!'),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-            ),
+          _showSuccessSnackBar(
+            'Successfully subscribed to service!',
           );
-          context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
-        } else if (subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
-          final currentPath = '/services/$serviceId';
-          final authUrl = subscriptionState.authorizationUrl;
-
-          final uri = Uri.parse(authUrl);
-          final modifiedUri = uri.replace(
-            queryParameters: {
-              ...uri.queryParameters,
-              'returnTo': currentPath,
-            },
-          );
-
-          final url = modifiedUri;
-          if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Could not launch authorization'),
-                  backgroundColor: AppColors.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+          if (mounted) {
+            context
+                .read<ServiceDetailsBloc>()
+                .add(LoadServiceDetails(widget.serviceId));
           }
+        } else if (
+        subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
+          await _handleAuthorizationFlow(context, subscriptionState);
         } else if (subscriptionState is ServiceUnsubscribed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully unsubscribed from service'),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-            ),
+          _showSuccessSnackBar(
+            'Successfully unsubscribed from service',
           );
-          context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
+          if (mounted) {
+            context
+                .read<ServiceDetailsBloc>()
+                .add(LoadServiceDetails(widget.serviceId));
+          }
         } else if (subscriptionState is ServiceSubscriptionError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(subscriptionState.message),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _showErrorSnackBar(subscriptionState.message);
         }
       },
       builder: (context, subscriptionState) {
@@ -116,6 +97,93 @@ class _ServiceDetailsPageContent extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleAuthorizationFlow(
+      BuildContext context,
+      ServiceSubscriptionAwaitingAuthorization subscriptionState,
+      ) async {
+    if (_isLaunchingUrl) {
+      debugPrint('⏳ URL launch already in progress, ignoring...');
+      return;
+    }
+
+    try {
+      _isLaunchingUrl = true;
+
+      final currentPath = '/services/${widget.serviceId}';
+      final authUrl = subscriptionState.authorizationUrl;
+
+      debugPrint('🔗 Authorization URL: $authUrl');
+
+      final uri = Uri.parse(authUrl);
+      final modifiedUri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          'returnTo': currentPath,
+        },
+      );
+
+      debugPrint('🚀 Launching authorization URL...');
+      debugPrint('   Full URL: ${modifiedUri.toString()}');
+
+      final launched = await launchUrl(
+        modifiedUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        debugPrint('❌ Failed to launch URL');
+        if (mounted) {
+          _showErrorSnackBar('Could not launch authorization URL');
+          if (mounted) {
+            context
+                .read<ServiceSubscriptionCubit>()
+                .emit(ServiceSubscriptionInitial());
+          }
+        }
+      } else {
+        debugPrint('✅ URL launched successfully');
+      }
+    } catch (e) {
+      debugPrint('❌ Error launching URL: $e');
+      if (mounted) {
+        _showErrorSnackBar('Error launching authorization: $e');
+        if (mounted) {
+          context
+              .read<ServiceSubscriptionCubit>()
+              .emit(ServiceSubscriptionInitial());
+        }
+      }
+    } finally {
+      _isLaunchingUrl = false;
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   Widget _buildBody(
@@ -132,7 +200,9 @@ class _ServiceDetailsPageContent extends StatelessWidget {
         title: 'Failed to Load Service',
         message: state.message,
         onRetry: () {
-          context.read<ServiceDetailsBloc>().add(LoadServiceDetails(serviceId));
+          context
+              .read<ServiceDetailsBloc>()
+              .add(LoadServiceDetails(widget.serviceId));
         },
       );
     }
@@ -152,10 +222,14 @@ class _ServiceDetailsPageContent extends StatelessWidget {
                   selectedKind: state.selectedComponentKind,
                   searchQuery: state.searchQuery,
                   onFilterChanged: (kind) {
-                    context.read<ServiceDetailsBloc>().add(FilterComponents(kind));
+                    context
+                        .read<ServiceDetailsBloc>()
+                        .add(FilterComponents(kind));
                   },
                   onSearchChanged: (query) {
-                    context.read<ServiceDetailsBloc>().add(SearchComponents(query));
+                    context
+                        .read<ServiceDetailsBloc>()
+                        .add(SearchComponents(query));
                   },
                 ),
               ],
