@@ -149,6 +149,66 @@ class MyApp extends StatelessWidget {
       navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
       routes: AuthRouter.routes,
+      redirect: (context, state) {
+        final uri = state.uri;
+
+        if (uri.scheme == 'area') {
+          debugPrint('🔄 Custom scheme detected: ${uri.toString()}');
+
+          final pathSegments = uri.pathSegments;
+
+          debugPrint('🔄 Custom scheme pathSegments SIZE: ${pathSegments.length}');
+          debugPrint('🔄 Custom scheme pathSegments 0: ${pathSegments[0]}');
+          debugPrint('🔄 Custom scheme pathSegments 1: ${pathSegments[1]}');
+
+          if (pathSegments.length >= 3 &&
+              pathSegments[0] == 'services' &&
+              pathSegments[2] == 'callback') {
+            final provider = pathSegments[1];
+            final code = uri.queryParameters['code'];
+            final error = uri.queryParameters['error'];
+
+            debugPrint('🔄 Service detected');
+
+            final newUri = Uri(
+              path: '/services/$provider/callback',
+              queryParameters: {
+                if (code != null) 'code': code,
+                if (error != null) 'error': error,
+                ...uri.queryParameters,
+              },
+            );
+
+            debugPrint('🔀 Redirecting to: ${newUri.toString()}');
+            return newUri.toString();
+          }
+
+          if (pathSegments.length >= 3 &&
+              pathSegments[0] == 'oauth' &&
+              pathSegments[2] == 'callback') {
+            final provider = pathSegments[1];
+            final code = uri.queryParameters['code'];
+            final error = uri.queryParameters['error'];
+
+            debugPrint('🔄 Oauth detected');
+
+            final newUri = Uri(
+              path: '/oauth/$provider/callback',
+              queryParameters: {
+                if (code != null) 'code': code,
+                if (error != null) 'error': error,
+                ...uri.queryParameters,
+              },
+            );
+
+            debugPrint('🔀 Redirecting to: ${newUri.toString()}');
+            return newUri.toString();
+          }
+          debugPrint('⚠️ Unhandled custom scheme, redirecting to dashboard');
+          return '/';
+        }
+        return null;
+      },
     );
   }
 }
