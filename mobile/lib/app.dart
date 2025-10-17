@@ -154,28 +154,27 @@ class MyApp extends StatelessWidget {
 
         if (uri.scheme == 'area') {
           debugPrint('🔄 Custom scheme detected: ${uri.toString()}');
+          debugPrint('🔄 Host: ${uri.host}');
+          debugPrint('🔄 PathSegments: ${uri.pathSegments}');
 
           final pathSegments = uri.pathSegments;
 
-          debugPrint('🔄 Custom scheme pathSegments SIZE: ${pathSegments.length}');
-          debugPrint('🔄 Custom scheme pathSegments 0: ${pathSegments[0]}');
-          debugPrint('🔄 Custom scheme pathSegments 1: ${pathSegments[1]}');
-
-          if (pathSegments.length >= 3 &&
-              pathSegments[0] == 'services' &&
-              pathSegments[2] == 'callback') {
-            final provider = pathSegments[1];
+          if (uri.host == 'services' &&
+              pathSegments.length >= 2 &&
+              pathSegments[1] == 'callback') {
+            final provider = pathSegments[0];
             final code = uri.queryParameters['code'];
             final error = uri.queryParameters['error'];
+            final state = uri.queryParameters['state'];
 
-            debugPrint('🔄 Service detected');
+            debugPrint('✅ Service callback detected for: $provider');
 
             final newUri = Uri(
               path: '/services/$provider/callback',
               queryParameters: {
                 if (code != null) 'code': code,
                 if (error != null) 'error': error,
-                ...uri.queryParameters,
+                if (state != null) 'state': state,
               },
             );
 
@@ -183,30 +182,35 @@ class MyApp extends StatelessWidget {
             return newUri.toString();
           }
 
-          if (pathSegments.length >= 3 &&
-              pathSegments[0] == 'oauth' &&
-              pathSegments[2] == 'callback') {
-            final provider = pathSegments[1];
+          if (uri.host == 'oauth' &&
+              pathSegments.length >= 2 &&
+              pathSegments[1] == 'callback') {
+            final provider = pathSegments[0];
             final code = uri.queryParameters['code'];
             final error = uri.queryParameters['error'];
+            final state = uri.queryParameters['state'];
+            final returnTo = uri.queryParameters['returnTo'];
 
-            debugPrint('🔄 Oauth detected');
+            debugPrint('✅ OAuth callback detected for: $provider');
 
             final newUri = Uri(
               path: '/oauth/$provider/callback',
               queryParameters: {
                 if (code != null) 'code': code,
                 if (error != null) 'error': error,
-                ...uri.queryParameters,
+                if (state != null) 'state': state,
+                if (returnTo != null) 'returnTo': returnTo,
               },
             );
 
             debugPrint('🔀 Redirecting to: ${newUri.toString()}');
             return newUri.toString();
           }
-          debugPrint('⚠️ Unhandled custom scheme, redirecting to dashboard');
+
+          debugPrint('⚠️ Unhandled custom scheme, redirecting to home');
           return '/';
         }
+
         return null;
       },
     );
