@@ -34,7 +34,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final servicesEither = await _getServicesWithStatus(null);
     servicesEither.fold(
       (failure) {
-        emit(ProfileError('Failed to load services'));
+        emit(ProfileLoaded(user: user, displayName: displayName, services: List.empty()));
       },
       (serviceList) {
         emit(ProfileLoaded(user: user, displayName: displayName, services: List.from(serviceList)));
@@ -48,7 +48,6 @@ class ProfileCubit extends Cubit<ProfileState> {
     return current.services.where((s) => s.isSubscribed).toList();
   }
 
-  // to do call api
   Future<bool> updateProfile({required String newName, required String newEmail}) async {
     if (state is! ProfileLoaded) return false;
     final current = state as ProfileLoaded;

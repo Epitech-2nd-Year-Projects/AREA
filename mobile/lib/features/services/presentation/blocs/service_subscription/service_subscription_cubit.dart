@@ -1,38 +1,59 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/di/injector.dart';
 import '../../../../../core/error/failures.dart';
 import '../../../../../core/services/deep_link_service.dart';
+import '../../../../../core/services/local_oauth_server.dart';
+import '../../../../../core/services/service_subscription_manager.dart';
 import '../../../domain/entities/service_subscription_result.dart';
 import '../../../domain/repositories/services_repository.dart';
-import '../../../domain/use_cases/complete_service_subscription.dart';
 import '../../../domain/use_cases/subscribe_to_service.dart';
 import '../../../domain/use_cases/unsubscribe_from_service.dart';
 import 'service_subscription_state.dart';
 
 class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
   final DeepLinkService _deepLinkService;
+  final ServiceSubscriptionManager _manager;
+  final LocalOAuthServer _localServer = LocalOAuthServer();
   final Random _random;
+
   late final SubscribeToService _subscribeToService;
   late final UnsubscribeFromService _unsubscribeFromService;
-  late final CompleteServiceSubscription _completeServiceSubscription;
-  final Map<String, _PendingSubscriptionAuthorization> _pendingAuthorizations = {};
 
   ServiceSubscriptionCubit(
       ServicesRepository repository, {
         DeepLinkService? deepLinkService,
         Random? random,
       })  : _deepLinkService = deepLinkService ?? DeepLinkService(),
+        _manager = ServiceSubscriptionManager(),
         _random = _createRandom(random),
         super(ServiceSubscriptionInitial()) {
     unawaited(_deepLinkService.initialize());
     _subscribeToService = SubscribeToService(repository);
     _unsubscribeFromService = UnsubscribeFromService(repository);
-    _completeServiceSubscription = CompleteServiceSubscription(repository);
 
-    _deepLinkService.addOAuthCallbackListener(_handleOAuthCallback);
-    _deepLinkService.addOAuthErrorListener(_handleOAuthError);
+    _setupManager(repository);
+  }
+
+  void _setupManager(ServicesRepository repository) {
+    _manager.onSuccess = (serviceId) {
+      if (!isClosed) {
+        emit(const ServiceSubscriptionSuccess(null));
+      }
+    };
+
+    _manager.onError = (error) {
+      if (!isClosed) {
+        emit(ServiceSubscriptionError(error));
+      }
+    };
+  }
+
+  @override
+  void emit(ServiceSubscriptionState state) {
+    super.emit(state);
   }
 
   Future<void> subscribe({
@@ -88,30 +109,28 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         return;
       }
 
-      _pendingAuthorizations[provider] = _PendingSubscriptionAuthorization(
-        provider: provider,
+      _manager.setupSubscription(
+        serviceId: provider,
         codeVerifier: authorization.codeVerifier,
         redirectUri: _extractRedirectUri(authorization.authorizationUrl),
         state: authorization.state,
       );
 
-      final launchUri = Uri.tryParse(authorization.authorizationUrl);
-      if (launchUri == null) {
-        _pendingAuthorizations.remove(provider);
-        emit(const ServiceSubscriptionError('Invalid authorization URL provided.'));
-        return;
-      }
+      await _localServer.start().catchError((e) {
+        debugPrint('⚠️ Could not start local server: $e');
+      });
 
-      final launched = await launchUrl(
-        launchUri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!launched) {
-        _pendingAuthorizations.remove(provider);
-        emit(const ServiceSubscriptionError('Unable to open authorization screen.'));
-        return;
-      }
+      _localServer.waitForCallback().then((callbackData) {
+        debugPrint('📥 Received service callback from local server');
+        if (callbackData.hasError) {
+          _handleServiceError(callbackData.provider, callbackData.error!);
+        } else if (callbackData.hasCode && callbackData.isService) {
+          _handleServiceCallback(callbackData.provider, callbackData.code!, callbackData.state);
+        }
+      }).catchError((e) {
+        debugPrint('❌ Error waiting for service callback: $e');
+        _handleServiceError(provider, e.toString());
+      });
 
       emit(ServiceSubscriptionAwaitingAuthorization(authorization));
       return;
@@ -123,48 +142,52 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return;
     }
 
-    emit(const ServiceSubscriptionError('Subscription flow did not return a result.'));
+    emit(const ServiceSubscriptionError(
+        'Subscription flow did not return a result.'));
   }
 
-  void _handleOAuthCallback(
+  void _handleServiceCallback(
       String provider,
       String code,
       String? state,
-      String? returnTo,
       ) async {
-    final normalizedProvider = _normalizeProvider(provider);
-    final pending = _pendingAuthorizations[normalizedProvider];
-    if (pending == null) {
-      return;
-    }
+    debugPrint('🔄 Service callback received for $provider');
 
-    if (pending.state != null && state != null && pending.state != state) {
+    final normalizedProvider = _normalizeProvider(provider);
+
+    if (isClosed) {
+      debugPrint('⚠️ Cubit is closed, ignoring callback');
       return;
     }
 
     emit(ServiceSubscriptionLoading());
 
-    final exchange = await _completeServiceSubscription(
+    final repository = sl<ServicesRepository>();
+
+    final pending = _manager.getPendingSubscription(normalizedProvider);
+    if (pending == null) {
+      debugPrint('❌ No pending subscription found for $normalizedProvider');
+      emit(const ServiceSubscriptionError(
+          'Subscription session expired or not initialized'));
+      return;
+    }
+
+    debugPrint('✅ Found pending subscription, completing...');
+
+    await _manager.completeSubscription(
       serviceId: normalizedProvider,
       code: code,
-      codeVerifier: pending.codeVerifier,
-      redirectUri: pending.redirectUri,
-    );
-
-    _pendingAuthorizations.remove(normalizedProvider);
-
-    exchange.fold(
-          (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
-          (result) => emit(ServiceSubscriptionSuccess(result.subscription)),
+      repository: repository,
     );
   }
 
-  void _handleOAuthError(String? provider, String error) {
+  void _handleServiceError(String? provider, String error) {
     if (provider == null) return;
 
     final normalizedProvider = _normalizeProvider(provider);
-    if (_pendingAuthorizations.containsKey(normalizedProvider)) {
-      _pendingAuthorizations.remove(normalizedProvider);
+    _manager.clearSubscription(normalizedProvider);
+
+    if (!isClosed) {
       emit(ServiceSubscriptionError(error));
     }
   }
@@ -200,9 +223,7 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
 
   @override
   Future<void> close() {
-    _deepLinkService.removeOAuthCallbackListener(_handleOAuthCallback);
-    _deepLinkService.removeOAuthErrorListener(_handleOAuthError);
-    _pendingAuthorizations.clear();
+    _manager.dispose();
     return super.close();
   }
 
@@ -216,18 +237,4 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return Random();
     }
   }
-}
-
-class _PendingSubscriptionAuthorization {
-  final String provider;
-  final String? codeVerifier;
-  final String? redirectUri;
-  final String? state;
-
-  const _PendingSubscriptionAuthorization({
-    required this.provider,
-    this.codeVerifier,
-    this.redirectUri,
-    this.state,
-  });
 }

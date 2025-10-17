@@ -63,12 +63,12 @@ class _LoginPageContent extends StatelessWidget {
               if (state is OAuthRedirectReady) {
                 final url = Uri.parse(state.redirectUrl.toString());
                 if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  /*ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Could not launch OAuth login'),
                       backgroundColor: AppColors.error,
                     ),
-                  );
+                  );*/
                 }
               } else if (state is OAuthSuccess) {
                 context.read<AuthBloc>().add(UserLoggedIn(state.user));

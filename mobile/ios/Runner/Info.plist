@@ -45,31 +45,44 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
 	<key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>area</string>
-        </array>
-      </dict>
-    </array>
-    <key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>http</string>
-        </array>
-        <key>CFBundleURLName</key>
-        <string>localhost</string>
-      </dict>
-    </array>
-    <key>com.apple.developer.associated-domains</key>
-    <array>
-      <string>applinks:tonapp.com</string>
-    </array>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.epitech.area.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>area</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.epitech.area.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.epitech.area</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:localhost:8080</string>
+	</array>
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

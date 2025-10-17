@@ -48,13 +48,13 @@ class SettingsCubit extends Cubit<SettingsState> {
     final trimmed = st.currentAddress.trim();
 
     if (!_isValidUrl(trimmed)) {
-      emit(st.copyWith(message: 'URL invalide. Exemple: https://api.example.com'));
+      emit(st.copyWith(message: 'invalid URL. Exemple: https://api.example.com'));
       return;
     }
 
     final reachable = await _probeServerAddress(trimmed);
     if (!reachable) {
-      emit(st.copyWith(message: 'Serveur injoignable. Vérifie l’URL ou ta connexion.'));
+      emit(st.copyWith(message: 'Server not accessible. Check server URL'));
       return;
     }
 
@@ -64,7 +64,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(st.copyWith(
       isDirty: false,
       isValid: true,
-      message: 'Adresse serveur mise à jour.',
+      message: 'Server adress updated',
     ));
   }
 
