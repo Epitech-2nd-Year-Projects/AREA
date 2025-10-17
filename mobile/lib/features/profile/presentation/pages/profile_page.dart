@@ -103,7 +103,7 @@ class _ProfileView extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 12),
                                       FilledButton.icon(
-                                        onPressed: () async {
+                                        onPressed: services.isEmpty ? null : () async {
                                           final saved = await showModalBottomSheet<bool>(
                                             context: context,
                                             isScrollControlled: true,
