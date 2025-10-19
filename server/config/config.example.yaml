@@ -119,6 +119,8 @@ security:
     ttl: 168h
   verification:
     tokenTTL: 48h
+  encryption:
+    identitiesKeyEnv: IDENTITY_ENCRYPTION_KEY
 
 servicesCatalog:
   refreshInterval: 5m
