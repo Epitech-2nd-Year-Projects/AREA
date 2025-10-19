@@ -3,6 +3,7 @@ package execution
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -299,6 +300,114 @@ RETURNING *`
 	return model.toDomain(), nil
 }
 
+func valueOrDefault(input *string) string {
+	if input == nil {
+		return ""
+	}
+	return *input
+}
+
+// ListWithDetails returns recent jobs enriched with area and component metadata
+func (r JobRepository) ListWithDetails(ctx context.Context, opts outbound.JobListOptions) ([]outbound.JobDetails, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("postgres.execution.JobRepository.ListWithDetails: nil db handle")
+	}
+	if opts.UserID == uuid.Nil {
+		return nil, fmt.Errorf("postgres.execution.JobRepository.ListWithDetails: user id required")
+	}
+	limit := opts.Limit
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+
+	type jobWithDetails struct {
+		jobModel
+		AreaID        uuid.UUID
+		AreaName      string
+		ComponentName *string
+		ProviderName  *string
+	}
+
+	query := r.db.WithContext(ctx).
+		Table("jobs AS j").
+		Select(`j.*, l.area_id, a.name AS area_name, sc.display_name AS component_name, sp.display_name AS provider_name`).
+		Joins("JOIN area_links l ON l.id = j.area_link_id").
+		Joins("JOIN areas a ON a.id = l.area_id").
+		Joins("LEFT JOIN user_component_configs cfg ON cfg.id = l.component_config_id").
+		Joins("LEFT JOIN service_components sc ON sc.id = cfg.component_id").
+		Joins("LEFT JOIN service_providers sp ON sp.id = sc.provider_id").
+		Where("a.user_id = ?", opts.UserID)
+
+	if opts.AreaID != uuid.Nil {
+		query = query.Where("l.area_id = ?", opts.AreaID)
+	}
+	if opts.Status != nil && *opts.Status != "" {
+		query = query.Where("j.status = ?", string(*opts.Status))
+	}
+
+	var rows []jobWithDetails
+	if err := query.Order("j.created_at DESC").Limit(limit).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("postgres.execution.JobRepository.ListWithDetails: %w", err)
+	}
+
+	results := make([]outbound.JobDetails, 0, len(rows))
+	for _, row := range rows {
+		job := row.jobModel.toDomain()
+		details := outbound.JobDetails{
+			Job:           job,
+			AreaID:        row.AreaID,
+			AreaName:      row.AreaName,
+			ComponentName: valueOrDefault(row.ComponentName),
+			ProviderName:  valueOrDefault(row.ProviderName),
+		}
+		results = append(results, details)
+	}
+	return results, nil
+}
+
+// FindDetails fetches a single job with area metadata ensuring ownership
+func (r JobRepository) FindDetails(ctx context.Context, userID uuid.UUID, jobID uuid.UUID) (outbound.JobDetails, error) {
+	if r.db == nil {
+		return outbound.JobDetails{}, fmt.Errorf("postgres.execution.JobRepository.FindDetails: nil db handle")
+	}
+	if userID == uuid.Nil || jobID == uuid.Nil {
+		return outbound.JobDetails{}, fmt.Errorf("postgres.execution.JobRepository.FindDetails: identifiers required")
+	}
+
+	type jobWithDetails struct {
+		jobModel
+		AreaID        uuid.UUID
+		AreaName      string
+		ComponentName *string
+		ProviderName  *string
+	}
+
+	var row jobWithDetails
+	query := r.db.WithContext(ctx).
+		Table("jobs AS j").
+		Select(`j.*, l.area_id, a.name AS area_name, sc.display_name AS component_name, sp.display_name AS provider_name`).
+		Joins("JOIN area_links l ON l.id = j.area_link_id").
+		Joins("JOIN areas a ON a.id = l.area_id").
+		Joins("LEFT JOIN user_component_configs cfg ON cfg.id = l.component_config_id").
+		Joins("LEFT JOIN service_components sc ON sc.id = cfg.component_id").
+		Joins("LEFT JOIN service_providers sp ON sp.id = sc.provider_id").
+		Where("a.user_id = ? AND j.id = ?", userID, jobID)
+	if err := query.Take(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return outbound.JobDetails{}, outbound.ErrNotFound
+		}
+		return outbound.JobDetails{}, fmt.Errorf("postgres.execution.JobRepository.FindDetails: %w", err)
+	}
+	job := row.jobModel.toDomain()
+	return outbound.JobDetails{
+		Job:           job,
+		AreaID:        row.AreaID,
+		AreaName:      row.AreaName,
+		ComponentName: valueOrDefault(row.ComponentName),
+		ProviderName:  valueOrDefault(row.ProviderName),
+	}, nil
+}
+
 // DeliveryLogRepository persists delivery logs using Postgres
 type DeliveryLogRepository struct {
 	db *gorm.DB
@@ -330,6 +439,34 @@ func (r DeliveryLogRepository) Create(ctx context.Context, log jobdomain.Deliver
 		return jobdomain.DeliveryLog{}, fmt.Errorf("postgres.execution.DeliveryLogRepository.Create: %w", err)
 	}
 	return model.toDomain(), nil
+}
+
+// ListByJob returns recent delivery logs for the specified job
+func (r DeliveryLogRepository) ListByJob(ctx context.Context, jobID uuid.UUID, limit int) ([]jobdomain.DeliveryLog, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("postgres.execution.DeliveryLogRepository.ListByJob: nil db handle")
+	}
+	if jobID == uuid.Nil {
+		return nil, fmt.Errorf("postgres.execution.DeliveryLogRepository.ListByJob: job id missing")
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+
+	var models []deliveryLogModel
+	if err := r.db.WithContext(ctx).
+		Where("job_id = ?", jobID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&models).Error; err != nil {
+		return nil, fmt.Errorf("postgres.execution.DeliveryLogRepository.ListByJob: %w", err)
+	}
+
+	logs := make([]jobdomain.DeliveryLog, 0, len(models))
+	for _, model := range models {
+		logs = append(logs, model.toDomain())
+	}
+	return logs, nil
 }
 
 var (
