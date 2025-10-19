@@ -27,6 +27,7 @@ import (
 	automation "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/automation"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
 	monitorapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/monitoring"
+	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
@@ -194,7 +195,21 @@ func run() error {
 			}
 		}
 		pipeline := areaapp.NewExecutionPipeline(executionRepo, nil, jobQueue)
+		pollingProvisioner := areaapp.NewPollingProvisioner(actionRepo, nil)
+		webhookProvisioner := areaapp.NewWebhookProvisioner(actionRepo, nil, nil, nil)
 		timerProvisioner := areaapp.NewTimerProvisioner(actionRepo, nil)
+		fallbackProvisioner := areaapp.ActionProvisionerFunc(func(ctx context.Context, area areadomain.Area) error {
+			if err := pollingProvisioner.Provision(ctx, area); err != nil {
+				return err
+			}
+			if err := webhookProvisioner.Provision(ctx, area); err != nil {
+				return err
+			}
+			return nil
+		})
+		provisionerRegistry := areaapp.NewRegistryProvisioner(areaapp.WithProvisionerFallback(fallbackProvisioner))
+		provisionerRegistry.Register("scheduler", "timer_interval", timerProvisioner)
+		provisionerRegistry.Register("scheduler", "", timerProvisioner)
 		areaService := areaapp.NewService(
 			areaRepo,
 			componentRepo,
@@ -202,7 +217,7 @@ func run() error {
 			actionRepo,
 			pipeline,
 			nil,
-			timerProvisioner,
+			provisionerRegistry,
 		)
 
 		areaCookies := areaapp.CookieConfig{

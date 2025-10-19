@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	actiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/action"
@@ -63,6 +64,109 @@ func (r Repository) UpsertScheduleSource(ctx context.Context, componentConfigID 
 		).
 		Create(&model).Error; err != nil {
 		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertScheduleSource: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+// UpsertPollingSource inserts or updates a polling action source for the component configuration
+func (r Repository) UpsertPollingSource(ctx context.Context, componentConfigID uuid.UUID, cursor map[string]any) (actiondomain.Source, error) {
+	if r.db == nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertPollingSource: nil db handle")
+	}
+	if componentConfigID == uuid.Nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertPollingSource: missing component config id")
+	}
+	buffer, err := json.Marshal(cursor)
+	if err != nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertPollingSource: marshal cursor: %w", err)
+	}
+
+	model := sourceModel{
+		ID:                uuid.New(),
+		ComponentConfigID: componentConfigID,
+		Mode:              string(actiondomain.ModePolling),
+		Cursor:            datatypes.JSON(buffer),
+		IsActive:          true,
+	}
+
+	if err := r.db.WithContext(ctx).
+		Clauses(
+			clause.OnConflict{
+				Columns: []clause.Column{{Name: "component_config_id"}},
+				TargetWhere: clause.Where{Exprs: []clause.Expression{
+					clause.Eq{Column: clause.Column{Table: clause.CurrentTable, Name: "mode"}, Value: string(actiondomain.ModePolling)},
+				}},
+				DoUpdates: clause.Assignments(map[string]any{
+					"mode":             string(actiondomain.ModePolling),
+					"cursor":           datatypes.JSON(buffer),
+					"schedule":         gorm.Expr("NULL"),
+					"webhook_secret":   gorm.Expr("NULL"),
+					"webhook_url_path": gorm.Expr("NULL"),
+					"is_active":        true,
+					"updated_at":       gorm.Expr("NOW()"),
+				}),
+			},
+			clause.Returning{},
+		).
+		Create(&model).Error; err != nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertPollingSource: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+// UpsertWebhookSource inserts or updates a webhook-driven action source for the component configuration
+func (r Repository) UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor map[string]any) (actiondomain.Source, error) {
+	if r.db == nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: nil db handle")
+	}
+	if componentConfigID == uuid.Nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: missing component config id")
+	}
+	if strings.TrimSpace(secret) == "" {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: secret empty")
+	}
+	if strings.TrimSpace(urlPath) == "" {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: url path empty")
+	}
+
+	buffer, err := json.Marshal(cursor)
+	if err != nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: marshal cursor: %w", err)
+	}
+
+	model := sourceModel{
+		ID:                uuid.New(),
+		ComponentConfigID: componentConfigID,
+		Mode:              string(actiondomain.ModeWebhook),
+		Cursor:            datatypes.JSON(buffer),
+		WebhookSecret:     &secret,
+		WebhookURLPath:    &urlPath,
+		IsActive:          true,
+	}
+
+	if err := r.db.WithContext(ctx).
+		Clauses(
+			clause.OnConflict{
+				Columns: []clause.Column{{Name: "component_config_id"}},
+				TargetWhere: clause.Where{Exprs: []clause.Expression{
+					clause.Eq{Column: clause.Column{Table: clause.CurrentTable, Name: "mode"}, Value: string(actiondomain.ModeWebhook)},
+				}},
+				DoUpdates: clause.Assignments(map[string]any{
+					"mode":             string(actiondomain.ModeWebhook),
+					"cursor":           datatypes.JSON(buffer),
+					"webhook_secret":   secret,
+					"webhook_url_path": urlPath,
+					"schedule":         gorm.Expr("NULL"),
+					"is_active":        true,
+					"updated_at":       gorm.Expr("NOW()"),
+				}),
+			},
+			clause.Returning{},
+		).
+		Create(&model).Error; err != nil {
+		return actiondomain.Source{}, fmt.Errorf("postgres.action.Repository.UpsertWebhookSource: %w", err)
 	}
 
 	return model.toDomain(), nil

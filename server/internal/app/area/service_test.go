@@ -20,6 +20,18 @@ type stubClock struct{ now time.Time }
 
 func (c stubClock) Now() time.Time { return c.now }
 
+type spyProvisioner struct {
+	calls int
+	area  areadomain.Area
+	err   error
+}
+
+func (s *spyProvisioner) Provision(ctx context.Context, area areadomain.Area) error {
+	s.calls++
+	s.area = area
+	return s.err
+}
+
 func TestService_CreateAndList(t *testing.T) {
 	ctx := context.Background()
 	clock := stubClock{now: time.Unix(1720000000, 0).UTC()}
@@ -176,6 +188,81 @@ func TestService_CreateActionValidation(t *testing.T) {
 	_, err = svc.Create(ctx, uuid.New(), "Valid", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: reactionComponentID}})
 	if !errors.Is(err, ErrActionComponentDisabled) {
 		t.Fatalf("expected ErrActionComponentDisabled got %v", err)
+	}
+}
+
+func TestService_CreateInvokesProvisioner(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	actionID := uuid.New()
+	reactionID := uuid.New()
+	providerID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionID: {
+			ID:         actionID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "scheduler"},
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "github"},
+		},
+	}}
+	subs := allowAllSubscriptions{}
+	provisioner := &spyProvisioner{}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, provisioner)
+
+	area, err := svc.Create(ctx, uuid.New(), "Timer mail", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: reactionID}})
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if provisioner.calls != 1 {
+		t.Fatalf("expected provisioner to be invoked once, got %d", provisioner.calls)
+	}
+	if provisioner.area.ID != area.ID {
+		t.Fatalf("provisioner received mismatched area ID")
+	}
+}
+
+func TestService_CreateRollsBackOnProvisionerError(t *testing.T) {
+	ctx := context.Background()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	actionID := uuid.New()
+	reactionID := uuid.New()
+	providerID := uuid.New()
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionID: {
+			ID:         actionID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "scheduler"},
+		},
+		reactionID: {
+			ID:         reactionID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: providerID,
+			Provider:   componentdomain.Provider{ID: providerID, Name: "github"},
+		},
+	}}
+	subs := allowAllSubscriptions{}
+	provisioner := &spyProvisioner{err: fmt.Errorf("boom")}
+	svc := NewService(repo, components, subs, nil, nil, stubClock{now: time.Now()}, provisioner)
+
+	if _, err := svc.Create(ctx, uuid.New(), "Timer mail", "", ActionInput{ComponentID: actionID}, []ReactionInput{{ComponentID: reactionID}}); err == nil {
+		t.Fatalf("expected error from failing provisioner")
+	}
+	if provisioner.calls != 1 {
+		t.Fatalf("expected provisioner to be invoked once, got %d", provisioner.calls)
+	}
+	if len(repo.items) != 0 {
+		t.Fatalf("expected repository to rollback stored area")
 	}
 }
 
@@ -436,6 +523,14 @@ type stubActionSourceRepo struct {
 }
 
 func (s *stubActionSourceRepo) UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor map[string]any) (actiondomain.Source, error) {
+	return actiondomain.Source{}, fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) UpsertPollingSource(ctx context.Context, componentConfigID uuid.UUID, cursor map[string]any) (actiondomain.Source, error) {
+	return actiondomain.Source{}, fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor map[string]any) (actiondomain.Source, error) {
 	return actiondomain.Source{}, fmt.Errorf("not implemented")
 }
 
