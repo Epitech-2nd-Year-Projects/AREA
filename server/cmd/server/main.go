@@ -103,6 +103,7 @@ func run() error {
 		componentHandler  *componentapp.Handler
 		timerScheduler    *areaapp.TimerScheduler
 		pollingRunner     *areaapp.PollingRunner
+		webhookHandler    *areaapp.WebhookHandler
 		jobQueue          queueport.JobQueue
 		jobWorker         *automation.Worker
 		monitoringHandler *monitorapp.Handler
@@ -230,6 +231,7 @@ func run() error {
 			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
 		}
 		areaHandler = areaapp.NewHandler(areaService, authService, areaCookies)
+		webhookHandler = areaapp.NewWebhookHandler(areaService, logger)
 
 		componentHandler = componentapp.NewHandler(
 			componentapp.NewService(componentRepo, serviceRepo.Subscriptions()),
@@ -303,6 +305,7 @@ func run() error {
 		AuthHandler:       authHandler,
 		AreaHandler:       areaHandler,
 		ComponentHandler:  componentHandler,
+		WebhookHandler:    webhookHandler,
 		MonitoringHandler: monitoringHandler,
 	}); err != nil {
 		return fmt.Errorf("router.Register: %w", err)
