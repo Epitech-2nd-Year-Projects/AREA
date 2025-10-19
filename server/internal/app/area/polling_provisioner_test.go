@@ -40,7 +40,15 @@ func (r *recordingActionSourceRepo) ListDueScheduleSources(ctx context.Context, 
 	return nil, nil
 }
 
+func (r *recordingActionSourceRepo) ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.PollingBinding, error) {
+	return nil, nil
+}
+
 func (r *recordingActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return nil
+}
+
+func (r *recordingActionSourceRepo) UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
 	return nil
 }
 

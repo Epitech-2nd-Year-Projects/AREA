@@ -42,3 +42,13 @@ type ScheduleBinding struct {
 	NextRun    time.Time
 	Config     componentdomain.Config
 }
+
+// PollingBinding associates a polling action source with its AREA metadata
+type PollingBinding struct {
+	Source     Source
+	AreaID     uuid.UUID
+	AreaLinkID uuid.UUID
+	UserID     uuid.UUID
+	NextRun    time.Time
+	Config     componentdomain.Config
+}

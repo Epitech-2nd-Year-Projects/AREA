@@ -102,6 +102,7 @@ func run() error {
 		areaHandler       *areaapp.Handler
 		componentHandler  *componentapp.Handler
 		timerScheduler    *areaapp.TimerScheduler
+		pollingRunner     *areaapp.PollingRunner
 		jobQueue          queueport.JobQueue
 		jobWorker         *automation.Worker
 		monitoringHandler *monitorapp.Handler
@@ -244,6 +245,7 @@ func run() error {
 		)
 
 		timerScheduler = areaapp.NewTimerScheduler(actionRepo, areaService, nil, areaapp.WithTimerLogger(logger))
+		pollingRunner = areaapp.NewPollingRunner(actionRepo, componentRepo, areaService, nil, nil, areaapp.WithPollingLogger(logger))
 
 		reactionHandlers := []areaapp.ComponentReactionHandler{
 			httpreaction.Executor{
@@ -311,6 +313,9 @@ func run() error {
 
 	if timerScheduler != nil {
 		go timerScheduler.Run(ctx)
+	}
+	if pollingRunner != nil {
+		go pollingRunner.Run(ctx)
 	}
 	if jobWorker != nil {
 		go jobWorker.Run(ctx)

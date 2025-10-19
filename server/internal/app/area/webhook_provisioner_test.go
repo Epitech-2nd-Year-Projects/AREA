@@ -42,7 +42,15 @@ func (r *webhookRecordingRepo) ListDueScheduleSources(ctx context.Context, befor
 	return nil, nil
 }
 
+func (r *webhookRecordingRepo) ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.PollingBinding, error) {
+	return nil, nil
+}
+
 func (r *webhookRecordingRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return nil
+}
+
+func (r *webhookRecordingRepo) UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
 	return nil
 }
 
