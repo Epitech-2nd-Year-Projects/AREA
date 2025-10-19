@@ -193,6 +193,10 @@ func (m *mockActionSourceRepo) ListDueScheduleSources(ctx context.Context, befor
 	return append([]actiondomain.ScheduleBinding(nil), m.listResponse...), nil
 }
 
+func (m *mockActionSourceRepo) ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.PollingBinding, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (m *mockActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
 	clone := cloneMapAny(cursor)
 	m.updateCalls = append(m.updateCalls, struct {
@@ -201,6 +205,10 @@ func (m *mockActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceI
 		cursor            map[string]any
 	}{sourceID: sourceID, componentConfigID: componentConfigID, cursor: clone})
 	return nil
+}
+
+func (m *mockActionSourceRepo) UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (m *mockActionSourceRepo) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {

@@ -538,7 +538,15 @@ func (s *stubActionSourceRepo) ListDueScheduleSources(ctx context.Context, befor
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (s *stubActionSourceRepo) ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.PollingBinding, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (s *stubActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (s *stubActionSourceRepo) UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
 	return fmt.Errorf("not implemented")
 }
 

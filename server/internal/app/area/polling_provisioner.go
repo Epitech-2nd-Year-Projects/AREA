@@ -46,9 +46,15 @@ func (p *PollingProvisioner) Provision(ctx context.Context, area areadomain.Area
 		return nil
 	}
 
+	now := p.now()
+	interval := time.Duration(cfg.intervalSeconds) * time.Second
+	if interval <= 0 {
+		interval = defaultPollingInterval
+	}
 	cursor := map[string]any{
 		"interval_seconds": cfg.intervalSeconds,
-		"last_run":         p.now().Format(time.RFC3339Nano),
+		"last_run":         now.Format(time.RFC3339Nano),
+		"next_run":         now.Add(interval).Format(time.RFC3339Nano),
 	}
 	if len(cfg.initialCursor) > 0 {
 		cursor["state"] = cloneMapAny(cfg.initialCursor)
