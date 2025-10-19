@@ -181,3 +181,45 @@ func (m pollingBindingModel) toDomain() (actiondomain.PollingBinding, error) {
 		Config:     config,
 	}, nil
 }
+
+type webhookBindingModel struct {
+	SourceID          uuid.UUID      `gorm:"column:source_id"`
+	ComponentConfigID uuid.UUID      `gorm:"column:component_config_id"`
+	Mode              string         `gorm:"column:mode"`
+	Cursor            datatypes.JSON `gorm:"column:cursor"`
+	WebhookSecret     *string        `gorm:"column:webhook_secret"`
+	WebhookURLPath    *string        `gorm:"column:webhook_url_path"`
+	IsActive          bool           `gorm:"column:is_active"`
+	CreatedAt         time.Time      `gorm:"column:created_at"`
+	UpdatedAt         time.Time      `gorm:"column:updated_at"`
+	AreaID            uuid.UUID      `gorm:"column:area_id"`
+	AreaLinkID        uuid.UUID      `gorm:"column:area_link_id"`
+	UserID            uuid.UUID      `gorm:"column:user_id"`
+}
+
+func (m webhookBindingModel) toDomain() (actiondomain.WebhookBinding, error) {
+	source := actiondomain.Source{
+		ID:                m.SourceID,
+		ComponentConfigID: m.ComponentConfigID,
+		Mode:              actiondomain.Mode(m.Mode),
+		Cursor:            nil,
+		WebhookSecret:     m.WebhookSecret,
+		WebhookURLPath:    m.WebhookURLPath,
+		IsActive:          m.IsActive,
+		CreatedAt:         m.CreatedAt,
+		UpdatedAt:         m.UpdatedAt,
+	}
+	if len(m.Cursor) > 0 {
+		var cursor map[string]any
+		if err := json.Unmarshal(m.Cursor, &cursor); err != nil {
+			return actiondomain.WebhookBinding{}, err
+		}
+		source.Cursor = cursor
+	}
+	return actiondomain.WebhookBinding{
+		Source:     source,
+		AreaID:     m.AreaID,
+		AreaLinkID: m.AreaLinkID,
+		UserID:     m.UserID,
+	}, nil
+}
