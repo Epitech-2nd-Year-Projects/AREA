@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0
 	github.com/oapi-codegen/runtime v1.1.2
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/spf13/viper v1.21.0
 	github.com/subosito/gotenv v1.6.0
@@ -66,7 +67,6 @@ require (
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.55.0 // indirect
-	github.com/redis/go-redis/v9 v9.14.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/speakeasy-api/jsonpath v0.6.2 // indirect

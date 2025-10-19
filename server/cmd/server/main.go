@@ -26,6 +26,7 @@ import (
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	automation "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/automation"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
+	monitorapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/monitoring"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
@@ -94,14 +95,15 @@ func run() error {
 	}
 
 	var (
-		loaders          []catalog.Loader
-		authHandler      *authapp.Handler
-		oauthService     *authapp.OAuthService
-		areaHandler      *areaapp.Handler
-		componentHandler *componentapp.Handler
-		timerScheduler   *areaapp.TimerScheduler
-		jobQueue         queueport.JobQueue
-		jobWorker        *automation.Worker
+		loaders           []catalog.Loader
+		authHandler       *authapp.Handler
+		oauthService      *authapp.OAuthService
+		areaHandler       *areaapp.Handler
+		componentHandler  *componentapp.Handler
+		timerScheduler    *areaapp.TimerScheduler
+		jobQueue          queueport.JobQueue
+		jobWorker         *automation.Worker
+		monitoringHandler *monitorapp.Handler
 	)
 
 	dbCtx := context.Background()
@@ -252,6 +254,16 @@ func run() error {
 		logRepo := executionpostgres.NewDeliveryLogRepository(db)
 		jobWorker = automation.NewWorker(jobQueue, jobRepo, logRepo, areaService, reactionExecutor, logger)
 
+		monitorService := monitorapp.NewService(jobRepo, logRepo)
+		monitoringHandler = monitorapp.NewHandler(monitorService, authService, monitorapp.CookieConfig{
+			Name:     cfg.Security.Sessions.CookieName,
+			Domain:   cfg.Security.Sessions.Domain,
+			Path:     cfg.Security.Sessions.Path,
+			Secure:   cfg.Security.Sessions.Secure,
+			HTTPOnly: cfg.Security.Sessions.HTTPOnly,
+			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
+		})
+
 		sqlDB, err := db.DB()
 		if err != nil {
 			logger.Warn("gorm.DB unwrap failed", zap.Error(err))
@@ -270,10 +282,11 @@ func run() error {
 	}
 
 	if err := router.Register(server.Engine(), router.Dependencies{
-		AboutLoader:      catalog.NewChainLoader(loaders...),
-		AuthHandler:      authHandler,
-		AreaHandler:      areaHandler,
-		ComponentHandler: componentHandler,
+		AboutLoader:       catalog.NewChainLoader(loaders...),
+		AuthHandler:       authHandler,
+		AreaHandler:       areaHandler,
+		ComponentHandler:  componentHandler,
+		MonitoringHandler: monitoringHandler,
 	}); err != nil {
 		return fmt.Errorf("router.Register: %w", err)
 	}

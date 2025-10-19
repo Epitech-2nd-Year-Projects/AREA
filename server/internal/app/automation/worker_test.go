@@ -138,6 +138,14 @@ func (s *stubJobRepository) Claim(ctx context.Context, id uuid.UUID, worker stri
 	return jobCopy, nil
 }
 
+func (s *stubJobRepository) ListWithDetails(ctx context.Context, opts outbound.JobListOptions) ([]outbound.JobDetails, error) {
+	return []outbound.JobDetails{}, nil
+}
+
+func (s *stubJobRepository) FindDetails(ctx context.Context, userID uuid.UUID, jobID uuid.UUID) (outbound.JobDetails, error) {
+	return outbound.JobDetails{}, outbound.ErrNotFound
+}
+
 type stubLogRepository struct {
 	logs []jobdomain.DeliveryLog
 	mu   sync.Mutex
@@ -148,6 +156,12 @@ func (s *stubLogRepository) Create(ctx context.Context, log jobdomain.DeliveryLo
 	defer s.mu.Unlock()
 	s.logs = append(s.logs, log)
 	return log, nil
+}
+
+func (s *stubLogRepository) ListByJob(ctx context.Context, jobID uuid.UUID, limit int) ([]jobdomain.DeliveryLog, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]jobdomain.DeliveryLog(nil), s.logs...), nil
 }
 
 type stubAreaRepository struct {
