@@ -8,6 +8,7 @@ import (
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	componentapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/components"
+	monitorapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/monitoring"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/services/catalog"
 	"github.com/gin-gonic/gin"
 	openapitypes "github.com/oapi-codegen/runtime/types"
@@ -15,11 +16,12 @@ import (
 
 // Dependencies aggregates inbound HTTP dependencies
 type Dependencies struct {
-	AboutLoader      catalog.Loader
-	Clock            aboutapp.Clock
-	AuthHandler      *authapp.Handler
-	AreaHandler      *areaapp.Handler
-	ComponentHandler *componentapp.Handler
+	AboutLoader       catalog.Loader
+	Clock             aboutapp.Clock
+	AuthHandler       *authapp.Handler
+	AreaHandler       *areaapp.Handler
+	ComponentHandler  *componentapp.Handler
+	MonitoringHandler *monitorapp.Handler
 }
 
 // Register mounts all HTTP endpoints on the provided router
@@ -41,6 +43,10 @@ func Register(r gin.IRouter, deps Dependencies) error {
 	openapi.RegisterHandlers(r, handler)
 	if deps.AuthHandler != nil {
 		r.GET("/v1/auth/verify", deps.AuthHandler.VerifyEmail)
+	}
+	if deps.MonitoringHandler != nil {
+		r.GET("/v1/monitoring/jobs", deps.MonitoringHandler.ListJobs)
+		r.GET("/v1/monitoring/jobs/:jobId/logs", deps.MonitoringHandler.ListJobLogs)
 	}
 
 	return nil
