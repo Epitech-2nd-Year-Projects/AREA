@@ -150,7 +150,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   OutlinedButton.icon(
-                                    onPressed: () => _controller.text = s.currentAddress,
+                                    onPressed: () => context.read<SettingsCubit>().save,
                                     icon: const Icon(Icons.refresh),
                                     label: const Text('Reload'),
                                     style: OutlinedButton.styleFrom(
