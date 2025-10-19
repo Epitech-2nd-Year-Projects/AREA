@@ -52,3 +52,11 @@ type PollingBinding struct {
 	NextRun    time.Time
 	Config     componentdomain.Config
 }
+
+// WebhookBinding associates a webhook action source with its AREA metadata
+type WebhookBinding struct {
+	Source     Source
+	AreaID     uuid.UUID
+	AreaLinkID uuid.UUID
+	UserID     uuid.UUID
+}
