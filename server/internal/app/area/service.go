@@ -2,6 +2,7 @@ package area
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,9 @@ var (
 	ErrAreaMisconfigured           = errors.New("area: misconfigured")
 	ErrProviderSubscriptionMissing = errors.New("area: provider subscription missing")
 	ErrComponentParamsInvalid      = errors.New("area: component params invalid")
+	ErrWebhookNotFound             = errors.New("area: webhook source not found")
+	ErrWebhookSecretMissing        = errors.New("area: webhook secret missing")
+	ErrWebhookSecretInvalid        = errors.New("area: webhook secret invalid")
 )
 
 const (
@@ -331,6 +335,70 @@ func (s *Service) ExecuteWithOptions(ctx context.Context, userID uuid.UUID, area
 	if err != nil {
 		return fmt.Errorf("area.Service.Execute: enqueue pipeline: %w", err)
 	}
+	return nil
+}
+
+// ProcessWebhook ingests a webhook event for the specified path and secret
+func (s *Service) ProcessWebhook(ctx context.Context, path string, secret string, payload map[string]any, fingerprint string, occurredAt time.Time) error {
+	if s.sources == nil {
+		return fmt.Errorf("area.Service.ProcessWebhook: source repository unavailable")
+	}
+
+	cleanPath := strings.Trim(strings.TrimSpace(path), "/")
+	if cleanPath == "" {
+		return fmt.Errorf("area.Service.ProcessWebhook: path missing")
+	}
+
+	binding, err := s.sources.FindWebhookBindingByPath(ctx, cleanPath)
+	if err != nil {
+		if errors.Is(err, outbound.ErrNotFound) {
+			return ErrWebhookNotFound
+		}
+		return fmt.Errorf("area.Service.ProcessWebhook: sources.FindWebhookBindingByPath: %w", err)
+	}
+
+	expected := ""
+	if binding.Source.WebhookSecret != nil {
+		expected = strings.TrimSpace(*binding.Source.WebhookSecret)
+	}
+	incoming := strings.TrimSpace(secret)
+	if incoming == "" {
+		return ErrWebhookSecretMissing
+	}
+	if expected == "" || subtle.ConstantTimeCompare([]byte(expected), []byte(incoming)) != 1 {
+		return ErrWebhookSecretInvalid
+	}
+
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	eventTime := occurredAt.UTC()
+	if eventTime.IsZero() {
+		eventTime = s.clock.Now().UTC()
+	}
+	if fingerprint == "" {
+		fingerprint = uuid.NewString()
+	}
+
+	options := ExecutionOptions{
+		SourceID:    binding.Source.ID,
+		Payload:     payload,
+		Fingerprint: fingerprint,
+		OccurredAt:  eventTime,
+	}
+	if err := s.ExecuteWithOptions(ctx, binding.UserID, binding.AreaID, options); err != nil {
+		return fmt.Errorf("area.Service.ProcessWebhook: execute: %w", err)
+	}
+
+	cursor := map[string]any{
+		"last_received": s.clock.Now().UTC().Format(time.RFC3339Nano),
+	}
+	if fingerprint != "" {
+		cursor["last_fingerprint"] = fingerprint
+	}
+	_ = s.sources.UpdateWebhookCursor(ctx, binding.Source.ID, binding.Source.ComponentConfigID, cursor)
+
 	return nil
 }
 

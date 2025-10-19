@@ -266,6 +266,120 @@ func TestService_CreateRollsBackOnProvisionerError(t *testing.T) {
 	}
 }
 
+func TestService_ProcessWebhook(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1720000000, 0).UTC()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
+	actionComponentID := uuid.New()
+	reactionComponentID := uuid.New()
+	actionConfigID := uuid.New()
+	reactionConfigID := uuid.New()
+	areaID := uuid.New()
+	userID := uuid.New()
+	sourceID := uuid.New()
+	secret := "top-secret"
+
+	repo.items[areaID] = areadomain.Area{
+		ID:     areaID,
+		UserID: userID,
+		Name:   "Webhook area",
+		Status: areadomain.StatusEnabled,
+		Action: &areadomain.Link{
+			ID:   uuid.New(),
+			Role: areadomain.LinkRoleAction,
+			Config: componentdomain.Config{
+				ID:          actionConfigID,
+				ComponentID: actionComponentID,
+				Params:      map[string]any{},
+			},
+		},
+		Reactions: []areadomain.Link{
+			{
+				ID:   uuid.New(),
+				Role: areadomain.LinkRoleReaction,
+				Config: componentdomain.Config{
+					ID:          reactionConfigID,
+					ComponentID: reactionComponentID,
+					Params:      map[string]any{"text": "hello"},
+				},
+			},
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	components := &memoryComponentRepo{items: map[uuid.UUID]componentdomain.Component{
+		actionComponentID: {
+			ID:         actionComponentID,
+			Kind:       componentdomain.KindAction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+			Provider:   componentdomain.Provider{Name: "github"},
+		},
+		reactionComponentID: {
+			ID:         reactionComponentID,
+			Kind:       componentdomain.KindReaction,
+			Enabled:    true,
+			ProviderID: uuid.New(),
+			Provider:   componentdomain.Provider{Name: "slack"},
+		},
+	}}
+
+	sourcePath := "hooks/github/webhook/" + actionConfigID.String()
+	sources := &stubActionSourceRepo{
+		sources: map[uuid.UUID]actiondomain.Source{
+			actionConfigID: {
+				ID:                sourceID,
+				ComponentConfigID: actionConfigID,
+				Mode:              actiondomain.ModeWebhook,
+				WebhookSecret:     strPtr(secret),
+				WebhookURLPath:    strPtr(sourcePath),
+				IsActive:          true,
+			},
+		},
+		webhooks: map[string]actiondomain.WebhookBinding{
+			sourcePath: {
+				Source: actiondomain.Source{
+					ID:                sourceID,
+					ComponentConfigID: actionConfigID,
+					Mode:              actiondomain.ModeWebhook,
+					WebhookSecret:     strPtr(secret),
+					WebhookURLPath:    strPtr(sourcePath),
+					IsActive:          true,
+				},
+				AreaID:     areaID,
+				AreaLinkID: repo.items[areaID].Action.ID,
+				UserID:     userID,
+			},
+		},
+	}
+
+	pipeline := &recordingPipeline{}
+	svc := NewService(repo, components, allowAllSubscriptions{}, sources, pipeline, stubClock{now: now}, nil)
+
+	payload := map[string]any{
+		"body": map[string]any{"foo": "bar"},
+	}
+
+	if err := svc.ProcessWebhook(ctx, sourcePath, secret, payload, "event-1", now); err != nil {
+		t.Fatalf("ProcessWebhook returned error: %v", err)
+	}
+	if len(pipeline.inputs) != 1 {
+		t.Fatalf("expected pipeline to receive 1 input, got %d", len(pipeline.inputs))
+	}
+	input := pipeline.inputs[0]
+	if input.SourceID != sourceID {
+		t.Fatalf("unexpected source id %s", input.SourceID)
+	}
+	if input.Fingerprint != "event-1" {
+		t.Fatalf("unexpected fingerprint %s", input.Fingerprint)
+	}
+
+	if err := svc.ProcessWebhook(ctx, sourcePath, "wrong", payload, "", time.Time{}); !errors.Is(err, ErrWebhookSecretInvalid) {
+		t.Fatalf("expected ErrWebhookSecretInvalid, got %v", err)
+	}
+}
+
 func TestService_CreateReactionValidation(t *testing.T) {
 	ctx := context.Background()
 	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{}}
@@ -509,6 +623,10 @@ func (denyingSubscriptions) ListByUser(ctx context.Context, userID uuid.UUID) ([
 	return []subscriptiondomain.Subscription{}, nil
 }
 
+func strPtr(value string) *string {
+	return &value
+}
+
 type recordingPipeline struct {
 	inputs []ExecutionInput
 }
@@ -519,7 +637,8 @@ func (p *recordingPipeline) Enqueue(ctx context.Context, input ExecutionInput) e
 }
 
 type stubActionSourceRepo struct {
-	sources map[uuid.UUID]actiondomain.Source
+	sources  map[uuid.UUID]actiondomain.Source
+	webhooks map[string]actiondomain.WebhookBinding
 }
 
 func (s *stubActionSourceRepo) UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor map[string]any) (actiondomain.Source, error) {
@@ -550,11 +669,26 @@ func (s *stubActionSourceRepo) UpdatePollingCursor(ctx context.Context, sourceID
 	return fmt.Errorf("not implemented")
 }
 
+func (s *stubActionSourceRepo) UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return nil
+}
+
 func (s *stubActionSourceRepo) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {
 	if source, ok := s.sources[componentConfigID]; ok {
 		return source, nil
 	}
 	return actiondomain.Source{}, outbound.ErrNotFound
+}
+
+func (s *stubActionSourceRepo) FindWebhookBindingByPath(ctx context.Context, path string) (actiondomain.WebhookBinding, error) {
+	if s.webhooks == nil {
+		return actiondomain.WebhookBinding{}, outbound.ErrNotFound
+	}
+	trimmed := strings.Trim(strings.TrimSpace(path), "/")
+	if binding, ok := s.webhooks[trimmed]; ok {
+		return binding, nil
+	}
+	return actiondomain.WebhookBinding{}, outbound.ErrNotFound
 }
 
 func TestService_Execute(t *testing.T) {

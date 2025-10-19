@@ -8,6 +8,7 @@ import (
 	actiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/action"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
 )
 
@@ -56,6 +57,14 @@ func (r *webhookRecordingRepo) UpdatePollingCursor(ctx context.Context, sourceID
 
 func (r *webhookRecordingRepo) FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error) {
 	return actiondomain.Source{}, nil
+}
+
+func (r *webhookRecordingRepo) UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return nil
+}
+
+func (r *webhookRecordingRepo) FindWebhookBindingByPath(ctx context.Context, path string) (actiondomain.WebhookBinding, error) {
+	return actiondomain.WebhookBinding{}, outbound.ErrNotFound
 }
 
 func TestWebhookProvisioner_UpsertsWebhookSource(t *testing.T) {
