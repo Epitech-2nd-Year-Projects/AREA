@@ -5,6 +5,7 @@ import '../../features/auth/domain/use_cases/complete_oauth_login.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/data/datasources/oauth_remote_datasource.dart';
 import 'deep_link_service.dart';
+import 'local_oauth_server.dart';
 
 class OAuthManager {
   static final OAuthManager _instance = OAuthManager._internal();
@@ -15,6 +16,7 @@ class OAuthManager {
   late final CompleteOAuthLogin _completeOAuthLogin;
   late final DeepLinkService _deepLinkService;
   late final OAuthRemoteDataSource _oauthDataSource;
+  final LocalOAuthServer _localServer = LocalOAuthServer();
 
   final Map<OAuthProvider, _OAuthFlowData> _flowData = {};
 
@@ -34,11 +36,17 @@ class OAuthManager {
     _deepLinkService.addOAuthErrorListener(_handleOAuthError);
 
     _deepLinkService.initialize();
+
+    _localServer.start().catchError((e) {
+      debugPrint('⚠️ Could not start local server: $e');
+    });
   }
 
   Future<String> startOAuth(OAuthProvider provider, {String? returnTo}) async {
     try {
       debugPrint('🚀 Starting OAuth for $provider');
+
+      await _localServer.start();
 
       final response = await _oauthDataSource.startOAuthFlow(provider, null);
 
@@ -53,6 +61,7 @@ class OAuthManager {
       );
 
       debugPrint('📝 Stored OAuth data for $provider');
+      debugPrint('   Redirect URI: $redirectUri');
 
       String finalUrl = response.authorizationUrl;
       if (returnTo != null) {
@@ -65,6 +74,23 @@ class OAuthManager {
         );
         finalUrl = modifiedUri.toString();
       }
+
+      _localServer.waitForCallback().then((callbackData) {
+        debugPrint('📥 Received callback from local server');
+        if (callbackData.hasError) {
+          _handleOAuthError(callbackData.provider, callbackData.error!);
+        } else if (callbackData.hasCode) {
+          _handleOAuthCallback(
+            callbackData.provider,
+            callbackData.code!,
+            callbackData.state,
+            callbackData.returnTo,
+          );
+        }
+      }).catchError((e) {
+        debugPrint('❌ Error waiting for callback: $e');
+        _handleOAuthError(provider.slug, e.toString());
+      });
 
       return finalUrl;
     } catch (e) {
@@ -84,18 +110,18 @@ class OAuthManager {
 
       final provider = _parseProvider(providerStr);
       if (provider == null) {
-        _handleOAuthError(providerStr, 'Unsupported provider: $providerStr');
+        _handleOAuthError(
+            providerStr, 'Unsupported provider: $providerStr');
         return;
       }
 
       final data = _flowData[provider];
       if (data == null) {
         debugPrint('⚠️ No OAuth flow data found for $provider');
-        _handleOAuthError(providerStr, 'OAuth session expired. Please try again.');
         return;
       }
 
-      debugPrint('🔑 Using stored OAuth data:');
+      debugPrint('🔑 Completing OAuth with stored data');
 
       final session = await _completeOAuthLogin(
         provider,
@@ -141,6 +167,7 @@ class OAuthManager {
     _flowData.clear();
     onSuccess = null;
     onError = null;
+    _localServer.stop();
   }
 }
 

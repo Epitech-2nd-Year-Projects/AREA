@@ -1,24 +1,39 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();
   factory DeepLinkService() => _instance;
+  final Set<String> _processedCodes = {};
   DeepLinkService._internal();
 
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   bool _initialized = false;
 
+  GoRouter? _router;
+
   final List<void Function(String provider, String code, String? state, String? returnTo)>
   _oauthCallbackListeners = [];
   final List<void Function(String? provider, String error)>
   _oauthErrorListeners = [];
 
+  final List<void Function(String provider, String code, String? state)>
+  _serviceCallbackListeners = [];
+  final List<void Function(String? provider, String error)>
+  _serviceErrorListeners = [];
+
+  // ⭐ NOUVEAU: Setter pour router
+  void setRouter(GoRouter router) {
+    _router = router;
+  }
+
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
+
     try {
       _linkSubscription = _appLinks.uriLinkStream.listen(
             (Uri uri) {
@@ -43,73 +58,136 @@ class DeepLinkService {
   void _handleDeepLink(Uri uri) {
     debugPrint('🔍 Processing deep link: ${uri.toString()}');
 
-    if (uri.path.startsWith('/oauth/') && uri.path.contains('/callback')) {
-      final pathSegments = uri.pathSegments;
+    if (uri.scheme == 'area') {
+      _handleAreaScheme(uri);
+      return;
+    }
 
-      if (pathSegments.length >= 3 &&
-          pathSegments[0] == 'oauth' &&
-          pathSegments[2] == 'callback') {
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      _handleHttpCallback(uri);
+    }
+  }
 
-        final provider = pathSegments[1];
-        final code = uri.queryParameters['code'];
-        final error = uri.queryParameters['error'];
-        final state = uri.queryParameters['state'];
-        final returnTo = uri.queryParameters['returnTo'];
+  void _handleAreaScheme(Uri uri) {
+    final pathSegments = uri.pathSegments;
 
-        debugPrint('🔄 OAuth callback detected - Provider: $provider');
+    if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
+      final type = pathSegments[0];
+      final provider = pathSegments[1];
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+      final state = uri.queryParameters['state'];
+      final returnTo = uri.queryParameters['returnTo'];
 
+      debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
+      debugPrint('   Code: ${code?.substring(0, 10)}...');
+      debugPrint('   Error: $error');
+
+      if (type == 'services') {
         if (error != null) {
-          debugPrint('❌ OAuth error: $error');
-          for (final listener in List.of(_oauthErrorListeners)) {
+          debugPrint('❌ Service error: $error');
+          for (final listener in List.of(_serviceErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
-          debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
-          for (final listener in List.of(_oauthCallbackListeners)) {
-            listener(provider, code, state, returnTo);
-          }
-        } else {
-          debugPrint('❌ OAuth without code or error');
-          for (final listener in List.of(_oauthErrorListeners)) {
-            listener(provider, 'No authorization code received');
+          debugPrint('✅ Service code received - notifying listeners');
+          for (final listener in List.of(_serviceCallbackListeners)) {
+            listener(provider, code, state);
           }
         }
-      }
-    }
-    if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
-      final pathSegments = uri.pathSegments;
-
-      if (pathSegments.length >= 3 &&
-          pathSegments[0] == 'services' &&
-          pathSegments[2] == 'callback') {
-
-        final provider = pathSegments[1];
-        final code = uri.queryParameters['code'];
-        final error = uri.queryParameters['error'];
-        final state = uri.queryParameters['state'];
-        final returnTo = uri.queryParameters['returnTo'];
-
-        debugPrint('🔄 OAuth callback detected - Provider: $provider');
-
+      } else {
         if (error != null) {
           debugPrint('❌ OAuth error: $error');
           for (final listener in List.of(_oauthErrorListeners)) {
             listener(provider, error);
           }
         } else if (code != null) {
-          debugPrint('✅ OAuth code received: ${code.substring(0, 10)}...');
+          debugPrint('✅ OAuth code received - notifying listeners');
           for (final listener in List.of(_oauthCallbackListeners)) {
             listener(provider, code, state, returnTo);
-          }
-        } else {
-          debugPrint('❌ OAuth without code or error');
-          for (final listener in List.of(_oauthErrorListeners)) {
-            listener(provider, 'No authorization code received');
           }
         }
       }
     }
   }
+
+  void _handleHttpCallback(Uri uri) {
+    if (uri.path.startsWith('/oauth/') && uri.path.contains('/callback')) {
+      _processOAuthCallback(uri, 'oauth');
+    } else if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
+      _processServiceCallback(uri, 'services');
+    }
+  }
+
+  void _processOAuthCallback(Uri uri, String type) {
+    final pathSegments = uri.pathSegments;
+
+    if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
+      final provider = pathSegments[1];
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+      final state = uri.queryParameters['state'];
+      final returnTo = uri.queryParameters['returnTo'];
+
+      if (code != null && _processedCodes.contains(code)) {
+        debugPrint('⏭️ Ignoring duplicate callback for code: ${code.substring(0, 10)}...');
+        return;
+      }
+
+      if (code != null) {
+        _processedCodes.add(code);
+      }
+
+      debugPrint('🔄 HTTP callback - Type: $type, Provider: $provider');
+
+      if (error != null) {
+        debugPrint('❌ OAuth error: $error');
+        for (final listener in List.of(_oauthErrorListeners)) {
+          listener(provider, error);
+        }
+      } else if (code != null) {
+        debugPrint('✅ OAuth code received');
+        for (final listener in List.of(_oauthCallbackListeners)) {
+          listener(provider, code, state, returnTo);
+        }
+      }
+    }
+  }
+
+  void _processServiceCallback(Uri uri, String type) {
+    final pathSegments = uri.pathSegments;
+
+    if (pathSegments.length >= 3 && pathSegments[2] == 'callback') {
+      final provider = pathSegments[1];
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+      final state = uri.queryParameters['state'];
+
+      if (code != null && _processedCodes.contains(code)) {
+        debugPrint('⏭️ Ignoring duplicate service callback');
+        return;
+      }
+
+      if (code != null) {
+        _processedCodes.add(code);
+      }
+
+      debugPrint('🔄 HTTP service callback - Provider: $provider');
+
+      if (error != null) {
+        debugPrint('❌ Service error: $error');
+        for (final listener in List.of(_serviceErrorListeners)) {
+          listener(provider, error);
+        }
+      } else if (code != null) {
+        debugPrint('✅ Service code received');
+        for (final listener in List.of(_serviceCallbackListeners)) {
+          listener(provider, code, state);
+        }
+      }
+    }
+  }
+
   @visibleForTesting
   void handleDeepLinkForTest(Uri uri) => _handleDeepLink(uri);
 
@@ -117,16 +195,21 @@ class DeepLinkService {
     _linkSubscription?.cancel();
     _oauthCallbackListeners.clear();
     _oauthErrorListeners.clear();
+    _serviceCallbackListeners.clear();
+    _serviceErrorListeners.clear();
+    _processedCodes.clear();
     _initialized = false;
   }
 
   void addOAuthCallbackListener(
-      void Function(String provider, String code, String? state, String? returnTo) listener,) {
+      void Function(String provider, String code, String? state, String? returnTo)
+      listener) {
     _oauthCallbackListeners.add(listener);
   }
 
   void removeOAuthCallbackListener(
-      void Function(String provider, String code, String? state, String? returnTo) listener,) {
+      void Function(String provider, String code, String? state, String? returnTo)
+      listener) {
     _oauthCallbackListeners.remove(listener);
   }
 
@@ -138,5 +221,25 @@ class DeepLinkService {
   void removeOAuthErrorListener(
       void Function(String? provider, String error) listener) {
     _oauthErrorListeners.remove(listener);
+  }
+
+  void addServiceCallbackListener(
+      void Function(String provider, String code, String? state) listener) {
+    _serviceCallbackListeners.add(listener);
+  }
+
+  void removeServiceCallbackListener(
+      void Function(String provider, String code, String? state) listener) {
+    _serviceCallbackListeners.remove(listener);
+  }
+
+  void addServiceErrorListener(
+      void Function(String? provider, String error) listener) {
+    _serviceErrorListeners.add(listener);
+  }
+
+  void removeServiceErrorListener(
+      void Function(String? provider, String error) listener) {
+    _serviceErrorListeners.remove(listener);
   }
 }

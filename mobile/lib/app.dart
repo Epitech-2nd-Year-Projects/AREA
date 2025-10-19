@@ -149,6 +149,70 @@ class MyApp extends StatelessWidget {
       navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
       routes: AuthRouter.routes,
+      redirect: (context, state) {
+        final uri = state.uri;
+
+        if (uri.scheme == 'area') {
+          debugPrint('🔄 Custom scheme detected: ${uri.toString()}');
+          debugPrint('🔄 Host: ${uri.host}');
+          debugPrint('🔄 PathSegments: ${uri.pathSegments}');
+
+          final pathSegments = uri.pathSegments;
+
+          if (uri.host == 'services' &&
+              pathSegments.length >= 2 &&
+              pathSegments[1] == 'callback') {
+            final provider = pathSegments[0];
+            final code = uri.queryParameters['code'];
+            final error = uri.queryParameters['error'];
+            final state = uri.queryParameters['state'];
+
+            debugPrint('✅ Service callback detected for: $provider');
+
+            final newUri = Uri(
+              path: '/services/$provider/callback',
+              queryParameters: {
+                if (code != null) 'code': code,
+                if (error != null) 'error': error,
+                if (state != null) 'state': state,
+              },
+            );
+
+            debugPrint('🔀 Redirecting to: ${newUri.toString()}');
+            return newUri.toString();
+          }
+
+          if (uri.host == 'oauth' &&
+              pathSegments.length >= 2 &&
+              pathSegments[1] == 'callback') {
+            final provider = pathSegments[0];
+            final code = uri.queryParameters['code'];
+            final error = uri.queryParameters['error'];
+            final state = uri.queryParameters['state'];
+            final returnTo = uri.queryParameters['returnTo'];
+
+            debugPrint('✅ OAuth callback detected for: $provider');
+
+            final newUri = Uri(
+              path: '/oauth/$provider/callback',
+              queryParameters: {
+                if (code != null) 'code': code,
+                if (error != null) 'error': error,
+                if (state != null) 'state': state,
+                if (returnTo != null) 'returnTo': returnTo,
+              },
+            );
+
+            debugPrint('🔀 Redirecting to: ${newUri.toString()}');
+            return newUri.toString();
+          }
+
+          debugPrint('⚠️ Unhandled custom scheme, redirecting to home');
+          return '/';
+        }
+
+        return null;
+      },
     );
   }
 }
