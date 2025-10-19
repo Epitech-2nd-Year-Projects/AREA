@@ -2,6 +2,7 @@ package area
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -171,7 +172,7 @@ type mockActionSourceRepo struct {
 }
 
 func (m *mockActionSourceRepo) UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor map[string]any) (actiondomain.Source, error) {
-	clone := cloneMap(cursor)
+	clone := cloneMapAny(cursor)
 	m.upsertCalls = append(m.upsertCalls, struct {
 		configID uuid.UUID
 		schedule string
@@ -180,12 +181,20 @@ func (m *mockActionSourceRepo) UpsertScheduleSource(ctx context.Context, compone
 	return actiondomain.Source{ID: uuid.New()}, nil
 }
 
+func (m *mockActionSourceRepo) UpsertPollingSource(ctx context.Context, componentConfigID uuid.UUID, cursor map[string]any) (actiondomain.Source, error) {
+	return actiondomain.Source{}, fmt.Errorf("not implemented")
+}
+
+func (m *mockActionSourceRepo) UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor map[string]any) (actiondomain.Source, error) {
+	return actiondomain.Source{}, fmt.Errorf("not implemented")
+}
+
 func (m *mockActionSourceRepo) ListDueScheduleSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.ScheduleBinding, error) {
 	return append([]actiondomain.ScheduleBinding(nil), m.listResponse...), nil
 }
 
 func (m *mockActionSourceRepo) UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
-	clone := cloneMap(cursor)
+	clone := cloneMapAny(cursor)
 	m.updateCalls = append(m.updateCalls, struct {
 		sourceID          uuid.UUID
 		componentConfigID uuid.UUID
@@ -201,7 +210,7 @@ func (m *mockActionSourceRepo) FindByComponentConfig(ctx context.Context, compon
 	}
 	resp := m.findResponse
 	if resp.Cursor != nil {
-		resp.Cursor = cloneMap(resp.Cursor)
+		resp.Cursor = cloneMapAny(resp.Cursor)
 	}
 	return resp, nil
 }

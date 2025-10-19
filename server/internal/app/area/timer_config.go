@@ -2,7 +2,6 @@ package area
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 )
@@ -134,38 +133,4 @@ func (cfg timerConfig) description() string {
 		label = unit.labelPlural
 	}
 	return fmt.Sprintf("every %d %s", cfg.frequencyValue, label)
-}
-
-func toInt(value any) (int, error) {
-	switch v := value.(type) {
-	case int:
-		return v, nil
-	case int32:
-		return int(v), nil
-	case int64:
-		return int(v), nil
-	case float64:
-		if math.Mod(v, 1) != 0 {
-			return 0, fmt.Errorf("not an integer")
-		}
-		return int(v), nil
-	case float32:
-		if math.Mod(float64(v), 1) != 0 {
-			return 0, fmt.Errorf("not an integer")
-		}
-		return int(v), nil
-	default:
-		return 0, fmt.Errorf("not a number")
-	}
-}
-
-func toString(value any) (string, error) {
-	switch v := value.(type) {
-	case string:
-		return v, nil
-	case fmt.Stringer:
-		return v.String(), nil
-	default:
-		return "", fmt.Errorf("not a string")
-	}
 }
