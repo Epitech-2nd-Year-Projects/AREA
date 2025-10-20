@@ -159,6 +159,14 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       _isLaunchingUrl = false;
     }
   }
+  List<String> _getRequestedScopes(String serviceId) {
+    if (serviceId.toLowerCase().contains('google')) {
+      return [
+        'https://www.googleapis.com/auth/gmail.send',
+      ];
+    }
+    return [];
+  }
 
   void _showSuccessSnackBar(String message) {
     if (mounted) {
@@ -282,6 +290,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
             onSubscribe: () {
               context.read<ServiceSubscriptionCubit>().subscribe(
                 serviceId: state.service.id,
+                requestedScopes: _getRequestedScopes(state.service.id),
               );
             },
             onUnsubscribe: () {
