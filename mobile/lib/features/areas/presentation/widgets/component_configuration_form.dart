@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/component_parameter.dart';
 import '../../../services/domain/entities/service_component.dart';
 
@@ -158,6 +159,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final component = widget.component;
 
     return Card(
@@ -170,7 +172,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: component == null
-            ? _buildEmptyState(context)
+            ? _buildEmptyState(context, l10n)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -180,7 +182,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                     controller: _nameController,
                     enabled: widget.enabled,
                     decoration: InputDecoration(
-                      labelText: 'Configuration name (optional)',
+                      labelText: l10n.configurationName,
                       hintText: component.displayName,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -190,13 +192,13 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                   const SizedBox(height: 16),
                   if (component.parameters.isEmpty)
                     Text(
-                      'This component does not require any parameters.',
+                      l10n.thisComponentDoesNotRequireParameters,
                       style: Theme.of(context).textTheme.bodyMedium,
                     )
                   else
                     ...component.parameters.map((param) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildParameterField(param),
+                          child: _buildParameterField(param, l10n),
                         )),
                 ],
               ),
@@ -204,7 +206,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -214,7 +216,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
           padding: const EdgeInsets.symmetric(vertical: 12),
           alignment: Alignment.centerLeft,
           child: Text(
-            'Select a component to configure its parameters.',
+            l10n.selectComponentToConfigure,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -222,7 +224,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     );
   }
 
-  Widget _buildParameterField(ComponentParameter param) {
+  Widget _buildParameterField(ComponentParameter param, AppLocalizations l10n) {
     if (_isBooleanParam(param)) {
       final current = (_values[param.key] == true);
       final helper = _helperText(param);
@@ -267,7 +269,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             : null,
         validator: (value) {
           if (param.required && (value == null || value.isEmpty)) {
-            return 'Required field';
+            return l10n.requiredField;
           }
           return null;
         },
@@ -282,15 +284,15 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     }
 
     if (_isDateTimeParam(param)) {
-      return _buildDateTimePicker(param);
+      return _buildDateTimePicker(param, l10n);
     }
 
     if (_isDateParam(param)) {
-      return _buildDatePicker(param);
+      return _buildDatePicker(param, l10n);
     }
 
     if (_isTimeParam(param)) {
-      return _buildTimePicker(param);
+      return _buildTimePicker(param, l10n);
     }
 
     final controller = _textControllers[param.key];
@@ -315,7 +317,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       validator: (value) {
         if (!param.required) return null;
         if (value == null || value.trim().isEmpty) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },
@@ -453,7 +455,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     return value?.toString() ?? '';
   }
 
-  Widget _buildDateTimePicker(ComponentParameter param) {
+  Widget _buildDateTimePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -467,7 +469,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select date & time' : null,
+        hintText: controller.text.isEmpty ? l10n.selectDateTime : null,
         suffixIcon: const Icon(Icons.calendar_month),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -477,14 +479,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },
     );
   }
 
-  Widget _buildDatePicker(ComponentParameter param) {
+  Widget _buildDatePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -498,7 +500,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select date' : null,
+        hintText: controller.text.isEmpty ? l10n.selectDate : null,
         suffixIcon: const Icon(Icons.event),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -508,14 +510,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },
     );
   }
 
-  Widget _buildTimePicker(ComponentParameter param) {
+  Widget _buildTimePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -529,7 +531,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select time' : null,
+        hintText: controller.text.isEmpty ? l10n.selectTime : null,
         suffixIcon: const Icon(Icons.schedule),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -539,7 +541,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/service_component.dart';
 import '../../../services/domain/value_objects/component_kind.dart';
 import '../cubits/area_form_cubit.dart';
@@ -117,7 +118,8 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final badge = _buildBadge(context);
+    final l10n = AppLocalizations.of(context)!;
+    final badge = _buildBadge(context, l10n);
 
     return Card(
       elevation: 0,
@@ -165,7 +167,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'No ${widget.title.toLowerCase()} components for this service',
+                          l10n.noComponentsFor,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
@@ -175,7 +177,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                                 _components.any((e) => e.id == widget.selectedComponentId))
                             ? widget.selectedComponentId
                             : null,
-                        hint: Text('Choose a ${widget.title.toLowerCase()} component'),
+                        hint: Text(l10n.chooseComponent),
                         items: _components
                             .map((component) => DropdownMenuItem<String>(
                                   value: component.id,
@@ -194,7 +196,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                             widget.onComponentSelected(component);
                           }
                         },
-                        validator: (v) => v == null ? 'Select a component' : null,
+                        validator: (v) => v == null ? l10n.selectComponent : null,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           contentPadding:
@@ -208,7 +210,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     );
   }
 
-  Widget _buildBadge(BuildContext context) {
+  Widget _buildBadge(BuildContext context, AppLocalizations l10n) {
     if (widget.providerId == null) return const SizedBox.shrink();
 
     final cubit = context.read<AreaFormCubit>();
@@ -218,10 +220,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
       cubit.checkSubscriptionActive(widget.providerId!);
       return Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: 6),
-          Text('Checking…'),
+        children: [
+          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: 6),
+          Text(l10n.checking),
         ],
       );
     }
@@ -229,7 +231,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     final isSub = widget.isSubscribed ?? cached;
     final color = isSub ? Colors.green : Theme.of(context).colorScheme.error;
     final icon = isSub ? Icons.check_circle : Icons.cancel_outlined;
-    final text = isSub ? 'Subscribed' : 'Not subscribed';
+    final text = isSub ? l10n.subscribed : l10n.notSubscribed;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/areas_cubit.dart';
 import '../cubits/areas_state.dart';
@@ -41,8 +42,10 @@ class _AreasScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('My Areas')),
+      appBar: AppBar(title: Text(l10n.myAreas)),
       body: BlocBuilder<AreasCubit, AreasState>(
         builder: (context, state) {
           if (state is AreasLoading) {
@@ -61,10 +64,10 @@ class _AreasScreen extends StatelessWidget {
                 onRefresh: () => context.read<AreasCubit>().fetchAreas(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 120),
-                    Center(child: Text('No automation configured.')),
-                    SizedBox(height: 600),
+                  children: [
+                    const SizedBox(height: 120),
+                    Center(child: Text(l10n.noAutomationConfigured)),
+                    const SizedBox(height: 600),
                   ],
                 ),
               );
@@ -97,7 +100,7 @@ class _AreasScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openCreate(context),
         icon: const Icon(Icons.add),
-        label: const Text('New'),
+        label: Text(l10n.newAreaButton),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
       ),

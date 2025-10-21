@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/area.dart';
 import '../../domain/entities/area_status.dart';
 import '../../domain/entities/area_component_binding.dart';
@@ -21,7 +22,8 @@ class AreaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusBadge = _buildStatusBadge(context, area.status);
+    final l10n = AppLocalizations.of(context)!;
+    final statusBadge = _buildStatusBadge(context, area.status, l10n);
     final actionSummary = _formatComponent(area.action);
     final reactionSummaries = area.reactions.map(_formatComponent).toList();
 
@@ -77,11 +79,11 @@ class AreaCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          _buildSummaryRow(context, 'Action', actionSummary),
+          _buildSummaryRow(context, l10n.action, actionSummary),
           const SizedBox(height: AppSpacing.xs),
           ...reactionSummaries.asMap().entries.map((entry) => Padding(
                 padding: EdgeInsets.only(top: entry.key == 0 ? 0 : AppSpacing.xs),
-                child: _buildSummaryRow(context, entry.key == 0 ? 'Reaction' : 'Reaction ${entry.key + 1}', entry.value),
+                child: _buildSummaryRow(context, entry.key == 0 ? l10n.reaction : 'Reaction ${entry.key + 1}', entry.value),
               )),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -89,13 +91,13 @@ class AreaCard extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.edit, size: 20),
-                tooltip: 'Edit',
+                tooltip: l10n.toolTipEdit,
                 onPressed: onEdit,
               ),
               const SizedBox(width: AppSpacing.sm),
               IconButton(
                 icon: const Icon(Icons.delete, size: 20),
-                tooltip: 'Delete',
+                tooltip: l10n.toolTipDelete,
                 onPressed: onDelete,
               ),
             ],
@@ -105,7 +107,7 @@ class AreaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, AreaStatus status) {
+  Widget _buildStatusBadge(BuildContext context, AreaStatus status, AppLocalizations l10n) {
     final isActive = status == AreaStatus.enabled;
     final color = switch (status) {
       AreaStatus.enabled => AppColors.success,
@@ -113,9 +115,9 @@ class AreaCard extends StatelessWidget {
       AreaStatus.archived => AppColors.warning,
     };
     final label = switch (status) {
-      AreaStatus.enabled => 'Enabled',
-      AreaStatus.disabled => 'Disabled',
-      AreaStatus.archived => 'Archived',
+      AreaStatus.enabled => l10n.enabled,
+      AreaStatus.disabled => l10n.disabled,
+      AreaStatus.archived => l10n.archived,
     };
 
     return Container(

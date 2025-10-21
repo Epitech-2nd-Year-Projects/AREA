@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../services/domain/use_cases/get_services_with_status.dart';
 import '../../../services/domain/entities/service_with_status.dart';
@@ -73,6 +74,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final filtered = _items.where((s) {
       final dn = (s.provider.displayName?.toLowerCase() ??
@@ -103,7 +105,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search services…',
+                      hintText: l10n.searchServices,
                       prefixIcon: const Icon(Icons.search),
                       isDense: true,
                       border: OutlineInputBorder(
@@ -116,7 +118,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                 ),
                 const SizedBox(width: 12),
                 FilterChip(
-                  label: const Text('Subscribed only'),
+                  label: Text(l10n.subscribedOnly),
                   selected: _onlySubscribed,
                   onSelected: (v) => setState(() => _onlySubscribed = v),
                 ),
@@ -124,14 +126,14 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
             ),
             const SizedBox(height: 12),
             Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.green, size: 16),
-                SizedBox(width: 6),
-                Text('Subscribed'),
-                SizedBox(width: 16),
-                Icon(Icons.cancel_outlined, size: 16),
-                SizedBox(width: 6),
-                Text('Not subscribed'),
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                const SizedBox(width: 6),
+                Text(l10n.subscribed),
+                const SizedBox(width: 16),
+                const Icon(Icons.cancel_outlined, size: 16),
+                const SizedBox(width: 6),
+                Text(l10n.notSubscribedStatus),
               ],
             ),
             const SizedBox(height: 8),
@@ -162,7 +164,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                       ),
                       title: Text(name),
                       subtitle: Text(
-                        s.isSubscribed ? 'Subscribed' : 'Not subscribed',
+                        s.isSubscribed ? l10n.subscribed : l10n.notSubscribedStatus,
                         style: TextStyle(color: color),
                       ),
                       trailing: Icon(icon, color: color),
