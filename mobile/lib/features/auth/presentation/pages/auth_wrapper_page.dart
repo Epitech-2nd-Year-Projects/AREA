@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/auth_state.dart';
@@ -32,6 +33,7 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentLocation = GoRouterState.of(context).uri.path;
+    final l10n = AppLocalizations.of(context)!;
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -48,12 +50,12 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
       },
       builder: (context, state) {
         if (state is AuthInitial || state is AuthLoading) {
-          return _buildLoadingScreen(theme);
+          return _buildLoadingScreen(theme, l10n);
         }
 
         if (state is Authenticated) {
           if (currentLocation == '/') {
-            return _buildLoadingScreen(theme);
+            return _buildLoadingScreen(theme, l10n);
           }
           return widget.authenticatedChild;
         }
@@ -63,26 +65,26 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
         }
 
         if (state is AuthError) {
-          return _buildErrorScreen(theme, state.message);
+          return _buildErrorScreen(theme, l10n, state.message);
         }
 
-        return _buildLoadingScreen(theme);
+        return _buildLoadingScreen(theme, l10n);
       },
     );
   }
 
-  Widget _buildLoadingScreen(ThemeData theme) {
+  Widget _buildLoadingScreen(ThemeData theme, AppLocalizations l10n) {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
+            const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
-            SizedBox(height: 16),
-            Text('Loading...'),
+            const SizedBox(height: 16),
+            Text(l10n.loading),
           ],
         ),
       ),
@@ -93,7 +95,7 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
     return const LoginPage();
   }
 
-  Widget _buildErrorScreen(ThemeData theme, String message) {
+  Widget _buildErrorScreen(ThemeData theme, AppLocalizations l10n, String message) {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
@@ -109,7 +111,7 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Authentication Error',
+                l10n.authenticationError,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: AppColors.error,
                 ),
@@ -125,7 +127,7 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
                 onPressed: () {
                   context.read<AuthBloc>().add(AppStarted());
                 },
-                child: const Text('Retry'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
