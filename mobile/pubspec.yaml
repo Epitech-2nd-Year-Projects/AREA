@@ -53,6 +53,7 @@ dependencies:
   path_provider_platform_interface: ^2.1.2
   shelf: ^1.4.2
   shelf_router: ^1.1.4
+  flutter_localization: ^0.3.3
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +71,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
   assets:
     - assets/icons/
   fonts:
