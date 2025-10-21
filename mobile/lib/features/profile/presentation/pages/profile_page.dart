@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../auth/presentation/blocs/auth_bloc.dart';
@@ -33,8 +34,10 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l10n.profile)),
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
@@ -119,12 +122,12 @@ class _ProfileView extends StatelessWidget {
                                           );
                                           if (saved == true && context.mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Profile updated.')),
+                                              SnackBar(content: Text(l10n.profileUpdated,)),
                                             );
                                           }
                                         },
                                         icon: const Icon(Icons.edit),
-                                        label: const Text('Edit'),
+                                        label: Text(l10n.edit),
                                         style: FilledButton.styleFrom(
                                             backgroundColor: AppColors.primary,
                                             foregroundColor: AppColors.white,
@@ -147,30 +150,30 @@ class _ProfileView extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Account ID: ${user.id}'),
+                                      Text('${l10n.accountId}: ${user.id}'),
                                       const SizedBox(height: 4),
-                                      Text('Status: active'),
+                                      Text('${l10n.status}: ${l10n.statusActive}'),
                                       const SizedBox(height: 4),
-                                      Text('Created: N/A'),
+                                      Text('${l10n.created}: ${l10n.notAvailable}'),
                                       const SizedBox(height: 4),
-                                      Text('Last login: N/A'),
+                                      Text('${l10n.lastLogin}: ${l10n.notAvailable}'),
                                     ],
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Services',
+                                l10n.services,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
                               if (services.isEmpty)
-                                const Text('No services available.'),
+                                Text(l10n.noServicesAvailable),
                               if (services.isNotEmpty)
                                 SubscribedServicesList(subscribedServices: state.subscribedServices),
                               const SizedBox(height: 16),
                               Text(
-                                'Security',
+                                l10n.security,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
@@ -187,21 +190,21 @@ class _ProfileView extends StatelessWidget {
                                     tiles: [
                                       ListTile(
                                         leading: const Icon(Icons.logout),
-                                        title: const Text('Logout'),
+                                        title: Text(l10n.logoutAction),
                                         onTap: () {
                                           context.read<AuthBloc>().add(UserLoggedOut());
                                         },
                                       ),
                                       ListTile(
                                         leading: const Icon(Icons.delete_forever),
-                                        title: const Text('Delete account'),
-                                        subtitle: const Text('Not available'),
+                                        title: Text(l10n.deleteAccount),
+                                        subtitle: Text(l10n.notAvailable),
                                         enabled: false,
                                         onTap: null,
                                       ),
                                       ListTile(
                                         leading: const Icon(Icons.settings),
-                                        title: const Text('Settings'),
+                                        title: Text(l10n.settingsAction),
                                         onTap: () {
                                           context.push('/profile/settings');
                                         },

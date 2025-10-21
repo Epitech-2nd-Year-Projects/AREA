@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../cubits/profile_state.dart';
 import '../cubits/profile_cubit.dart';
 
@@ -35,6 +36,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     return SafeArea(
@@ -48,12 +50,12 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
         child: Form(
           key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min, // wrap content
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Text('Edit profile',
+                  Text(l10n.editProfile,
                       style: Theme.of(context).textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
@@ -69,23 +71,23 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Display name',
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.displayName,
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    (v == null || v.trim().isEmpty) ? l10n.required : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.alternate_email),
+                decoration: InputDecoration(
+                  labelText: l10n.email,
+                  prefixIcon: const Icon(Icons.alternate_email),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    (v == null || v.trim().isEmpty) ? l10n.required : null,
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -103,11 +105,11 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                           );
                           if (!mounted) return;
                           if (ok) {
-                            Navigator.of(context).pop(true); // succès
+                            Navigator.of(context).pop(true);
                           } else {
                             setState(() => _saving = false);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to update profile')),
+                              SnackBar(content: Text(l10n.failedToUpdateProfile)),
                             );
                           }
                         },
@@ -118,7 +120,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_outlined),
-                  label: const Text('Save'),
+                  label: Text(l10n.saveAction),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,

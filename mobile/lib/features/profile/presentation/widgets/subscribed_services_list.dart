@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/service_with_status.dart';
 
 class SubscribedServicesList extends StatelessWidget {
@@ -13,6 +14,8 @@ class SubscribedServicesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 0,
       color: AppColors.getSurfaceColor(context),
@@ -23,11 +26,11 @@ class SubscribedServicesList extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: subscribedServices.isEmpty
-            ? const _EmptySubscriptions()
+            ? _EmptySubscriptions(l10n: l10n)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Your subscriptions',
+                  Text(l10n.yourSubscriptions,
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -52,7 +55,7 @@ class SubscribedServicesList extends StatelessWidget {
                               ),
                             ),
                             title: Text(provider.displayName),
-                            subtitle: const Text('Subscribed'),
+                            subtitle: Text(l10n.subscribed),
                             trailing: const Icon(Icons.check_circle_outline),
                           );
                         },
@@ -67,14 +70,18 @@ class SubscribedServicesList extends StatelessWidget {
 }
 
 class _EmptySubscriptions extends StatelessWidget {
-  const _EmptySubscriptions();
+  final AppLocalizations l10n;
+
+  const _EmptySubscriptions({
+    required this.l10n,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Your subscriptions',
+        Text(l10n.yourSubscriptions,
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         Container(
@@ -86,12 +93,12 @@ class _EmptySubscriptions extends StatelessWidget {
           ),
           child: Column(
             children: [
-              const Text('No subscribed services yet.'),
+              Text(l10n.noSubscribedServicesYet),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: () => context.push('/services'),
                 icon: const Icon(Icons.explore_outlined),
-                label: const Text('Discover services'),
+                label: Text(l10n.discoverServices),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.white,
