@@ -6,6 +6,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/service_details/service_details_bloc.dart';
 import '../blocs/service_details/service_details_event.dart';
 import '../blocs/service_details/service_details_state.dart';
@@ -59,11 +60,13 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocConsumer<ServiceSubscriptionCubit, ServiceSubscriptionState>(
       listener: (context, subscriptionState) async {
         if (subscriptionState is ServiceSubscriptionSuccess) {
           _showSuccessSnackBar(
-            'Successfully subscribed to service!',
+            l10n.successfullySubscribedToService,
           );
           if (mounted) {
             context
@@ -72,10 +75,10 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
           }
         } else if (
         subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
-          await _handleAuthorizationFlow(context, subscriptionState);
+          await _handleAuthorizationFlow(context, subscriptionState, l10n);
         } else if (subscriptionState is ServiceUnsubscribed) {
           _showSuccessSnackBar(
-            'Successfully unsubscribed from service',
+            l10n.successfullyUnsubscribedFromService,
           );
           if (mounted) {
             context
@@ -91,7 +94,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
           builder: (context, state) {
             return Scaffold(
               backgroundColor: AppColors.getBackgroundColor(context),
-              body: _buildBody(context, state, subscriptionState),
+              body: _buildBody(context, state, subscriptionState, l10n),
             );
           },
         );
@@ -102,6 +105,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
   Future<void> _handleAuthorizationFlow(
       BuildContext context,
       ServiceSubscriptionAwaitingAuthorization subscriptionState,
+      AppLocalizations l10n,
       ) async {
     if (_isLaunchingUrl) {
       debugPrint('⏳ URL launch already in progress, ignoring...');
@@ -135,7 +139,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       if (!launched) {
         debugPrint('❌ Failed to launch URL');
         if (mounted) {
-          _showErrorSnackBar('Could not launch authorization URL');
+          _showErrorSnackBar(l10n.couldNotLaunchAuthorizationUrl);
           if (mounted) {
             context
                 .read<ServiceSubscriptionCubit>()
@@ -198,6 +202,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       BuildContext context,
       ServiceDetailsState state,
       ServiceSubscriptionState subscriptionState,
+      AppLocalizations l10n,
       ) {
     if (state is ServiceDetailsLoading) {
       return const ServiceDetailsLoadingView();
@@ -205,7 +210,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
 
     if (state is ServiceDetailsError) {
       return ServiceDetailsErrorView(
-        title: 'Failed to Load Service',
+        title: l10n.failedToLoadService,
         message: state.message,
         onRetry: () {
           context

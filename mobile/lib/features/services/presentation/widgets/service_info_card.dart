@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/service_provider.dart';
 
 class ServiceInfoCard extends StatelessWidget {
@@ -14,6 +15,8 @@ class ServiceInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       margin: const EdgeInsets.all(AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -40,11 +43,11 @@ class ServiceInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (isExtremelyCompact)
-                _buildCompactHeader(context)
+                _buildCompactHeader(context, l10n)
               else
-                _buildNormalHeader(context, constraints.maxWidth),
+                _buildNormalHeader(context, constraints.maxWidth, l10n),
               const SizedBox(height: AppSpacing.xl),
-              _buildAuthenticationSection(context, constraints.maxWidth),
+              _buildAuthenticationSection(context, constraints.maxWidth, l10n),
             ],
           );
         },
@@ -52,7 +55,7 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactHeader(BuildContext context) {
+  Widget _buildCompactHeader(BuildContext context, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -76,14 +79,14 @@ class ServiceInfoCard extends StatelessWidget {
           runSpacing: AppSpacing.xs,
           children: [
             _buildCategoryChip(context, true),
-            _buildStatusBadge(context, true),
+            _buildStatusBadge(context, true, l10n),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildNormalHeader(BuildContext context, double width) {
+  Widget _buildNormalHeader(BuildContext context, double width, AppLocalizations l10n) {
     final isSmall = width < 350;
     final isMedium = width < 450;
 
@@ -110,7 +113,7 @@ class ServiceInfoCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AppSpacing.sm),
-              _buildBadges(context, width),
+              _buildBadges(context, width, l10n),
             ],
           ),
         ),
@@ -153,11 +156,11 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBadges(BuildContext context, double width) {
+  Widget _buildBadges(BuildContext context, double width, AppLocalizations l10n) {
     final isSmall = width < 350;
 
     final categoryChip = _buildCategoryChip(context, isSmall);
-    final statusBadge = _buildStatusBadge(context, isSmall);
+    final statusBadge = _buildStatusBadge(context, isSmall, l10n);
 
     return Wrap(
       spacing: AppSpacing.sm,
@@ -193,10 +196,10 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, bool isSmall) {
+  Widget _buildStatusBadge(BuildContext context, bool isSmall, AppLocalizations l10n) {
     final isActive = service.isEnabled;
     final statusColor = isActive ? AppColors.success : AppColors.error;
-    final statusText = isActive ? 'Active' : 'Inactive';
+    final statusText = isActive ? l10n.active : l10n.inactive;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -236,8 +239,8 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAuthenticationSection(BuildContext context, double width) {
-    final authInfo = _getAuthInfo();
+  Widget _buildAuthenticationSection(BuildContext context, double width, AppLocalizations l10n) {
+    final authInfo = _getAuthInfo(l10n);
     final isSmall = width < 350;
 
     return Container(
@@ -269,7 +272,7 @@ class ServiceInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Authentication',
+                  l10n.authentication,
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.getTextSecondaryColor(context),
                     fontWeight: FontWeight.w500,
@@ -311,35 +314,35 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  ({Color color, IconData icon, String text, String badge}) _getAuthInfo() {
+  ({Color color, IconData icon, String text, String badge}) _getAuthInfo(AppLocalizations l10n  ) {
     switch (service.oauthType.value) {
       case 'oauth2':
         return (
         color: AppColors.primary,
         icon: Icons.security_rounded,
-        text: 'OAuth 2.0 Required',
-        badge: 'OAuth'
+        text: l10n.oauth2Required,
+        badge: l10n.oauthBadge
         );
       case 'apikey':
         return (
         color: AppColors.warning,
         icon: Icons.key_rounded,
-        text: 'API Key Required',
-        badge: 'API Key'
+        text: l10n.apiKeyRequired,
+        badge: l10n.apiKeyBadge
         );
       case 'none':
         return (
         color: AppColors.success,
         icon: Icons.public_rounded,
-        text: 'No Authentication',
-        badge: 'Public'
+        text: l10n.noAuthentication,
+        badge: l10n.publicBadge
         );
       default:
         return (
         color: AppColors.gray500,
         icon: Icons.help_outline_rounded,
-        text: 'Unknown Authentication',
-        badge: 'Unknown'
+        text: l10n.unknownAuthentication,
+        badge: l10n.unknownBadge
         );
     }
   }

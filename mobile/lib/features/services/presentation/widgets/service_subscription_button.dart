@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/service_provider.dart';
 import '../../domain/entities/user_service_subscription.dart';
 
@@ -23,6 +24,7 @@ class ServiceSubscriptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isSubscribed = subscription?.isActive ?? false;
 
     return LayoutBuilder(
@@ -57,7 +59,7 @@ class ServiceSubscriptionButton extends StatelessWidget {
             label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                isSubscribed ? 'Unsubscribe' : 'Subscribe',
+                isSubscribed ? l10n.unsubscribe : l10n.subscribe,
                 style: AppTypography.labelMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: constraints.maxWidth < 120 ? 11 : null,

@@ -5,6 +5,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/services_list/services_list_bloc.dart';
 import '../blocs/services_list/services_list_event.dart';
 import '../blocs/services_list/services_list_state.dart';
@@ -32,6 +33,8 @@ class _ServicesListPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(context),
       body: BlocConsumer<ServicesListBloc, ServicesListState>(
@@ -60,15 +63,15 @@ class _ServicesListPageContent extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context),
+                        _buildHeader(context, l10n),
                         const SizedBox(height: AppSpacing.lg),
-                        _buildSearchAndFilters(context, state),
+                        _buildSearchAndFilters(context, state, l10n),
                         const SizedBox(height: AppSpacing.lg),
                       ],
                     ),
                   ),
                 ),
-                _buildServicesList(context, state),
+                _buildServicesList(context, state, l10n),
               ],
             ),
           );
@@ -77,21 +80,21 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Connect Your Services',
+            l10n.connectYourServices,
             style: AppTypography.displayMedium.copyWith(
               color: AppColors.getTextPrimaryColor(context),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Subscribe to services to create powerful automations',
+            l10n.subscribeToServices,
             style: AppTypography.bodyLarge.copyWith(
               color: AppColors.getTextSecondaryColor(context),
             ),
@@ -101,7 +104,7 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchAndFilters(BuildContext context, ServicesListState state) {
+  Widget _buildSearchAndFilters(BuildContext context, ServicesListState state, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -135,7 +138,7 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildServicesList(BuildContext context, ServicesListState state) {
+  Widget _buildServicesList(BuildContext context, ServicesListState state, AppLocalizations l10n) {
     if (state is ServicesListLoading) {
       return const SliverToBoxAdapter(
         child: ServicesLoadingShimmer(),
@@ -145,7 +148,7 @@ class _ServicesListPageContent extends StatelessWidget {
     if (state is ServicesListError) {
       return SliverToBoxAdapter(
         child: ServicesErrorWidget(
-          title: 'Failed to Load Services',
+          title: l10n.failedToLoadServices,
           message: state.message,
           onRetry: () {
             context.read<ServicesListBloc>().add(LoadServices());

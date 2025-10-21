@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EmptyServicesState extends StatelessWidget {
   final bool hasFilters;
@@ -15,6 +16,8 @@ class EmptyServicesState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -36,7 +39,7 @@ class EmptyServicesState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              hasFilters ? 'No services found' : 'No services available',
+              hasFilters ? l10n.noServicesFound : l10n.noServicesAvailable,
               style: AppTypography.headlineMedium.copyWith(
                 color: AppColors.getTextPrimaryColor(context),
               ),
@@ -45,8 +48,8 @@ class EmptyServicesState extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               hasFilters
-                  ? 'Try adjusting your search or filters'
-                  : 'Services will appear here once available',
+                  ? l10n.tryAdjustingSearchOrFilters
+                  : l10n.servicesWillAppearHereOnceAvailable,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.getTextSecondaryColor(context),
               ),
@@ -57,7 +60,7 @@ class EmptyServicesState extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onClearFilters,
                 icon: const Icon(Icons.clear),
-                label: const Text('Clear Filters'),
+                label: Text(l10n.clearFilters),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/service_component.dart';
 import '../../domain/value_objects/component_kind.dart';
 
@@ -46,6 +47,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final actions = widget.components.where((c) => c.isAction).toList();
     final reactions = widget.components.where((c) => c.isReaction).toList();
 
@@ -69,24 +71,23 @@ class _ComponentsSectionState extends State<ComponentsSection>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
-          _buildSearchBar(context),
-          _buildTabs(context, actions.length, reactions.length),
+          _buildHeader(context, l10n),
+          _buildSearchBar(context, l10n),
+          _buildTabs(context, actions.length, reactions.length, l10n),
           SizedBox(
             height: 400,
-            child: _buildTabContent(context, actions, reactions),
+            child: _buildTabContent(context, actions, reactions, l10n),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Seulement en très compact et on centre bien
           final isVeryCompact = constraints.maxWidth < 280;
 
           if (isVeryCompact) {
@@ -101,16 +102,16 @@ class _ComponentsSectionState extends State<ComponentsSection>
                   child: Icon(
                     Icons.extension_rounded,
                     color: AppColors.primary,
-                    size: 20, // Plus petit
+                    size: 20,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Available Components',
+                  l10n.availableComponents,
                   style: AppTypography.headlineMedium.copyWith(
                     color: AppColors.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w700,
-                    fontSize: 18, // Plus petit mais lisible
+                    fontSize: 18,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -135,7 +136,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
-                  'Available Components',
+                  l10n.availableComponents,
                   style: AppTypography.headlineMedium.copyWith(
                     color: AppColors.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w700,
@@ -149,7 +150,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
+  Widget _buildSearchBar(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Container(
@@ -166,7 +167,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
             color: AppColors.getTextPrimaryColor(context),
           ),
           decoration: InputDecoration(
-            hintText: 'Search components...',
+            hintText: l10n.searchComponents,
             hintStyle: AppTypography.bodyLarge.copyWith(
               color: AppColors.getTextTertiaryColor(context),
             ),
@@ -200,7 +201,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
     );
   }
 
-  Widget _buildTabs(BuildContext context, int actionsCount, int reactionsCount) {
+  Widget _buildTabs(BuildContext context, int actionsCount, int reactionsCount, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(AppSpacing.xl),
       height: 44,
@@ -210,7 +211,6 @@ class _ComponentsSectionState extends State<ComponentsSection>
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Réduction de la taille de police seulement si vraiment nécessaire
           final fontSize = constraints.maxWidth < 280 ? 11.0 : null;
 
           return TabBar(
@@ -240,9 +240,9 @@ class _ComponentsSectionState extends State<ComponentsSection>
             dividerColor: Colors.transparent,
             indicatorSize: TabBarIndicatorSize.tab,
             tabs: [
-              Tab(text: 'All (${widget.components.length})'),
-              Tab(text: 'Actions ($actionsCount)'),
-              Tab(text: 'Reactions ($reactionsCount)'),
+              Tab(text: '${l10n.allTab}(${widget.components.length})'),
+              Tab(text: '${l10n.actionsTab} ($actionsCount)'),
+              Tab(text: '${l10n.reactionsTab}($reactionsCount)'),
             ],
           );
         },
@@ -254,18 +254,19 @@ class _ComponentsSectionState extends State<ComponentsSection>
       BuildContext context,
       List<ServiceComponent> actions,
       List<ServiceComponent> reactions,
+      AppLocalizations l10n
       ) {
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildComponentsList(widget.components),
-        _buildComponentsList(actions),
-        _buildComponentsList(reactions),
+        _buildComponentsList(widget.components, l10n),
+        _buildComponentsList(actions, l10n),
+        _buildComponentsList(reactions, l10n),
       ],
     );
   }
 
-  Widget _buildComponentsList(List<ServiceComponent> components) {
+  Widget _buildComponentsList(List<ServiceComponent> components, AppLocalizations l10n) {
     if (components.isEmpty) {
       return Center(
         child: Column(
@@ -285,7 +286,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No components available',
+              l10n.noComponentsAvailable,
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.getTextSecondaryColor(context),
               ),
@@ -306,12 +307,12 @@ class _ComponentsSectionState extends State<ComponentsSection>
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         final component = components[index];
-        return _buildComponentItem(component);
+        return _buildComponentItem(component, l10n);
       },
     );
   }
 
-  Widget _buildComponentItem(ServiceComponent component) {
+  Widget _buildComponentItem(ServiceComponent component, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -370,7 +371,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            component.description ?? 'No description provided.',
+            component.description ?? l10n.noDescriptionProvided,
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.getTextSecondaryColor(context),
               height: 1.4,
