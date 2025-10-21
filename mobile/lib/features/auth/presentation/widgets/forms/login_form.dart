@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/design_system/app_colors.dart';
 import '../../../../../core/design_system/app_spacing.dart';
 import '../../../../../core/design_system/app_typography.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../blocs/login/login_cubit.dart';
 import '../../blocs/login/login_state.dart';
 import '../common/auth_text_field.dart';
@@ -29,6 +30,7 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<LoginCubit, LoginState>(
       builder: (context, state) {
         return Form(
@@ -36,14 +38,14 @@ class _LoginFormState extends State<LoginForm> {
           child: Column(
             children: [
               AuthTextField(
-                label: 'Email',
-                hintText: 'Enter your email address',
+                label: l10n.email,
+                hintText: l10n.enterEmail,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 prefixIcon: const Icon(Icons.email_outlined, size: 20),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.pleaseEnterEmail;
                   }
                   return null;
                 },
@@ -51,14 +53,14 @@ class _LoginFormState extends State<LoginForm> {
               ),
               const SizedBox(height: AppSpacing.lg),
               AuthTextField(
-                label: 'Password',
-                hintText: 'Enter your password',
+                label: l10n.password,
+                hintText: l10n.enterPassword,
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: const Icon(Icons.lock_outline, size: 20),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return l10n.pleaseEnterPassword;
                   }
                   return null;
                 },
@@ -66,7 +68,7 @@ class _LoginFormState extends State<LoginForm> {
               ),
               const SizedBox(height: AppSpacing.xl),
               AuthButton(
-                text: 'Sign In',
+                text: l10n.login,
                 onPressed: _handleLogin,
                 isLoading: state is LoginLoading,
               ),
