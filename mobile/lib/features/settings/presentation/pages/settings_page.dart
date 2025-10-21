@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/use_cases/get_server_address.dart';
 import '../../domain/use_cases/set_server_address.dart';
@@ -45,6 +46,8 @@ class _SettingsScreenState extends State<_SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocConsumer<SettingsCubit, SettingsState>(
       listener: (context, state) {
         if (state is SettingsReady && state.message != null && state.message!.isNotEmpty) {
@@ -58,14 +61,14 @@ class _SettingsScreenState extends State<_SettingsScreen> {
 
         if (state is SettingsLoading) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Settings')),
+            appBar: AppBar(title: Text(l10n.settingsPageTitle)),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (state is SettingsError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Settings')),
+            appBar: AppBar(title: Text(l10n.settingsPageTitle)),
             body: Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
           );
         }
@@ -78,10 +81,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Settings'),
+            title: Text(l10n.settingsPageTitle),
             actions: [
               IconButton(
-                tooltip: 'Close',
+                tooltip: l10n.closeAction,
                 icon: const Icon(Icons.close),
                 onPressed: () => context.pop(),
               )
@@ -114,16 +117,16 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Server address', style: theme.textTheme.titleMedium),
+                              Text(l10n.serverAddress, style: theme.textTheme.titleMedium),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _controller,
                                 keyboardType: TextInputType.url,
                                 onChanged: context.read<SettingsCubit>().onAddressChanged,
                                 decoration: InputDecoration(
-                                  hintText: 'https://api.example.com',
+                                  hintText: l10n.serverAddressHint,
                                   prefixIcon: const Icon(Icons.link),
-                                  errorText: s.isValid ? null : 'Invalid URL',
+                                  errorText: s.isValid ? null : l10n.invalidUrl,
                                   border: border,
                                   enabledBorder: border,
                                   focusedBorder: OutlineInputBorder(
@@ -142,7 +145,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                         ? context.read<SettingsCubit>().save
                                         : null,
                                     icon: const Icon(Icons.save),
-                                    label: const Text('Save'),
+                                    label: Text(l10n.saveServerAddress),
                                     style: FilledButton.styleFrom(
                                       backgroundColor: AppColors.primary,
                                       foregroundColor: AppColors.white,
@@ -152,7 +155,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                   OutlinedButton.icon(
                                     onPressed: () => context.read<SettingsCubit>().save,
                                     icon: const Icon(Icons.refresh),
-                                    label: const Text('Reload'),
+                                    label: Text(l10n.reloadServer),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.primary,
                                       side: const BorderSide(color: AppColors.primary, width: 2),
@@ -174,8 +177,8 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                         ),
                         child: ListTile(
                           leading: const Icon(Icons.info_outline),
-                          title: const Text('About'),
-                          subtitle: const Text('Client version • Settings are stored locally'),
+                          title: Text(l10n.aboutSection),
+                          subtitle: Text(l10n.clientVersionInfo),
                         ),
                       ),
                     ],
