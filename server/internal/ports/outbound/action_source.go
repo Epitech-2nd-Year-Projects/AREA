@@ -15,7 +15,9 @@ type ActionSourceRepository interface {
 	UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor map[string]any) (actiondomain.Source, error)
 	ListDueScheduleSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.ScheduleBinding, error)
 	ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]actiondomain.PollingBinding, error)
+	FindWebhookBindingByPath(ctx context.Context, path string) (actiondomain.WebhookBinding, error)
 	UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error
 	UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error
+	UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error
 	FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (actiondomain.Source, error)
 }

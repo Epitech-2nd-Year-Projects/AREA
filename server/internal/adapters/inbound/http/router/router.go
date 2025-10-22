@@ -21,6 +21,7 @@ type Dependencies struct {
 	AuthHandler       *authapp.Handler
 	AreaHandler       *areaapp.Handler
 	ComponentHandler  *componentapp.Handler
+	WebhookHandler    *areaapp.WebhookHandler
 	MonitoringHandler *monitorapp.Handler
 }
 
@@ -43,6 +44,9 @@ func Register(r gin.IRouter, deps Dependencies) error {
 	openapi.RegisterHandlers(r, handler)
 	if deps.AuthHandler != nil {
 		r.GET("/v1/auth/verify", deps.AuthHandler.VerifyEmail)
+	}
+	if deps.WebhookHandler != nil {
+		r.POST("/hooks/*path", deps.WebhookHandler.Handle)
 	}
 	if deps.MonitoringHandler != nil {
 		r.GET("/v1/monitoring/jobs", deps.MonitoringHandler.ListJobs)

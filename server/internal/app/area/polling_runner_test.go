@@ -65,6 +65,14 @@ func (s *stubPollingSourceRepo) FindByComponentConfig(ctx context.Context, compo
 	return actiondomain.Source{}, fmt.Errorf("not implemented")
 }
 
+func (s *stubPollingSourceRepo) UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	return nil
+}
+
+func (s *stubPollingSourceRepo) FindWebhookBindingByPath(ctx context.Context, path string) (actiondomain.WebhookBinding, error) {
+	return actiondomain.WebhookBinding{}, outbound.ErrNotFound
+}
+
 type stubComponentRepo struct {
 	component componentdomain.Component
 	err       error

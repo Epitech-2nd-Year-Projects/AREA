@@ -390,3 +390,88 @@ func (r Repository) UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID,
 	}
 	return nil
 }
+
+// FindWebhookBindingByPath resolves a webhook source and its AREA metadata by path
+func (r Repository) FindWebhookBindingByPath(ctx context.Context, path string) (actiondomain.WebhookBinding, error) {
+	if r.db == nil {
+		return actiondomain.WebhookBinding{}, fmt.Errorf("postgres.action.Repository.FindWebhookBindingByPath: nil db handle")
+	}
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return actiondomain.WebhookBinding{}, outbound.ErrNotFound
+	}
+
+	query := `
+SELECT
+    s.id AS source_id,
+    s.component_config_id,
+    s.mode,
+    s.cursor,
+    s.webhook_secret,
+    s.webhook_url_path,
+    s.is_active,
+    s.created_at,
+    s.updated_at,
+    l.id AS area_link_id,
+    l.area_id,
+    a.user_id
+FROM action_sources s
+JOIN user_component_configs c ON c.id = s.component_config_id
+JOIN area_links l ON l.component_config_id = c.id AND l.role = 'action'
+JOIN areas a ON a.id = l.area_id
+WHERE s.mode = 'webhook'
+  AND s.is_active = TRUE
+  AND c.is_active = TRUE
+  AND a.status = 'enabled'
+  AND s.webhook_url_path = ?
+LIMIT 1`
+
+	var row webhookBindingModel
+	if err := r.db.WithContext(ctx).Raw(query, trimmed).Scan(&row).Error; err != nil {
+		return actiondomain.WebhookBinding{}, fmt.Errorf("postgres.action.Repository.FindWebhookBindingByPath: %w", err)
+	}
+	if row.SourceID == uuid.Nil {
+		return actiondomain.WebhookBinding{}, outbound.ErrNotFound
+	}
+
+	binding, err := row.toDomain()
+	if err != nil {
+		return actiondomain.WebhookBinding{}, fmt.Errorf("postgres.action.Repository.FindWebhookBindingByPath: decode row: %w", err)
+	}
+	return binding, nil
+}
+
+// UpdateWebhookCursor persists auxiliary cursor metadata for webhook sources
+func (r Repository) UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor map[string]any) error {
+	if r.db == nil {
+		return fmt.Errorf("postgres.action.Repository.UpdateWebhookCursor: nil db handle")
+	}
+	if sourceID == uuid.Nil && componentConfigID == uuid.Nil {
+		return fmt.Errorf("postgres.action.Repository.UpdateWebhookCursor: missing identifiers")
+	}
+	buffer, err := json.Marshal(cursor)
+	if err != nil {
+		return fmt.Errorf("postgres.action.Repository.UpdateWebhookCursor: marshal cursor: %w", err)
+	}
+
+	query := r.db.WithContext(ctx).
+		Model(&sourceModel{})
+
+	if sourceID != uuid.Nil {
+		query = query.Where("id = ?", sourceID)
+	} else {
+		query = query.Where("component_config_id = ? AND mode = ?", componentConfigID, string(actiondomain.ModeWebhook))
+	}
+
+	result := query.Updates(map[string]any{
+		"cursor":     datatypes.JSON(buffer),
+		"updated_at": time.Now().UTC(),
+	})
+	if result.Error != nil {
+		return fmt.Errorf("postgres.action.Repository.UpdateWebhookCursor: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return outbound.ErrNotFound
+	}
+	return nil
+}
