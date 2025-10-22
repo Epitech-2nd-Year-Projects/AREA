@@ -16,7 +16,6 @@ import '../datasources/services_remote_datasource.dart';
 import '../models/about_info_model.dart';
 import '../models/service_component_model.dart';
 import '../models/service_provider_model.dart';
-import '../models/identity_summary_model.dart';
 
 class ServicesRepositoryImpl implements ServicesRepository {
   final ServicesRemoteDataSource remoteDataSource;
