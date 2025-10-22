@@ -11,7 +11,6 @@ class ServiceSubscriptionManager {
 
   final Map<String, _PendingSubscription> _pendingSubscriptions = {};
 
-  // ⭐ NOUVEAU: Stocker les callbacks reçus EN ATTENTE
   final Map<String, _PendingCallback> _pendingCallbacks = {};
 
   Function(String serviceId)? onSuccess;
@@ -31,7 +30,6 @@ class ServiceSubscriptionManager {
     );
     debugPrint('✅ Subscription setup for $serviceId');
 
-    // ⭐ NOUVEAU: Si un callback était en attente, le traiter maintenant
     if (_pendingCallbacks.containsKey(serviceId)) {
       final pending = _pendingCallbacks.remove(serviceId)!;
       debugPrint('⭐ Processing pending callback for $serviceId');
@@ -39,7 +37,6 @@ class ServiceSubscriptionManager {
     }
   }
 
-  // ⭐ NOUVEAU: Traiter les callbacks qui arrivent AVANT la setup
   void handleCallbackReceived({
     required String serviceId,
     required String code,
@@ -49,7 +46,6 @@ class ServiceSubscriptionManager {
     final subscription = _pendingSubscriptions[serviceId];
 
     if (subscription == null) {
-      // Stocker en attente
       debugPrint('⭐ Callback received but subscription not setup yet - storing');
       _pendingCallbacks[serviceId] = _PendingCallback(
         code: code,
@@ -75,7 +71,6 @@ class ServiceSubscriptionManager {
       return;
     }
 
-    // Le Cubit doit récupérer le repo et appeler directement
     debugPrint('⭐ Pending callback ready to be processed');
   }
 
