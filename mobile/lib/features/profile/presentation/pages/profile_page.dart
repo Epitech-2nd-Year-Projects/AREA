@@ -115,13 +115,13 @@ class _ProfileView extends StatelessWidget {
                               Card(
                                 elevation: 2,
                                 shadowColor: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black.withOpacity(0.3)
-                                    : AppColors.gray300.withOpacity(0.2),
+                                    ? Colors.black.withValues(alpha: 0.3)
+                                    : AppColors.gray300.withValues(alpha: 0.2),
                                 color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                   side: BorderSide(
-                                    color: AppColors.getBorderColor(context).withOpacity(0.3),
+                                    color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Padding(
@@ -136,7 +136,7 @@ class _ProfileView extends StatelessWidget {
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: AppColors.primary.withOpacity(0.2),
+                                                color: AppColors.primary.withValues(alpha: 0.2),
                                                 blurRadius: 16,
                                                 offset: const Offset(0, 4),
                                               ),
@@ -144,7 +144,7 @@ class _ProfileView extends StatelessWidget {
                                           ),
                                           child: CircleAvatar(
                                             radius: 56,
-                                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                             child: Text(
                                               displayName.isNotEmpty
                                                   ? displayName[0].toUpperCase()
@@ -225,7 +225,7 @@ class _ProfileView extends StatelessWidget {
                                               backgroundColor: AppColors.primary,
                                               foregroundColor: AppColors.white,
                                               disabledBackgroundColor:
-                                                  AppColors.primary.withOpacity(0.5),
+                                                  AppColors.primary.withValues(alpha: 0.5),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(16),
                                               ),
@@ -258,13 +258,13 @@ class _ProfileView extends StatelessWidget {
                               Card(
                                 elevation: 2,
                                 shadowColor: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black.withOpacity(0.3)
-                                    : AppColors.gray300.withOpacity(0.2),
+                                    ? Colors.black.withValues(alpha: 0.3)
+                                    : AppColors.gray300.withValues(alpha: 0.2),
                                 color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                   side: BorderSide(
-                                    color: AppColors.getBorderColor(context).withOpacity(0.3),
+                                    color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Padding(
@@ -324,13 +324,13 @@ class _ProfileView extends StatelessWidget {
                                 Card(
                                   elevation: 2,
                                   shadowColor: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.black.withOpacity(0.3)
-                                      : AppColors.gray300.withOpacity(0.2),
+                                      ? Colors.black.withValues(alpha: 0.3)
+                                      : AppColors.gray300.withValues(alpha: 0.2),
                                   color: AppColors.getSurfaceColor(context),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                     side: BorderSide(
-                                      color: AppColors.getBorderColor(context).withOpacity(0.3),
+                                      color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Padding(
@@ -369,13 +369,13 @@ class _ProfileView extends StatelessWidget {
                               Card(
                                 elevation: 2,
                                 shadowColor: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black.withOpacity(0.3)
-                                    : AppColors.gray300.withOpacity(0.2),
+                                    ? Colors.black.withValues(alpha: 0.3)
+                                    : AppColors.gray300.withValues(alpha: 0.2),
                                 color: AppColors.getSurfaceColor(context),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                   side: BorderSide(
-                                    color: AppColors.getBorderColor(context).withOpacity(0.3),
+                                    color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Column(
@@ -399,7 +399,7 @@ class _ProfileView extends StatelessWidget {
                                                 Container(
                                                   padding: const EdgeInsets.all(AppSpacing.sm),
                                                   decoration: BoxDecoration(
-                                                    color: AppColors.error.withOpacity(0.1),
+                                                    color: AppColors.error.withValues(alpha: 0.1),
                                                     borderRadius: BorderRadius.circular(12),
                                                   ),
                                                   child: Icon(
@@ -431,7 +431,7 @@ class _ProfileView extends StatelessWidget {
                                     ),
                                     Divider(
                                       height: 1,
-                                      color: AppColors.getDividerColor(context).withOpacity(0.5),
+                                      color: AppColors.getDividerColor(context).withValues(alpha: 0.5),
                                     ),
                                     Semantics(
                                       label: '${l10n.settingsAction} button',
@@ -452,7 +452,7 @@ class _ProfileView extends StatelessWidget {
                                                 Container(
                                                   padding: const EdgeInsets.all(AppSpacing.sm),
                                                   decoration: BoxDecoration(
-                                                    color: AppColors.primary.withOpacity(0.1),
+                                                    color: AppColors.primary.withValues(alpha: 0.1),
                                                     borderRadius: BorderRadius.circular(12),
                                                   ),
                                                   child: Icon(
@@ -513,7 +513,7 @@ class _ProfileView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(

@@ -109,7 +109,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.getTextTertiaryColor(context).withOpacity(0.3),
+                color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -141,7 +141,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                           color: AppColors.primary,
                         ),
                         filled: true,
-                        fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.5),
+                        fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
                         isDense: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -150,7 +150,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withOpacity(0.3),
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -181,14 +181,14 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                       ),
                     ),
                     selected: _onlySubscribed,
-                    selectedColor: AppColors.primary.withOpacity(0.15),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.15),
                     checkmarkColor: AppColors.primary,
                     side: BorderSide(
                       color: _onlySubscribed
-                          ? AppColors.primary.withOpacity(0.5)
-                          : AppColors.getBorderColor(context).withOpacity(0.3),
+                          ? AppColors.primary.withValues(alpha: 0.5)
+                          : AppColors.getBorderColor(context).withValues(alpha: 0.3),
                     ),
-                    backgroundColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                    backgroundColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                     onSelected: (v) => setState(() => _onlySubscribed = v),
                   ),
                 ),
@@ -198,10 +198,10 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.getBorderColor(context).withOpacity(0.2),
+                  color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -315,10 +315,10 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                           child: Container(
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                              color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.getBorderColor(context).withOpacity(0.3),
+                                color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -327,7 +327,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: AppColors.primary.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(

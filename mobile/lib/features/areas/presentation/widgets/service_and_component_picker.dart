@@ -126,13 +126,13 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     return Card(
       elevation: 2,
       shadowColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.black.withOpacity(0.3)
-          : AppColors.gray300.withOpacity(0.2),
+          ? Colors.black.withValues(alpha: 0.3)
+          : AppColors.gray300.withValues(alpha: 0.2),
       color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
         ),
       ),
       child: Padding(
@@ -145,7 +145,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -186,10 +186,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.getSurfaceVariantColor(context).withOpacity(0.5),
+                      color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.getBorderColor(context).withOpacity(0.4),
+                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                         width: 1.5,
                       ),
                     ),
@@ -198,7 +198,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                         Container(
                           padding: const EdgeInsets.all(AppSpacing.sm),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -260,10 +260,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                     ? Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
+                          color: AppColors.warning.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.warning.withOpacity(0.3),
+                            color: AppColors.warning.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -323,17 +323,17 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                           validator: (v) => v == null ? l10n.selectComponent : null,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -415,10 +415,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
           ),
         ),
         child: Row(

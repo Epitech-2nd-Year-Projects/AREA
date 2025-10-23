@@ -167,13 +167,13 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     return Card(
       elevation: 2,
       shadowColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.black.withOpacity(0.3)
-          : AppColors.gray300.withOpacity(0.2),
+          ? Colors.black.withValues(alpha: 0.3)
+          : AppColors.gray300.withValues(alpha: 0.2),
       color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
         ),
       ),
       child: Padding(
@@ -188,7 +188,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -230,17 +230,17 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                           color: AppColors.getTextTertiaryColor(context),
                         ),
                         filled: true,
-                        fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                        fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withOpacity(0.4),
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withOpacity(0.4),
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -262,10 +262,10 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
-                        color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.getBorderColor(context).withOpacity(0.2),
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -311,7 +311,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.getTextTertiaryColor(context).withOpacity(0.1),
+                color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -337,10 +337,10 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         Container(
           padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.getBorderColor(context).withOpacity(0.2),
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
             ),
           ),
           child: Center(
@@ -376,10 +376,10 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.getBorderColor(context).withOpacity(0.3),
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
             ),
           ),
           child: SwitchListTile.adaptive(
@@ -470,17 +470,17 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
               fontSize: 12,
             ),
             filled: true,
-            fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.getBorderColor(context).withOpacity(0.4),
+                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.getBorderColor(context).withOpacity(0.4),
+                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -544,17 +544,17 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             fontSize: 12,
           ),
           filled: true,
-          fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+          fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: AppColors.getBorderColor(context).withOpacity(0.4),
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: AppColors.getBorderColor(context).withOpacity(0.4),
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
             ),
           ),
           focusedBorder: OutlineInputBorder(

@@ -180,13 +180,13 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                       Card(
                         elevation: 2,
                         shadowColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black.withOpacity(0.3)
-                            : AppColors.gray300.withOpacity(0.2),
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : AppColors.gray300.withValues(alpha: 0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                           side: BorderSide(
-                            color: AppColors.getBorderColor(context).withOpacity(0.3),
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Padding(
@@ -199,7 +199,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(AppSpacing.sm),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -243,17 +243,17 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                     errorText: s.isValid ? null : l10n.invalidUrl,
                                     filled: true,
                                     fillColor: AppColors.getSurfaceVariantColor(context)
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
@@ -307,7 +307,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                         backgroundColor: AppColors.primary,
                                         foregroundColor: AppColors.white,
                                         disabledBackgroundColor:
-                                            AppColors.primary.withOpacity(0.5),
+                                            AppColors.primary.withValues(alpha: 0.5),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: AppSpacing.lg,
                                           vertical: AppSpacing.md,
@@ -356,13 +356,13 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                       Card(
                         elevation: 2,
                         shadowColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black.withOpacity(0.3)
-                            : AppColors.gray300.withOpacity(0.2),
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : AppColors.gray300.withValues(alpha: 0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                           side: BorderSide(
-                            color: AppColors.getBorderColor(context).withOpacity(0.3),
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Padding(
@@ -372,7 +372,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                               Container(
                                 padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(

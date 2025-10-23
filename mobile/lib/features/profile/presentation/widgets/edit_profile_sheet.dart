@@ -65,7 +65,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.getTextTertiaryColor(context).withOpacity(0.3),
+                    color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -74,7 +74,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -103,7 +103,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () => Navigator.of(context).pop(false),
                         style: IconButton.styleFrom(
-                          backgroundColor: AppColors.error.withOpacity(0.1),
+                          backgroundColor: AppColors.error.withValues(alpha: 0.1),
                           foregroundColor: AppColors.error,
                         ),
                       ),
@@ -126,17 +126,17 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         color: AppColors.primary,
                       ),
                       filled: true,
-                      fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                      fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.getBorderColor(context).withOpacity(0.4),
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.getBorderColor(context).withOpacity(0.4),
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -186,17 +186,17 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         color: AppColors.primary,
                       ),
                       filled: true,
-                      fillColor: AppColors.getSurfaceVariantColor(context).withOpacity(0.3),
+                      fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.getBorderColor(context).withOpacity(0.4),
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.getBorderColor(context).withOpacity(0.4),
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -280,7 +280,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.white,
-                        disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                        disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
