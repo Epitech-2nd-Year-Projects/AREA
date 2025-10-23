@@ -32,14 +32,14 @@ class AreaCard extends StatelessWidget {
         color: AppColors.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black.withOpacity(0.2)
-                : AppColors.gray300.withOpacity(0.15),
+                ? Colors.black.withValues(alpha: 0.2)
+                : AppColors.gray300.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 2),
             spreadRadius: 0,
@@ -93,10 +93,10 @@ class AreaCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.getSurfaceVariantColor(context).withOpacity(0.5),
+              color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.getBorderColor(context).withOpacity(0.2),
+                color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -106,7 +106,7 @@ class AreaCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Divider(
-                      color: AppColors.getDividerColor(context).withOpacity(0.5),
+                      color: AppColors.getDividerColor(context).withValues(alpha: 0.5),
                       height: 1,
                     ),
                   ),
@@ -141,10 +141,10 @@ class AreaCard extends StatelessWidget {
                         vertical: AppSpacing.sm,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -184,10 +184,10 @@ class AreaCard extends StatelessWidget {
                         vertical: AppSpacing.sm,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.error.withOpacity(0.3),
+                          color: AppColors.error.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -249,7 +249,7 @@ class AreaCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -286,7 +286,7 @@ class AreaCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

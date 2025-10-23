@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
-import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -403,7 +402,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: AppColors.white,
-                              disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                              disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
