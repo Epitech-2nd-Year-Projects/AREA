@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
@@ -61,15 +63,67 @@ class _SettingsScreenState extends State<_SettingsScreen> {
 
         if (state is SettingsLoading) {
           return Scaffold(
-            appBar: AppBar(title: Text(l10n.settingsPageTitle)),
-            body: const Center(child: CircularProgressIndicator()),
+            backgroundColor: AppColors.getBackgroundColor(context),
+            appBar: AppBar(
+              title: Text(
+                l10n.settingsPageTitle,
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.getTextPrimaryColor(context),
+                ),
+              ),
+              centerTitle: false,
+              elevation: 0,
+              backgroundColor: AppColors.getSurfaceColor(context),
+              surfaceTintColor: Colors.transparent,
+            ),
+            body: Center(
+              child: Semantics(
+                label: 'Loading settings',
+                child: const CircularProgressIndicator(),
+              ),
+            ),
           );
         }
 
         if (state is SettingsError) {
           return Scaffold(
-            appBar: AppBar(title: Text(l10n.settingsPageTitle)),
-            body: Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
+            backgroundColor: AppColors.getBackgroundColor(context),
+            appBar: AppBar(
+              title: Text(
+                l10n.settingsPageTitle,
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.getTextPrimaryColor(context),
+                ),
+              ),
+              centerTitle: false,
+              elevation: 0,
+              backgroundColor: AppColors.getSurfaceColor(context),
+              surfaceTintColor: Colors.transparent,
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppColors.error,
+                      semanticLabel: 'Error',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      state.message,
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: AppColors.error,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 
@@ -80,13 +134,35 @@ class _SettingsScreenState extends State<_SettingsScreen> {
         );
 
         return Scaffold(
+          backgroundColor: AppColors.getBackgroundColor(context),
           appBar: AppBar(
-            title: Text(l10n.settingsPageTitle),
-            actions: [
-              IconButton(
-                tooltip: l10n.closeAction,
-                icon: const Icon(Icons.close),
+            title: Text(
+              l10n.settingsPageTitle,
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+              ),
+            ),
+            centerTitle: false,
+            elevation: 0,
+            backgroundColor: AppColors.getSurfaceColor(context),
+            surfaceTintColor: Colors.transparent,
+            leading: Semantics(
+              label: 'Back',
+              button: true,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => context.pop(),
+              ),
+            ),
+            actions: [
+              Semantics(
+                label: l10n.closeAction,
+                button: true,
+                child: IconButton(
+                  tooltip: l10n.closeAction,
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => context.pop(),
+                ),
               )
             ],
           ),
@@ -94,71 +170,180 @@ class _SettingsScreenState extends State<_SettingsScreen> {
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 720;
               final maxWidth = isWide ? 640.0 : double.infinity;
-              final border = OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.getBorderColor(context), width: 1.5),
-              );
 
               return Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     children: [
                       Card(
-                        elevation: 0,
+                        elevation: 2,
+                        shadowColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withOpacity(0.3)
+                            : AppColors.gray300.withOpacity(0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: AppColors.getBorderColor(context)),
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(
+                            color: AppColors.getBorderColor(context).withOpacity(0.3),
+                          ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(l10n.serverAddress, style: theme.textTheme.titleMedium),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _controller,
-                                keyboardType: TextInputType.url,
-                                onChanged: context.read<SettingsCubit>().onAddressChanged,
-                                decoration: InputDecoration(
-                                  hintText: l10n.serverAddressHint,
-                                  prefixIcon: const Icon(Icons.link),
-                                  errorText: s.isValid ? null : l10n.invalidUrl,
-                                  border: border,
-                                  enabledBorder: border,
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: AppColors.primary, width: 2),
-                                  ),
-                                  errorBorder: border,
-                                  focusedErrorBorder: border,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  FilledButton.icon(
-                                    onPressed: s.isValid && s.isDirty
-                                        ? context.read<SettingsCubit>().save
-                                        : null,
-                                    icon: const Icon(Icons.save),
-                                    label: Text(l10n.saveServerAddress),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: AppColors.white,
+                                  Container(
+                                    padding: const EdgeInsets.all(AppSpacing.sm),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.dns_rounded,
+                                      size: 24,
+                                      color: AppColors.primary,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  OutlinedButton.icon(
-                                    onPressed: () => context.read<SettingsCubit>().save,
-                                    icon: const Icon(Icons.refresh),
-                                    label: Text(l10n.reloadServer),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.primary,
-                                      side: const BorderSide(color: AppColors.primary, width: 2),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Semantics(
+                                      header: true,
+                                      child: Text(
+                                        l10n.serverAddress,
+                                        style: AppTypography.headlineMedium.copyWith(
+                                          color: AppColors.getTextPrimaryColor(context),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Semantics(
+                                label: 'Server address field',
+                                child: TextFormField(
+                                  controller: _controller,
+                                  keyboardType: TextInputType.url,
+                                  onChanged: context.read<SettingsCubit>().onAddressChanged,
+                                  style: AppTypography.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: l10n.serverAddressHint,
+                                    hintStyle: AppTypography.bodyMedium.copyWith(
+                                      color: AppColors.getTextTertiaryColor(context),
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.link_rounded,
+                                      color: AppColors.primary,
+                                    ),
+                                    errorText: s.isValid ? null : l10n.invalidUrl,
+                                    filled: true,
+                                    fillColor: AppColors.getSurfaceVariantColor(context)
+                                        .withOpacity(0.3),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: AppColors.getBorderColor(context).withOpacity(0.4),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: AppColors.error,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: AppColors.error,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                      vertical: AppSpacing.md,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Wrap(
+                                spacing: AppSpacing.md,
+                                runSpacing: AppSpacing.md,
+                                children: [
+                                  Semantics(
+                                    label: '${l10n.saveServerAddress} button',
+                                    button: true,
+                                    child: FilledButton.icon(
+                                      onPressed: s.isValid && s.isDirty
+                                          ? context.read<SettingsCubit>().save
+                                          : null,
+                                      icon: const Icon(Icons.save_rounded, size: 20),
+                                      label: Text(
+                                        l10n.saveServerAddress,
+                                        style: AppTypography.labelLarge.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: AppColors.white,
+                                        disabledBackgroundColor:
+                                            AppColors.primary.withOpacity(0.5),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.lg,
+                                          vertical: AppSpacing.md,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Semantics(
+                                    label: '${l10n.reloadServer} button',
+                                    button: true,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => context.read<SettingsCubit>().save,
+                                      icon: const Icon(Icons.refresh_rounded, size: 20),
+                                      label: Text(
+                                        l10n.reloadServer,
+                                        style: AppTypography.labelLarge.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primary,
+                                        side: BorderSide(
+                                          color: AppColors.primary,
+                                          width: 2,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.lg,
+                                          vertical: AppSpacing.md,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -167,18 +352,59 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.lg),
                       Card(
-                        elevation: 0,
+                        elevation: 2,
+                        shadowColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withOpacity(0.3)
+                            : AppColors.gray300.withOpacity(0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: AppColors.getBorderColor(context)),
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(
+                            color: AppColors.getBorderColor(context).withOpacity(0.3),
+                          ),
                         ),
-                        child: ListTile(
-                          leading: const Icon(Icons.info_outline),
-                          title: Text(l10n.aboutSection),
-                          subtitle: Text(l10n.clientVersionInfo),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 24,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.aboutSection,
+                                      style: AppTypography.labelLarge.copyWith(
+                                        color: AppColors.getTextPrimaryColor(context),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      l10n.clientVersionInfo,
+                                      style: AppTypography.bodyMedium.copyWith(
+                                        color: AppColors.getTextSecondaryColor(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
