@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/area.dart';
@@ -298,7 +300,27 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
         final isSubmitting = state is AreaFormSubmitting;
 
         return Scaffold(
-          appBar: AppBar(title: Text(isEdit ? l10n.editArea : l10n.newArea)),
+          backgroundColor: AppColors.getBackgroundColor(context),
+          appBar: AppBar(
+            title: Text(
+              isEdit ? l10n.editArea : l10n.newArea,
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+              ),
+            ),
+            centerTitle: false,
+            elevation: 0,
+            backgroundColor: AppColors.getSurfaceColor(context),
+            surfaceTintColor: Colors.transparent,
+            leading: Semantics(
+              label: 'Back',
+              button: true,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
           body: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 900;
@@ -352,22 +374,45 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                         onNameChanged: (value) => _reactionComponentName = value,
                         onParametersChanged: (values) => _reactionParams = values,
                       ),
-                      const SizedBox(height: 24),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton.icon(
-                          icon: isSubmitting
-                              ? const SizedBox(
-                                  width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.save),
-                          label: Text(isEdit ? l10n.editButton : l10n.createButton),
-                          onPressed: isSubmitting ? null : _submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
+                      const SizedBox(height: 32),
+                      Semantics(
+                        label: '${isEdit ? l10n.editButton : l10n.createButton} button',
+                        button: true,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton.icon(
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded, size: 24),
+                            label: Text(
+                              isEdit ? l10n.editButton : l10n.createButton,
+                              style: AppTypography.labelLarge.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            onPressed: isSubmitting ? null : _submit,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: isSubmitting ? 0 : 2,
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),

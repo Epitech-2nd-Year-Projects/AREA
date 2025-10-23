@@ -30,17 +30,22 @@ class AreaCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.getBorderColor(context), width: 1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.getBorderColor(context).withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gray200.withOpacity(0.3),
-            blurRadius: 4,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withOpacity(0.2)
+                : AppColors.gray300.withOpacity(0.15),
+            blurRadius: 8,
             offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
       ),
-      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,23 +57,29 @@ class AreaCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      area.name,
-                      style: AppTypography.headlineMedium.copyWith(
-                        color: AppColors.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w700,
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        area.name,
+                        style: AppTypography.headlineMedium.copyWith(
+                          color: AppColors.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     if (area.description != null && area.description!.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
                         child: Text(
                           area.description!,
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.getTextSecondaryColor(context),
+                            height: 1.5,
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                   ],
@@ -78,27 +89,128 @@ class AreaCard extends StatelessWidget {
               statusBadge,
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          _buildSummaryRow(context, l10n.action, actionSummary),
-          const SizedBox(height: AppSpacing.xs),
-          ...reactionSummaries.asMap().entries.map((entry) => Padding(
-                padding: EdgeInsets.only(top: entry.key == 0 ? 0 : AppSpacing.xs),
-                child: _buildSummaryRow(context, entry.key == 0 ? l10n.reaction : 'Reaction ${entry.key + 1}', entry.value),
-              )),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.getSurfaceVariantColor(context).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.getBorderColor(context).withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildSummaryRow(context, l10n.action, actionSummary, Icons.flash_on),
+                if (reactionSummaries.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Divider(
+                      color: AppColors.getDividerColor(context).withOpacity(0.5),
+                      height: 1,
+                    ),
+                  ),
+                  ...reactionSummaries.asMap().entries.map((entry) => Padding(
+                        padding: EdgeInsets.only(top: entry.key == 0 ? 0 : AppSpacing.sm),
+                        child: _buildSummaryRow(
+                          context,
+                          entry.key == 0 ? l10n.reaction : 'Reaction ${entry.key + 1}',
+                          entry.value,
+                          Icons.settings_suggest,
+                        ),
+                      )),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20),
-                tooltip: l10n.toolTipEdit,
-                onPressed: onEdit,
+              Semantics(
+                label: '${l10n.toolTipEdit} ${area.name}',
+                button: true,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onEdit,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            l10n.toolTipEdit,
+                            style: AppTypography.labelMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                icon: const Icon(Icons.delete, size: 20),
-                tooltip: l10n.toolTipDelete,
-                onPressed: onDelete,
+              Semantics(
+                label: '${l10n.toolTipDelete} ${area.name}',
+                button: true,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onDelete,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.error.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            l10n.toolTipDelete,
+                            style: AppTypography.labelMedium.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -119,55 +231,93 @@ class AreaCard extends StatelessWidget {
       AreaStatus.disabled => l10n.disabled,
       AreaStatus.archived => l10n.archived,
     };
+    final icon = switch (status) {
+      AreaStatus.enabled => Icons.check_circle_rounded,
+      AreaStatus.disabled => Icons.pause_circle_outline_rounded,
+      AreaStatus.archived => Icons.archive_outlined,
+    };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isActive ? Icons.check_circle : Icons.pause_circle_outline,
-            color: Colors.white,
-            size: 14,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            label,
-            style: AppTypography.labelMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+    return Semantics(
+      label: 'Status: $label',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: AppTypography.labelMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSummaryRow(BuildContext context, String label, String description) {
+  Widget _buildSummaryRow(BuildContext context, String label, String description, IconData icon) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: AppTypography.labelMedium.copyWith(
-              color: AppColors.getTextSecondaryColor(context),
-            ),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: AppColors.primary,
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
-          child: Text(
-            description,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.getTextPrimaryColor(context),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTypography.labelMedium.copyWith(
+                  color: AppColors.getTextSecondaryColor(context),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                description,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.getTextPrimaryColor(context),
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ],
