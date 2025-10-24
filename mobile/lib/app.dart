@@ -4,6 +4,8 @@ import 'core/design_system/app_colors.dart';
 import 'core/design_system/app_typography.dart';
 import 'core/navigation/app_navigation.dart';
 import 'features/auth/presentation/router/auth_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -13,6 +15,31 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'AREA - Automation Platform',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: null,
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (deviceLocale == null) {
+          return const Locale('en');
+        }
+        for (final locale in supportedLocales) {
+          if (locale.languageCode == deviceLocale.languageCode &&
+              locale.countryCode == deviceLocale.countryCode) {
+            return locale;
+          }
+        }
+        for (final locale in supportedLocales) {
+          if (locale.languageCode == deviceLocale.languageCode) {
+            return locale;
+          }
+        }
+        return const Locale('en');
+      },
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,

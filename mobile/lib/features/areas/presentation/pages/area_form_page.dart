@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/area.dart';
 import '../../domain/entities/area_draft.dart';
 import '../../domain/repositories/area_repository.dart';
@@ -100,7 +102,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Future<void> _pickActionService() async {
-    final res = await showServicePickerSheet(context, title: 'Select Action Service');
+    final res = await showServicePickerSheet(context, title:  AppLocalizations.of(context)!
+        .selectActionService);
     if (res == null) return;
 
     if (!res.isSubscribed) {
@@ -121,7 +124,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Future<void> _pickReactionService() async {
-    final res = await showServicePickerSheet(context, title: 'Select Reaction Service');
+    final res = await showServicePickerSheet(context, title: AppLocalizations.of(context)!.selectReactionService);
     if (res == null) return;
 
     if (!res.isSubscribed) {
@@ -142,17 +145,18 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Future<bool> _confirmSubscribe(String serviceName) async {
+    final l10n = AppLocalizations.of(context)!;
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Not subscribed'),
+            title: Text(l10n.notSubscribedTitle),
             content: Text('You are not subscribed to "$serviceName". Subscribe now?'),
             actions: [
               TextButton(onPressed: () => Navigator.of(ctx).pop(false),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,
                 ),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
@@ -160,7 +164,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
                   ),
-                  child: const Text('Go to Services')),
+                  child: Text(l10n.goToServices)),
             ],
           ),
         ) ??
@@ -206,16 +210,17 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   void _submit() {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
+    final l10n =  AppLocalizations.of(context)!;
 
     if (_actionProviderId == null || _reactionProviderId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick Action & Reaction services')),
+        SnackBar(content: Text(l10n.selectActionReactionServices)),
       );
       return;
     }
     if (_actionComponentId == null || _reactionComponentId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick Action & Reaction components')),
+        SnackBar(content: Text(l10n.selectActionReactionComponents)),
       );
       return;
     }
@@ -276,6 +281,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cubit = context.read<AreaFormCubit>();
     final isEdit = cubit.initialArea != null;
 
@@ -283,7 +289,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
       listener: (context, state) {
         if (state is AreaFormSuccess) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Area saved successfully!')));
+              .showSnackBar(SnackBar(content: Text(l10n.areaSaved)));
           context.pop(true);
         } else if (state is AreaFormError) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
@@ -293,7 +299,27 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
         final isSubmitting = state is AreaFormSubmitting;
 
         return Scaffold(
-          appBar: AppBar(title: Text(isEdit ? 'Edit Area' : 'New Area')),
+          backgroundColor: AppColors.getBackgroundColor(context),
+          appBar: AppBar(
+            title: Text(
+              isEdit ? l10n.editArea : l10n.newArea,
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+              ),
+            ),
+            centerTitle: false,
+            elevation: 0,
+            backgroundColor: AppColors.getSurfaceColor(context),
+            surfaceTintColor: Colors.transparent,
+            leading: Semantics(
+              label: 'Back',
+              button: true,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
           body: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 900;
@@ -308,28 +334,28 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildHeaderCard(context, isSubmitting),
+                      _buildHeaderCard(context, isSubmitting, l10n),
                       const SizedBox(height: 16),
                       if (isWide)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: _buildActionPicker(isSubmitting)),
+                            Expanded(child: _buildActionPicker(isSubmitting, l10n)),
                             const SizedBox(width: 16),
-                            Expanded(child: _buildReactionPicker(isSubmitting)),
+                            Expanded(child: _buildReactionPicker(isSubmitting, l10n)),
                           ],
                         )
                       else
                         Column(
                           children: [
-                            _buildActionPicker(isSubmitting),
+                            _buildActionPicker(isSubmitting, l10n),
                             const SizedBox(height: 16),
-                            _buildReactionPicker(isSubmitting),
+                            _buildReactionPicker(isSubmitting, l10n),
                           ],
                         ),
                       const SizedBox(height: 16),
                       ComponentConfigurationForm(
-                        title: 'Action configuration',
+                        title: l10n.actionConfiguration,
                         component: _actionComponent,
                         initialName: _actionComponentName,
                         initialValues: _actionParams,
@@ -339,7 +365,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                       ),
                       const SizedBox(height: 16),
                       ComponentConfigurationForm(
-                        title: 'Reaction configuration',
+                        title: l10n.reactionConfiguration,
                         component: _reactionComponent,
                         initialName: _reactionComponentName,
                         initialValues: _reactionParams,
@@ -347,22 +373,45 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                         onNameChanged: (value) => _reactionComponentName = value,
                         onParametersChanged: (values) => _reactionParams = values,
                       ),
-                      const SizedBox(height: 24),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton.icon(
-                          icon: isSubmitting
-                              ? const SizedBox(
-                                  width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.save),
-                          label: Text(isEdit ? 'Save' : 'Create'),
-                          onPressed: isSubmitting ? null : _submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
+                      const SizedBox(height: 32),
+                      Semantics(
+                        label: '${isEdit ? l10n.editButton : l10n.createButton} button',
+                        button: true,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton.icon(
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded, size: 24),
+                            label: Text(
+                              isEdit ? l10n.editButton : l10n.createButton,
+                              style: AppTypography.labelLarge.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            onPressed: isSubmitting ? null : _submit,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: isSubmitting ? 0 : 2,
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -384,7 +433,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context, bool isSubmitting) {
+  Widget _buildHeaderCard(BuildContext context, bool isSubmitting, AppLocalizations l10n) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(color: AppColors.getBorderColor(context), width: 2),
@@ -406,8 +455,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
             TextFormField(
               controller: _nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Name',
-                hintText: 'Name your automation',
+                labelText: l10n.name,
+                hintText: l10n.nameYourAutomation,
                 border: border,
                 enabledBorder: border,
                 focusedBorder: OutlineInputBorder(
@@ -418,7 +467,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                 focusedErrorBorder: border,
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Name cannot be empty'
+                  ? l10n.nameCannotBeEmpty
                   : null,
               enabled: !isSubmitting,
             ),
@@ -427,8 +476,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
               controller: _descriptionCtrl,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText: 'Description (optional)',
-                hintText: 'Add context to remember what this automation does',
+                labelText: l10n.descriptionOptional,
+                hintText: l10n.addContextToRemember,
                 border: border,
                 enabledBorder: border,
                 focusedBorder: OutlineInputBorder(
@@ -446,9 +495,9 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
   }
 
-  Widget _buildActionPicker(bool isSubmitting) {
+  Widget _buildActionPicker(bool isSubmitting, AppLocalizations l10n) {
     return ServiceAndComponentPicker(
-      title: 'Action',
+      title: l10n.action,
       providerId: _actionProviderId,
       providerLabel: _actionProviderLabel,
       isSubscribed: _actionIsSubscribed,
@@ -464,9 +513,9 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
   }
 
-  Widget _buildReactionPicker(bool isSubmitting) {
+  Widget _buildReactionPicker(bool isSubmitting, AppLocalizations l10n) {
     return ServiceAndComponentPicker(
-      title: 'Reaction',
+      title: l10n.reaction,
       providerId: _reactionProviderId,
       providerLabel: _reactionProviderLabel,
       isSubscribed: _reactionIsSubscribed,

@@ -25,7 +25,6 @@ class DeepLinkService {
   final List<void Function(String? provider, String error)>
   _serviceErrorListeners = [];
 
-  // ⭐ NOUVEAU: Setter pour router
   void setRouter(GoRouter router) {
     _router = router;
   }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/auth_state.dart';
@@ -92,8 +93,10 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (widget.error != null) {
-      return _buildErrorState(context);
+      return _buildErrorState(context, l10n);
     }
 
     return BlocListener<AuthBloc, AuthState>(
@@ -108,12 +111,12 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: _buildLoadingState(context),
+        body: _buildLoadingState(context, l10n),
       ),
     );
   }
 
-  Widget _buildLoadingState(BuildContext context) {
+  Widget _buildLoadingState(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -136,7 +139,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Completing sign in...',
+              l10n.completingSignIn,
               style: AppTypography.headlineMedium.copyWith(
                 color: AppColors.getTextPrimaryColor(context),
               ),
@@ -144,7 +147,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Please wait while we authenticate you',
+              l10n.pleaseWaitWhileWeAuthenticateYou,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.getTextSecondaryColor(context),
               ),
@@ -156,7 +159,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -178,7 +181,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Authentication failed',
+              l10n.authenticationFailed,
               style: AppTypography.headlineMedium.copyWith(
                 color: AppColors.getTextPrimaryColor(context),
               ),
@@ -186,7 +189,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              widget.error ?? 'An unknown error occurred',
+              widget.error ?? l10n.unknownErrorOccurred,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.getTextSecondaryColor(context),
               ),
@@ -203,7 +206,7 @@ class _OAuthCallbackPageState extends State<OAuthCallbackPage> {
                   vertical: AppSpacing.md,
                 ),
               ),
-              child: const Text('Back to Login'),
+              child: Text(l10n.backToLogin),
             ),
           ],
         ),

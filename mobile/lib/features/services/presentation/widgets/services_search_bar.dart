@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ServicesSearchBar extends StatefulWidget {
   final Function(String) onSearch;
@@ -49,6 +50,8 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -77,8 +80,8 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
                   ),
                   decoration: InputDecoration(
                     hintText: constraints.maxWidth > 300
-                        ? 'Search services by name...'
-                        : 'Search services...',
+                        ? l10n.searchServicesByName
+                        : l10n.searchServices,
                     hintStyle: AppTypography.bodyLarge.copyWith(
                       color: AppColors.getTextTertiaryColor(context),
                     ),

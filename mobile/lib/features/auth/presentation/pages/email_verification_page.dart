@@ -5,6 +5,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/email_verification/email_verification_cubit.dart';
@@ -35,6 +36,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocProvider(
       create: (context) => EmailVerificationCubit(sl()),
       child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
@@ -53,13 +56,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                 child: BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
                   builder: (context, state) {
                     if (state is EmailVerificationInitial) {
-                      return _buildInitialState();
+                      return _buildInitialState(context, l10n);
                     } else if (state is EmailVerificationLoading) {
-                      return _buildLoadingState();
+                      return _buildLoadingState(context, l10n);
                     } else if (state is EmailVerificationSuccess) {
-                      return _buildSuccessState();
+                      return _buildSuccessState(context, l10n);
                     } else if (state is EmailVerificationError) {
-                      return _buildErrorState(context, state.message);
+                      return _buildErrorState(context, l10n, state.message);
                     }
                     return const SizedBox.shrink();
                   },
@@ -72,7 +75,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     );
   }
 
-  Widget _buildInitialState() {
+  Widget _buildInitialState(BuildContext context, AppLocalizations l10n) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -83,13 +86,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         ),
         const SizedBox(height: AppSpacing.xl),
         Text(
-          'Check your email',
+          l10n.checkYourEmail,
           style: AppTypography.headlineMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          'We\'ve sent you a verification link.\nPlease check your inbox.',
+          l10n.weVeSentVerificationLink,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.getTextSecondaryColor(context),
           ),
@@ -112,14 +115,14 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(BuildContext context, AppLocalizations l10n) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const CircularProgressIndicator(),
         const SizedBox(height: AppSpacing.xl),
         Text(
-          'Verifying your email...',
+          l10n.verifyingYourEmail,
           style: AppTypography.bodyLarge,
           textAlign: TextAlign.center,
         ),
@@ -127,7 +130,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(BuildContext context, AppLocalizations l10n) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -146,13 +149,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         ),
         const SizedBox(height: AppSpacing.xl),
         Text(
-          'Email verified!',
+          l10n.emailVerified,
           style: AppTypography.headlineMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          'Redirecting to dashboard...',
+          l10n.redirectingToDashboard,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.getTextSecondaryColor(context),
           ),
@@ -162,7 +165,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String message) {
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n, String message) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -181,7 +184,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         ),
         const SizedBox(height: AppSpacing.xl),
         Text(
-          'Verification failed',
+          l10n.verificationFailed,
           style: AppTypography.headlineMedium,
           textAlign: TextAlign.center,
         ),
@@ -204,7 +207,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
               vertical: AppSpacing.md,
             ),
           ),
-          child: const Text('Back to Login'),
+          child: Text(l10n.backToLogin),
         ),
       ],
     );

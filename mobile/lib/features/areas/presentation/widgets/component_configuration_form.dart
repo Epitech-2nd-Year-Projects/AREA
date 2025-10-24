@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/component_parameter.dart';
 import '../../../services/domain/entities/service_component.dart';
 
@@ -158,45 +161,140 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final component = widget.component;
 
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.black.withValues(alpha: 0.3)
+          : AppColors.gray300.withValues(alpha: 0.2),
       color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.getBorderColor(context)),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: component == null
-            ? _buildEmptyState(context)
+            ? _buildEmptyState(context, l10n)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _nameController,
-                    enabled: widget.enabled,
-                    decoration: InputDecoration(
-                      labelText: 'Configuration name (optional)',
-                      hintText: component.displayName,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Semantics(
+                          header: true,
+                          child: Text(
+                            widget.title,
+                            style: AppTypography.headlineMedium.copyWith(
+                              color: AppColors.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Semantics(
+                    label: 'Configuration name field',
+                    child: TextFormField(
+                      controller: _nameController,
+                      enabled: widget.enabled,
+                      style: AppTypography.bodyLarge,
+                      decoration: InputDecoration(
+                        labelText: l10n.configurationName,
+                        labelStyle: AppTypography.labelLarge.copyWith(
+                          color: AppColors.getTextSecondaryColor(context),
+                        ),
+                        hintText: component.displayName,
+                        hintStyle: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.getTextTertiaryColor(context),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.md,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   if (component.parameters.isEmpty)
-                    Text(
-                      'This component does not require any parameters.',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.getTextSecondaryColor(context),
+                            size: 20,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              l10n.thisComponentDoesNotRequireParameters,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.getTextSecondaryColor(context),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   else
-                    ...component.parameters.map((param) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildParameterField(param),
+                    ...component.parameters.asMap().entries.map((entry) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: entry.key < component.parameters.length - 1
+                                ? AppSpacing.md
+                                : 0,
+                          ),
+                          child: _buildParameterField(entry.value, l10n),
                         )),
                 ],
               ),
@@ -204,93 +302,220 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.tune_rounded,
+                size: 20,
+                color: AppColors.getTextTertiaryColor(context),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                widget.title,
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.getTextPrimaryColor(context),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Select a component to configure its parameters.',
-            style: Theme.of(context).textTheme.bodyMedium,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
+            ),
+          ),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.settings_outlined,
+                  size: 48,
+                  color: AppColors.getTextTertiaryColor(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.selectComponentToConfigure,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.getTextSecondaryColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildParameterField(ComponentParameter param) {
+  Widget _buildParameterField(ComponentParameter param, AppLocalizations l10n) {
     if (_isBooleanParam(param)) {
       final current = (_values[param.key] == true);
       final helper = _helperText(param);
-      return SwitchListTile.adaptive(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        title: Text(param.label),
-        subtitle: helper != null ? Text(helper) : null,
-        value: current,
-        onChanged: widget.enabled
-            ? (value) {
-                setState(() {
-                  _values[param.key] = value;
-                });
-                widget.onParametersChanged(Map<String, dynamic>.from(_values));
-              }
-            : null,
+      return Semantics(
+        label: '${param.label} switch',
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+            ),
+          ),
+          child: SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              param.label,
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: helper != null
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      helper,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.getTextSecondaryColor(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  )
+                : null,
+            value: current,
+            activeColor: AppColors.primary,
+            onChanged: widget.enabled
+                ? (value) {
+                    setState(() {
+                      _values[param.key] = value;
+                    });
+                    widget.onParametersChanged(Map<String, dynamic>.from(_values));
+                  }
+                : null,
+          ),
+        ),
       );
     }
 
     if (param.hasOptions) {
       final current = (_values[param.key] ?? '') as String;
-      return DropdownButtonFormField<String>(
-        value: param.options.any((o) => o.value == current)
-            ? current
-            : (param.options.isNotEmpty ? param.options.first.value : null),
-        items: param.options
-            .map(
-              (option) => DropdownMenuItem<String>(
-                value: option.value,
-                child: Text(option.label),
+      return Semantics(
+        label: '${param.label} dropdown',
+        child: DropdownButtonFormField<String>(
+          value: param.options.any((o) => o.value == current)
+              ? current
+              : (param.options.isNotEmpty ? param.options.first.value : null),
+          icon: Icon(
+            Icons.arrow_drop_down_rounded,
+            color: AppColors.primary,
+          ),
+          style: AppTypography.bodyLarge.copyWith(
+            color: AppColors.getTextPrimaryColor(context),
+          ),
+          items: param.options
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option.value,
+                  child: Text(
+                    option.label,
+                    style: AppTypography.bodyMedium,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: widget.enabled
+              ? (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _values[param.key] = value;
+                  });
+                  widget.onParametersChanged(Map<String, dynamic>.from(_values));
+                }
+              : null,
+          validator: (value) {
+            if (param.required && (value == null || value.isEmpty)) {
+              return l10n.requiredField;
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+            labelText: param.label,
+            labelStyle: AppTypography.labelLarge.copyWith(
+              color: AppColors.getTextSecondaryColor(context),
+            ),
+            helperText: _helperText(param),
+            helperStyle: AppTypography.bodyMedium.copyWith(
+              color: AppColors.getTextTertiaryColor(context),
+              fontSize: 12,
+            ),
+            filled: true,
+            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
               ),
-            )
-            .toList(),
-        onChanged: widget.enabled
-            ? (value) {
-                if (value == null) return;
-                setState(() {
-                  _values[param.key] = value;
-                });
-                widget.onParametersChanged(Map<String, dynamic>.from(_values));
-              }
-            : null,
-        validator: (value) {
-          if (param.required && (value == null || value.isEmpty)) {
-            return 'Required field';
-          }
-          return null;
-        },
-        decoration: InputDecoration(
-          labelText: param.label,
-          helperText: _helperText(param),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: AppColors.primary,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: AppColors.error,
+                width: 1.5,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
           ),
         ),
       );
     }
 
     if (_isDateTimeParam(param)) {
-      return _buildDateTimePicker(param);
+      return _buildDateTimePicker(param, l10n);
     }
 
     if (_isDateParam(param)) {
-      return _buildDatePicker(param);
+      return _buildDatePicker(param, l10n);
     }
 
     if (_isTimeParam(param)) {
-      return _buildTimePicker(param);
+      return _buildTimePicker(param, l10n);
     }
 
     final controller = _textControllers[param.key];
@@ -298,27 +523,74 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       return const SizedBox.shrink();
     }
 
-    return TextFormField(
-      controller: controller,
-      enabled: widget.enabled,
-      keyboardType: const ['number', 'integer', 'float', 'double']
-              .contains(param.type.toLowerCase())
-          ? TextInputType.number
-          : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: param.label,
-        helperText: _helperText(param),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+    return Semantics(
+      label: '${param.label} text field',
+      child: TextFormField(
+        controller: controller,
+        enabled: widget.enabled,
+        style: AppTypography.bodyLarge,
+        keyboardType: const ['number', 'integer', 'float', 'double']
+                .contains(param.type.toLowerCase())
+            ? TextInputType.number
+            : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: param.label,
+          labelStyle: AppTypography.labelLarge.copyWith(
+            color: AppColors.getTextSecondaryColor(context),
+          ),
+          helperText: _helperText(param),
+          helperStyle: AppTypography.bodyMedium.copyWith(
+            color: AppColors.getTextTertiaryColor(context),
+            fontSize: 12,
+          ),
+          filled: true,
+          fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.primary,
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.error,
+              width: 1.5,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.error,
+              width: 2,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
         ),
+        validator: (value) {
+          if (!param.required) return null;
+          if (value == null || value.trim().isEmpty) {
+            return l10n.requiredField;
+          }
+          return null;
+        },
       ),
-      validator: (value) {
-        if (!param.required) return null;
-        if (value == null || value.trim().isEmpty) {
-          return 'Required field';
-        }
-        return null;
-      },
     );
   }
 
@@ -453,7 +725,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     return value?.toString() ?? '';
   }
 
-  Widget _buildDateTimePicker(ComponentParameter param) {
+  Widget _buildDateTimePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -467,7 +739,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select date & time' : null,
+        hintText: controller.text.isEmpty ? l10n.selectDateTime : null,
         suffixIcon: const Icon(Icons.calendar_month),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -477,14 +749,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },
     );
   }
 
-  Widget _buildDatePicker(ComponentParameter param) {
+  Widget _buildDatePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -498,7 +770,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select date' : null,
+        hintText: controller.text.isEmpty ? l10n.selectDate : null,
         suffixIcon: const Icon(Icons.event),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -508,14 +780,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },
     );
   }
 
-  Widget _buildTimePicker(ComponentParameter param) {
+  Widget _buildTimePicker(ComponentParameter param, AppLocalizations l10n) {
     final controller = _textControllers[param.key];
     if (controller == null) {
       return const SizedBox.shrink();
@@ -529,7 +801,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       decoration: InputDecoration(
         labelText: param.label,
         helperText: _helperText(param),
-        hintText: controller.text.isEmpty ? 'Select time' : null,
+        hintText: controller.text.isEmpty ? l10n.selectTime : null,
         suffixIcon: const Icon(Icons.schedule),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -539,7 +811,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         if (!param.required) return null;
         final raw = _values[param.key];
         if (raw == null || (raw is String && raw.trim().isEmpty)) {
-          return 'Required field';
+          return l10n.requiredField;
         }
         return null;
       },

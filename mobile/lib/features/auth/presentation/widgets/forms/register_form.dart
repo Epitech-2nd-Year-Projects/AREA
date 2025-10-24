@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/design_system/app_colors.dart';
 import '../../../../../core/design_system/app_spacing.dart';
 import '../../../../../core/design_system/app_typography.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../blocs/register/register_cubit.dart';
 import '../../blocs/register/register_state.dart';
 import '../common/auth_text_field.dart';
@@ -31,6 +32,8 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocBuilder<RegisterCubit, RegisterState>(
       builder: (context, state) {
         return Form(
@@ -38,17 +41,17 @@ class _RegisterFormState extends State<RegisterForm> {
           child: Column(
             children: [
               AuthTextField(
-                label: 'Email',
-                hintText: 'Enter your email address',
+                label: l10n.email,
+                hintText: l10n.enterEmail,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 prefixIcon: const Icon(Icons.email_outlined, size: 20),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.pleaseEnterEmail;
                   }
                   if (!_isValidEmail(value)) {
-                    return 'Please enter a valid email';
+                    return l10n.pleaseEnterValidEmail;
                   }
                   return null;
                 },
@@ -56,17 +59,17 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
               const SizedBox(height: AppSpacing.lg),
               AuthTextField(
-                label: 'Password',
-                hintText: 'Create a strong password',
+                label: l10n.password,
+                hintText: l10n.createStrongPassword,
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: const Icon(Icons.lock_outline, size: 20),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return l10n.pleaseEnterPassword;
                   }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                  if (value.length < 12) {
+                    return l10n.passwordMinLength;
                   }
                   return null;
                 },
@@ -74,17 +77,17 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
               const SizedBox(height: AppSpacing.lg),
               AuthTextField(
-                label: 'Confirm Password',
-                hintText: 'Confirm your password',
+                label: l10n.confirmPassword,
+                hintText: l10n.confirmYourPassword,
                 controller: _confirmPasswordController,
                 obscureText: true,
                 prefixIcon: const Icon(Icons.lock_outline, size: 20),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
+                    return l10n.pleaseConfirmPassword;
                   }
                   if (value != _passwordController.text) {
-                    return 'Passwords do not match';
+                    return l10n.passwordsDoNotMatch;
                   }
                   return null;
                 },
@@ -92,12 +95,12 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
               const SizedBox(height: AppSpacing.xl),
               AuthButton(
-                text: 'Create Account',
+                text: l10n.createAccountButton,
                 onPressed: _handleRegister,
                 isLoading: state is RegisterLoading,
               ),
               const SizedBox(height: AppSpacing.md),
-              _buildTermsAndConditions(context),
+              _buildTermsAndConditions(context, l10n),
             ],
           ),
         );
@@ -105,11 +108,11 @@ class _RegisterFormState extends State<RegisterForm> {
     );
   }
 
-  Widget _buildTermsAndConditions(BuildContext context) {
+  Widget _buildTermsAndConditions(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Text(
-        'By creating an account, you agree to our Terms of Service and Privacy Policy',
+        l10n.agreeTermsAndPrivacy,
         style: AppTypography.labelMedium.copyWith(
           color: AppColors.getTextTertiaryColor(context),
         ),

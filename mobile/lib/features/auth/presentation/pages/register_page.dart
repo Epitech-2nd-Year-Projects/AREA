@@ -6,6 +6,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/oauth/oauth_cubit.dart';
@@ -38,6 +39,7 @@ class _RegisterPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -47,10 +49,10 @@ class _RegisterPageContent extends StatelessWidget {
             listener: (context, state) {
               if (state is RegisterSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Account created! Please check your email to verify.'),
+                  SnackBar(
+                    content: Text(l10n.accountCreatedSuccess),
                     backgroundColor: AppColors.success,
-                    duration: Duration(seconds: 5),
+                    duration: const Duration(seconds: 5),
                   ),
                 );
                 context.go('/verify-email');
@@ -70,8 +72,8 @@ class _RegisterPageContent extends StatelessWidget {
                 final url = Uri.parse(state.redirectUrl.toString());
                 if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not launch OAuth register'),
+                    SnackBar(
+                      content: Text(l10n.couldNotLaunchOAuth),
                       backgroundColor: AppColors.error,
                     ),
                   );
@@ -100,15 +102,15 @@ class _RegisterPageContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.md),
-                    _buildHeader(context),
+                    _buildHeader(context, l10n),
                     const SizedBox(height: AppSpacing.xl),
                     const RegisterForm(),
                     const SizedBox(height: AppSpacing.lg),
-                    const AuthDivider(text: 'or sign up with'),
+                    AuthDivider(text: l10n.orSignUpWith),
                     const SizedBox(height: AppSpacing.lg),
                     _buildOAuthButtons(context),
                     const SizedBox(height: AppSpacing.xl),
-                    _buildLoginPrompt(context),
+                    _buildLoginPrompt(context, l10n),
                   ],
                 ),
               ),
@@ -119,20 +121,20 @@ class _RegisterPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Create account',
+          l10n.createAccount,
           style: AppTypography.displayMedium.copyWith(
             color: theme.colorScheme.onBackground,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Join AREA to automate your digital life',
+          l10n.joinAreaToAutomate,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.getTextSecondaryColor(context),
           ),
@@ -160,14 +162,14 @@ class _RegisterPageContent extends StatelessWidget {
     ],
   );
 
-  Widget _buildLoginPrompt(BuildContext context) {
+  Widget _buildLoginPrompt(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Already have an account? ',
+            l10n.alreadyHaveAccount,
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.getTextSecondaryColor(context),
             ),
@@ -175,7 +177,7 @@ class _RegisterPageContent extends StatelessWidget {
           GestureDetector(
             onTap: () => context.go('/login'),
             child: Text(
-              'Sign in',
+              l10n.signInLink,
               style: AppTypography.bodyMedium.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,

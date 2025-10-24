@@ -5,6 +5,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/services_list/services_list_bloc.dart';
 import '../blocs/services_list/services_list_event.dart';
 import '../blocs/services_list/services_list_state.dart';
@@ -14,6 +15,7 @@ import '../widgets/service_card.dart';
 import '../widgets/services_loading_shimmer.dart';
 import '../widgets/services_error_widget.dart';
 import '../widgets/empty_services_state.dart';
+import '../widgets/staggered_animations.dart';
 
 class ServicesListPage extends StatelessWidget {
   const ServicesListPage({super.key});
@@ -32,6 +34,8 @@ class _ServicesListPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(context),
       body: BlocConsumer<ServicesListBloc, ServicesListState>(
@@ -60,15 +64,15 @@ class _ServicesListPageContent extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context),
+                        _buildHeader(context, l10n),
                         const SizedBox(height: AppSpacing.lg),
-                        _buildSearchAndFilters(context, state),
+                        _buildSearchAndFilters(context, state, l10n),
                         const SizedBox(height: AppSpacing.lg),
                       ],
                     ),
                   ),
                 ),
-                _buildServicesList(context, state),
+                _buildServicesList(context, state, l10n),
               ],
             ),
           );
@@ -77,65 +81,89 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Connect Your Services',
-            style: AppTypography.displayMedium.copyWith(
-              color: AppColors.getTextPrimaryColor(context),
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+    return StaggeredAnimation(
+      delay: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.connectYourServices,
+              style: AppTypography.displayMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Subscribe to services to create powerful automations',
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.getTextSecondaryColor(context),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              height: 4,
+              width: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.subscribeToServices,
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.getTextSecondaryColor(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSearchAndFilters(BuildContext context, ServicesListState state) {
+  Widget _buildSearchAndFilters(BuildContext context, ServicesListState state, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ServicesSearchBar(
-            onSearch: (query) {
-              context.read<ServicesListBloc>().add(SearchServices(query));
-            },
-            initialValue: state is ServicesListLoaded ? state.searchQuery : '',
-            onClear: () {
-              context.read<ServicesListBloc>().add(ClearFilters());
-            },
-            hasActiveFilters: state is ServicesListLoaded &&
-                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+          StaggeredAnimation(
+            delay: 50,
+            child: ServicesSearchBar(
+              onSearch: (query) {
+                context.read<ServicesListBloc>().add(SearchServices(query));
+              },
+              initialValue: state is ServicesListLoaded ? state.searchQuery : '',
+              onClear: () {
+                context.read<ServicesListBloc>().add(ClearFilters());
+              },
+              hasActiveFilters: state is ServicesListLoaded &&
+                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ServicesFilterChips(
-            selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
-            onCategorySelected: (category) {
-              context.read<ServicesListBloc>().add(FilterByCategory(category));
-            },
-            hasActiveFilters: state is ServicesListLoaded &&
-                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
-            onClearFilters: () {
-              context.read<ServicesListBloc>().add(ClearFilters());
-            },
+          StaggeredAnimation(
+            delay: 100,
+            child: ServicesFilterChips(
+              selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
+              onCategorySelected: (category) {
+                context.read<ServicesListBloc>().add(FilterByCategory(category));
+              },
+              hasActiveFilters: state is ServicesListLoaded &&
+                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+              onClearFilters: () {
+                context.read<ServicesListBloc>().add(ClearFilters());
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildServicesList(BuildContext context, ServicesListState state) {
+  Widget _buildServicesList(BuildContext context, ServicesListState state, AppLocalizations l10n) {
     if (state is ServicesListLoading) {
       return const SliverToBoxAdapter(
         child: ServicesLoadingShimmer(),
@@ -145,7 +173,7 @@ class _ServicesListPageContent extends StatelessWidget {
     if (state is ServicesListError) {
       return SliverToBoxAdapter(
         child: ServicesErrorWidget(
-          title: 'Failed to Load Services',
+          title: l10n.failedToLoadServices,
           message: state.message,
           onRetry: () {
             context.read<ServicesListBloc>().add(LoadServices());
@@ -183,11 +211,14 @@ class _ServicesListPageContent extends StatelessWidget {
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
                   final service = state.filteredServices[index];
+                  // Cascade animation: base delay + stagger based on index
+                  final delay = 150 + (index * 50);
                   return ServiceCard(
                     service: service,
                     onTap: () {
                       context.push('/services/${service.provider.id}');
                     },
+                    delay: delay,
                   );
                 },
                 childCount: state.filteredServices.length,

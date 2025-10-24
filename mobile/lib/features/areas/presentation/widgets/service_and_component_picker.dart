@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/service_component.dart';
 import '../../../services/domain/value_objects/component_kind.dart';
 import '../cubits/area_form_cubit.dart';
@@ -117,88 +120,241 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final badge = _buildBadge(context);
+    final l10n = AppLocalizations.of(context)!;
+    final badge = _buildBadge(context, l10n);
 
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.black.withValues(alpha: 0.3)
+          : AppColors.gray300.withValues(alpha: 0.2),
       color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.getBorderColor(context)),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    widget.kind == ServiceComponentKind.action
+                        ? Icons.flash_on_rounded
+                        : Icons.settings_suggest_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      widget.title,
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
                 badge,
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.lg),
 
-            ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).dividerColor),
+            Semantics(
+              label: 'Select ${widget.title.toLowerCase()} service',
+              button: true,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onSelectService,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.apps_rounded,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            widget.providerLabel ?? 'Select ${widget.title.toLowerCase()} service',
+                            style: AppTypography.bodyLarge.copyWith(
+                              color: widget.providerLabel != null
+                                  ? AppColors.getTextPrimaryColor(context)
+                                  : AppColors.getTextSecondaryColor(context),
+                              fontWeight: widget.providerLabel != null
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: AppColors.getTextSecondaryColor(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .15),
-              leading: const Icon(Icons.apps),
-              title: Text(
-                widget.providerLabel ?? 'Select ${widget.title.toLowerCase()} service',
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.edit),
-              onTap: widget.onSelectService,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
             if (widget.providerId != null) ...[
-              if (_loading) const LinearProgressIndicator(),
+              if (_loading)
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Loading components...',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               if (!_loading)
                 _components.isEmpty
                     ? Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'No ${widget.title.toLowerCase()} components for this service',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.warning.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: AppColors.warning,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Text(
+                                l10n.noComponentsFor,
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: AppColors.getTextPrimaryColor(context),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       )
-                    : DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        initialValue: (widget.selectedComponentId != null &&
-                                _components.any((e) => e.id == widget.selectedComponentId))
-                            ? widget.selectedComponentId
-                            : null,
-                        hint: Text('Choose a ${widget.title.toLowerCase()} component'),
-                        items: _components
-                            .map((component) => DropdownMenuItem<String>(
-                                  value: component.id,
-                                  child: Text(component.displayName, overflow: TextOverflow.ellipsis),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          widget.onComponentChanged(value);
-                          if (value == null) {
-                            widget.onComponentSelected(null);
-                          } else {
-                            final component = _components.firstWhere(
-                              (c) => c.id == value,
-                              orElse: () => _components.first,
-                            );
-                            widget.onComponentSelected(component);
-                          }
-                        },
-                        validator: (v) => v == null ? 'Select a component' : null,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    : Semantics(
+                        label: 'Component selection dropdown',
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: (widget.selectedComponentId != null &&
+                                  _components.any((e) => e.id == widget.selectedComponentId))
+                              ? widget.selectedComponentId
+                              : null,
+                          hint: Text(l10n.chooseComponent),
+                          icon: Icon(
+                            Icons.arrow_drop_down_rounded,
+                            color: AppColors.primary,
+                          ),
+                          items: _components
+                              .map((component) => DropdownMenuItem<String>(
+                                    value: component.id,
+                                    child: Text(
+                                      component.displayName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodyMedium,
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            widget.onComponentChanged(value);
+                            if (value == null) {
+                              widget.onComponentSelected(null);
+                            } else {
+                              final component = _components.firstWhere(
+                                (c) => c.id == value,
+                                orElse: () => _components.first,
+                              );
+                              widget.onComponentSelected(component);
+                            }
+                          },
+                          validator: (v) => v == null ? l10n.selectComponent : null,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: AppColors.error,
+                                width: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
                         ),
                       ),
             ],
@@ -208,7 +364,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     );
   }
 
-  Widget _buildBadge(BuildContext context) {
+  Widget _buildBadge(BuildContext context, AppLocalizations l10n) {
     if (widget.providerId == null) return const SizedBox.shrink();
 
     final cubit = context.read<AreaFormCubit>();
@@ -216,28 +372,71 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
 
     if (cached == null) {
       cubit.checkSubscriptionActive(widget.providerId!);
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: 6),
-          Text('Checking…'),
-        ],
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceVariantColor(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              l10n.checking,
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.getTextSecondaryColor(context),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     final isSub = widget.isSubscribed ?? cached;
-    final color = isSub ? Colors.green : Theme.of(context).colorScheme.error;
-    final icon = isSub ? Icons.check_circle : Icons.cancel_outlined;
-    final text = isSub ? 'Subscribed' : 'Not subscribed';
+    final color = isSub ? AppColors.success : AppColors.error;
+    final icon = isSub ? Icons.check_circle_rounded : Icons.cancel_outlined;
+    final text = isSub ? l10n.subscribed : l10n.notSubscribed;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 16),
-        const SizedBox(width: 6),
-        Text(text, style: TextStyle(color: color)),
-      ],
+    return Semantics(
+      label: 'Subscription status: $text',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              text,
+              style: AppTypography.labelMedium.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -12,11 +12,11 @@ import '../../domain/entities/service_identity_summary.dart';
 import '../../domain/repositories/services_repository.dart';
 import '../../domain/value_objects/component_kind.dart';
 import '../../domain/value_objects/service_category.dart';
+import '../../domain/value_objects/subscription_status.dart';
 import '../datasources/services_remote_datasource.dart';
 import '../models/about_info_model.dart';
 import '../models/service_component_model.dart';
 import '../models/service_provider_model.dart';
-import '../models/identity_summary_model.dart';
 
 class ServicesRepositoryImpl implements ServicesRepository {
   final ServicesRemoteDataSource remoteDataSource;
@@ -131,19 +131,52 @@ class ServicesRepositoryImpl implements ServicesRepository {
   }) async {
     try {
       final servicesResult = await getAvailableServices(category: category);
-
+      
+      final availableComponentsResult = await remoteDataSource.listComponents(
+        onlyAvailable: true,
+      );
+      
+      final Set<String> subscribedProviderIdentifiers = {};
+      for (final component in availableComponentsResult) {
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.id));
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.name));
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.displayName));
+      }
+      
       return servicesResult.fold(
-            (failure) => Left(failure),
-            (services) {
+        (failure) => Left(failure),
+        (services) {
           final servicesWithStatus = services.map((service) {
-            final key = _normalizeServiceKey(service.id);
-            final fallbackKey = _normalizeServiceKey(service.name);
-            final cachedSubscription = _subscriptionCache[key] ??
-                _subscriptionCache[fallbackKey];
+            final normalizedId = _normalizeServiceKey(service.id);
+            final normalizedName = _normalizeServiceKey(service.name);
+            final normalizedDisplayName = _normalizeServiceKey(service.displayName);
+            
+            final isSubscribed = subscribedProviderIdentifiers.contains(normalizedId) ||
+                                subscribedProviderIdentifiers.contains(normalizedName) ||
+                                subscribedProviderIdentifiers.contains(normalizedDisplayName);
+            
+            final cachedSubscription = _subscriptionCache[normalizedId] ??
+                _subscriptionCache[normalizedName] ??
+                _subscriptionCache[normalizedDisplayName];
+            
+            UserServiceSubscription? subscription = cachedSubscription;
+
+            if (isSubscribed && subscription == null) {
+              final now = DateTime.now();
+              subscription = UserServiceSubscription(
+                id: normalizedId,
+                providerId: normalizedId,
+                status: SubscriptionStatus.active,
+                scopeGrants: const [],
+                createdAt: now,
+                updatedAt: now,
+              );
+            }
+                
             return ServiceWithStatus(
               provider: service,
-              isSubscribed: cachedSubscription?.isActive ?? false,
-              subscription: cachedSubscription,
+              isSubscribed: isSubscribed,
+              subscription: subscription,
             );
           }).toList();
           return Right(servicesWithStatus);
@@ -171,11 +204,43 @@ class ServicesRepositoryImpl implements ServicesRepository {
   Future<Either<Failure, List<UserServiceSubscription>>>
       getUserSubscriptions() async {
     try {
-      final seen = <String>{};
-      final subscriptions = _subscriptionCache.values.where((subscription) {
-        final isNew = seen.add(subscription.id);
-        return isNew;
+      final availableComponentsResult = await remoteDataSource.listComponents(
+        onlyAvailable: true,
+      );
+      
+      final Map<String, ServiceProviderSummaryModel> subscribedProviders = {};
+      for (final component in availableComponentsResult) {
+        final normalizedId = _normalizeServiceKey(component.provider.id);
+        subscribedProviders[normalizedId] = component.provider;
+        
+        final normalizedName = _normalizeServiceKey(component.provider.name);
+        if (!subscribedProviders.containsKey(normalizedName)) {
+          subscribedProviders[normalizedName] = component.provider;
+        }
+        
+        final normalizedDisplayName = _normalizeServiceKey(component.provider.displayName);
+        if (!subscribedProviders.containsKey(normalizedDisplayName)) {
+          subscribedProviders[normalizedDisplayName] = component.provider;
+        }
+      }
+      
+      final subscriptions = subscribedProviders.entries.map((entry) {
+        final cachedSubscription = _subscriptionCache[entry.key];
+        if (cachedSubscription != null) {
+          return cachedSubscription;
+        }
+        
+        final now = DateTime.now();
+        return UserServiceSubscription(
+          id: entry.key,
+          providerId: entry.key,
+          status: SubscriptionStatus.active,
+          scopeGrants: const [],
+          createdAt: now,
+          updatedAt: now,
+        );
       }).toList();
+      
       return Right(subscriptions);
     } catch (e) {
       return Left(_mapError(e));
@@ -187,9 +252,41 @@ class ServicesRepositoryImpl implements ServicesRepository {
       String serviceId,
       ) async {
     try {
-      final subscription = _subscriptionCache[serviceId] ??
-          _subscriptionCache[_normalizeServiceKey(serviceId)];
-      return Right(subscription);
+      final normalizedId = _normalizeServiceKey(serviceId);
+      
+      final availableComponentsResult = await remoteDataSource.listComponents(
+        onlyAvailable: true,
+      );
+      
+      final Set<String> subscribedProviderIdentifiers = {};
+      for (final component in availableComponentsResult) {
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.id));
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.name));
+        subscribedProviderIdentifiers.add(_normalizeServiceKey(component.provider.displayName));
+      }
+      
+      final isSubscribed = subscribedProviderIdentifiers.contains(normalizedId);
+      
+      if (!isSubscribed) {
+        return const Right(null);
+      }
+      
+      final subscription = _subscriptionCache[normalizedId];
+      if (subscription != null) {
+        return Right(subscription);
+      }
+      
+      final now = DateTime.now();
+      final newSubscription = UserServiceSubscription(
+        id: normalizedId,
+        providerId: normalizedId,
+        status: SubscriptionStatus.active,
+        scopeGrants: const [],
+        createdAt: now,
+        updatedAt: now,
+      );
+      
+      return Right(newSubscription);
     } catch (e) {
       return Left(_mapError(e));
     }

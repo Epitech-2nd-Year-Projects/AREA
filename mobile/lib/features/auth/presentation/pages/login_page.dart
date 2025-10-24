@@ -6,6 +6,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/auth_event.dart';
 import '../blocs/login/login_cubit.dart';
@@ -37,6 +38,7 @@ class _LoginPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -94,15 +96,15 @@ class _LoginPageContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.xl),
-                    _buildHeader(context),
+                    _buildHeader(context, l10n),
                     const SizedBox(height: AppSpacing.xxl),
                     const LoginForm(),
                     const SizedBox(height: AppSpacing.xl),
-                    const AuthDivider(text: 'or continue with'),
+                    AuthDivider(text: l10n.continueWith),
                     const SizedBox(height: AppSpacing.xl),
                     _buildOAuthButtons(context),
                     const SizedBox(height: AppSpacing.xl),
-                    _buildSignUpPrompt(context),
+                    _buildSignUpPrompt(context, l10n),
                   ],
                 ),
               ),
@@ -113,19 +115,19 @@ class _LoginPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back',
+          l10n.welcomeBack,
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.getTextPrimaryColor(context),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Sign in to your account to continue',
+          l10n.signInToAccount,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.getTextSecondaryColor(context),
           ),
@@ -153,14 +155,14 @@ class _LoginPageContent extends StatelessWidget {
     ],
   );
 
-  Widget _buildSignUpPrompt(BuildContext context) {
+  Widget _buildSignUpPrompt(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "Don't have an account? ",
+            l10n.dontHaveAnAccount,
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.getTextSecondaryColor(context),
             ),
@@ -168,7 +170,7 @@ class _LoginPageContent extends StatelessWidget {
           GestureDetector(
             onTap: () => context.go('/register'),
             child: Text(
-              'Sign up',
+              l10n.signUp,
               style: AppTypography.bodyMedium.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,

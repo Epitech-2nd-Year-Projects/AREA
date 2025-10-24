@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/app_colors.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/areas_cubit.dart';
 import '../cubits/areas_state.dart';
@@ -41,16 +44,56 @@ class _AreasScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('My Areas')),
+      backgroundColor: AppColors.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          l10n.myAreas,
+          style: AppTypography.headlineMedium.copyWith(
+            color: AppColors.getTextPrimaryColor(context),
+          ),
+        ),
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: AppColors.getSurfaceColor(context),
+        surfaceTintColor: Colors.transparent,
+      ),
       body: BlocBuilder<AreasCubit, AreasState>(
         builder: (context, state) {
           if (state is AreasLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: Semantics(
+                label: l10n.myAreas,
+                child: const CircularProgressIndicator(),
+              ),
+            );
           }
           if (state is AreasError) {
             return Center(
-              child: Text(state.message, style: const TextStyle(color: Colors.red)),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppColors.error,
+                      semanticLabel: 'Error',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      state.message,
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: AppColors.error,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             );
           }
           if (state is AreasLoaded) {
@@ -59,12 +102,50 @@ class _AreasScreen extends StatelessWidget {
             if (areas.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () => context.read<AreasCubit>().fetchAreas(),
-                child: ListView(
+                child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 120),
-                    Center(child: Text('No automation configured.')),
-                    SizedBox(height: 600),
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.xl),
+                                decoration: BoxDecoration(
+                                  color: AppColors.getSurfaceVariantColor(context),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.auto_awesome_outlined,
+                                  size: 64,
+                                  color: AppColors.getTextTertiaryColor(context),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              Text(
+                                l10n.noAutomationConfigured,
+                                style: AppTypography.headlineMedium.copyWith(
+                                  color: AppColors.getTextPrimaryColor(context),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                'Create your first automation to get started',
+                                style: AppTypography.bodyLarge.copyWith(
+                                  color: AppColors.getTextSecondaryColor(context),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -72,13 +153,20 @@ class _AreasScreen extends StatelessWidget {
 
             return RefreshIndicator(
               onRefresh: () => context.read<AreasCubit>().fetchAreas(),
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 96, top: 8),
+              child: ListView.separated(
+                padding: const EdgeInsets.only(
+                  bottom: 96,
+                  top: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                ),
                 itemCount: areas.length,
+                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final area = areas[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  return Semantics(
+                    label: '${area.name} automation',
+                    button: true,
                     child: AreaCard(
                       area: area,
                       onEdit: () => _openEdit(context, area),
@@ -94,12 +182,27 @@ class _AreasScreen extends StatelessWidget {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openCreate(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
+      floatingActionButton: Semantics(
+        label: '${l10n.newAreaButton} button',
+        button: true,
+        child: FloatingActionButton.extended(
+          onPressed: () => _openCreate(context),
+          icon: const Icon(Icons.add_rounded, size: 24),
+          label: Text(
+            l10n.newAreaButton,
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          elevation: 4,
+          extendedPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+        ),
       ),
     );
   }
