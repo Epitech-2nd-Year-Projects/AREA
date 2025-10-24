@@ -33,6 +33,7 @@ type PollingRequest struct {
 	Component componentdomain.Component
 	Cursor    map[string]any
 	Now       time.Time
+	Identity  map[string]any
 }
 
 // ComponentPollingHandler fetches events for polling-based action components

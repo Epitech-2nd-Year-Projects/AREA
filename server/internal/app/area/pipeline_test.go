@@ -10,6 +10,7 @@ import (
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	jobdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/job"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	queueport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/queue"
 	"github.com/google/uuid"
 )
@@ -18,9 +19,13 @@ type fakeExecutionRepository struct {
 	events   []actiondomain.Event
 	triggers []actiondomain.Trigger
 	jobs     []jobdomain.Job
+	err      error
 }
 
 func (f *fakeExecutionRepository) Create(ctx context.Context, event actiondomain.Event, triggers []actiondomain.Trigger, jobs []jobdomain.Job) (actiondomain.Event, []actiondomain.Trigger, []jobdomain.Job, error) {
+	if f.err != nil {
+		return actiondomain.Event{}, nil, nil, f.err
+	}
 	f.events = append(f.events, event)
 	f.triggers = append(f.triggers, triggers...)
 	f.jobs = append(f.jobs, jobs...)
@@ -144,5 +149,47 @@ func TestExecutionPipelineMissingQueue(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "queue unavailable") {
 		t.Fatalf("unexpected enqueue error: %v", err)
+	}
+}
+
+func TestExecutionPipelineIgnoresDuplicateEvents(t *testing.T) {
+	repo := &fakeExecutionRepository{err: outbound.ErrConflict}
+	queue := &recordingQueue{}
+	pipe := NewExecutionPipeline(repo, stubClock{now: time.Unix(1720000000, 0).UTC()}, queue)
+
+	reaction := areadomain.Link{
+		ID:   uuid.New(),
+		Role: areadomain.LinkRoleReaction,
+		Config: componentdomain.Config{
+			ID:          uuid.New(),
+			ComponentID: uuid.New(),
+			Params:      map[string]any{},
+		},
+	}
+
+	areaModel := areadomain.Area{
+		ID: uuid.New(),
+		Action: &areadomain.Link{
+			ID:   uuid.New(),
+			Role: areadomain.LinkRoleAction,
+			Config: componentdomain.Config{
+				ID:          uuid.New(),
+				ComponentID: uuid.New(),
+			},
+		},
+		Reactions: []areadomain.Link{reaction},
+	}
+
+	input := ExecutionInput{
+		Area:     areaModel,
+		SourceID: uuid.New(),
+	}
+
+	if err := pipe.Enqueue(context.Background(), input); err != nil {
+		t.Fatalf("expected duplicate events to be ignored, got error: %v", err)
+	}
+
+	if len(queue.messages) != 0 {
+		t.Fatalf("expected no jobs enqueued on duplicate event, got %d", len(queue.messages))
 	}
 }

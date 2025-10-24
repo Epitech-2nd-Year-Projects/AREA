@@ -2,6 +2,7 @@ package area
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -114,6 +115,9 @@ func (p *dbExecutionPipeline) Enqueue(ctx context.Context, input ExecutionInput)
 
 	_, _, _, err := p.executions.Create(ctx, event, triggers, jobs)
 	if err != nil {
+		if errors.Is(err, outbound.ErrConflict) {
+			return nil
+		}
 		return fmt.Errorf("area.ExecutionPipeline.Enqueue: %w", err)
 	}
 	if p.queue == nil {
