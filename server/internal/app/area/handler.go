@@ -163,6 +163,7 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 	case errors.Is(err, ErrActionComponentRequired), errors.Is(err, ErrActionComponentInvalid), errors.Is(err, ErrActionComponentDisabled), errors.Is(err, ErrReactionsRequired), errors.Is(err, ErrReactionComponentInvalid), errors.Is(err, ErrReactionComponentDisabled):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component payload"})
 	case errors.Is(err, ErrComponentParamsInvalid):
+		zap.L().Warn("invalid component params", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component params"})
 	case errors.Is(err, ErrProviderSubscriptionMissing):
 		c.JSON(http.StatusForbidden, gin.H{"error": "provider subscription required"})
