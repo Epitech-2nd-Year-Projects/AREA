@@ -377,11 +377,72 @@ func (p *provider) fetchProfile(ctx context.Context, accessToken string) (identi
 	if profile.Provider == "" {
 		profile.Provider = p.name
 	}
+	if strings.EqualFold(p.name, "github") && strings.TrimSpace(profile.Email) == "" {
+		if email, emailErr := p.fetchGithubPrimaryEmail(ctx, accessToken); emailErr == nil && strings.TrimSpace(email) != "" {
+			profile.Email = strings.TrimSpace(email)
+			raw["email"] = profile.Email
+		}
+	}
 	if profile.Raw == nil {
 		profile.Raw = raw
 	}
 
 	return profile, raw, nil
+}
+
+func (p *provider) fetchGithubPrimaryEmail(ctx context.Context, accessToken string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user/emails", nil)
+	if err != nil {
+		return "", fmt.Errorf("github emails request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", p.userAgent)
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("github emails http: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("github emails status %d", resp.StatusCode)
+	}
+
+	type emailEntry struct {
+		Email      string `json:"email"`
+		Primary    bool   `json:"primary"`
+		Verified   bool   `json:"verified"`
+		Visibility string `json:"visibility"`
+	}
+
+	var entries []emailEntry
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&entries); err != nil {
+		return "", fmt.Errorf("github emails decode: %w", err)
+	}
+
+	var fallback string
+	for _, entry := range entries {
+		email := strings.TrimSpace(entry.Email)
+		if email == "" {
+			continue
+		}
+		if entry.Verified && entry.Primary {
+			return email, nil
+		}
+		if fallback == "" {
+			if entry.Verified {
+				fallback = email
+			} else {
+				fallback = email
+			}
+		}
+	}
+
+	return fallback, nil
 }
 
 func fallbackScopes(primary []string, secondary []string) []string {
