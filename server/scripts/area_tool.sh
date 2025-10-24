@@ -555,10 +555,12 @@ collect_params() {
                         continue
                     elif [[ -n "$default_json" ]]; then
                         value_json=$default_json
+                    else
+                        value_json='[]'
                     fi
                     break
                 fi
-                value_json=$(jq -nc --arg csv "$answer" '[($csv | split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0)))]')
+                value_json=$(jq -nc --arg csv "$answer" '($csv | split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0)))')
                 break
                 ;;
             keyValue|json|object)
