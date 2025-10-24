@@ -17,6 +17,8 @@ import '../widgets/service_subscription_button.dart';
 import '../widgets/components_section.dart';
 import '../widgets/service_details_loading.dart';
 import '../widgets/service_details_error.dart';
+import '../widgets/staggered_animations.dart';
+import '../widgets/parallax_header.dart';
 
 class ServiceDetailsPage extends StatelessWidget {
   final String serviceId;
@@ -222,6 +224,9 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
 
     if (state is ServiceDetailsLoaded) {
       return CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         slivers: [
           _buildAppBar(context, state, subscriptionState),
           SliverToBoxAdapter(
@@ -245,6 +250,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
                         .add(SearchComponents(query));
                   },
                 ),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),
@@ -261,14 +267,24 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       ServiceSubscriptionState subscriptionState,
       ) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 140,
       pinned: true,
+      floating: false,
       backgroundColor: AppColors.getSurfaceColor(context),
-      leading: IconButton(
-        onPressed: () => context.pop(),
-        icon: Icon(
-          Icons.arrow_back,
-          color: AppColors.getTextPrimaryColor(context),
+      elevation: 0,
+      leading: Container(
+        margin: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: IconButton(
+          onPressed: () => context.pop(),
+          icon: Icon(
+            Icons.arrow_back,
+            color: AppColors.getTextPrimaryColor(context),
+          ),
+          tooltip: 'Go back',
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
@@ -276,35 +292,82 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
           state.service.displayName,
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w700,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         titlePadding: const EdgeInsets.only(
           left: 56,
           bottom: 16,
           right: 16,
         ),
+        centerTitle: false,
+        collapseMode: CollapseMode.parallax,
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.05),
+                AppColors.primary.withValues(alpha: 0.02),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -50,
+                right: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withValues(alpha: 0.03),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -30,
+                left: -30,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primaryLight.withValues(alpha: 0.02),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.md),
-          child: ServiceSubscriptionButton(
-            service: state.service,
-            subscription: state.subscription,
-            isLoading: subscriptionState is ServiceSubscriptionLoading ||
-                subscriptionState is ServiceSubscriptionAwaitingAuthorization,
-            onSubscribe: () {
-              context.read<ServiceSubscriptionCubit>().subscribe(
-                serviceId: state.service.id,
-                requestedScopes: _getRequestedScopes(state.service.id),
-              );
-            },
-            onUnsubscribe: () {
-              if (state.subscription != null) {
-                context.read<ServiceSubscriptionCubit>().unsubscribe(
-                  state.subscription!.id,
+          padding: const EdgeInsets.only(right: AppSpacing.md, top: AppSpacing.sm, bottom: AppSpacing.sm),
+          child: FadeInAnimation(
+            child: ServiceSubscriptionButton(
+              service: state.service,
+              subscription: state.subscription,
+              isLoading: subscriptionState is ServiceSubscriptionLoading ||
+                  subscriptionState is ServiceSubscriptionAwaitingAuthorization,
+              onSubscribe: () {
+                context.read<ServiceSubscriptionCubit>().subscribe(
+                  serviceId: state.service.id,
+                  requestedScopes: _getRequestedScopes(state.service.id),
                 );
-              }
-            },
+              },
+              onUnsubscribe: () {
+                if (state.subscription != null) {
+                  context.read<ServiceSubscriptionCubit>().unsubscribe(
+                    state.subscription!.id,
+                  );
+                }
+              },
+            ),
           ),
         ),
       ],

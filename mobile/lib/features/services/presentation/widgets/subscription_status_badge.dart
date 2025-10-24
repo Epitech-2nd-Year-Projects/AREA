@@ -4,6 +4,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../domain/entities/user_service_subscription.dart';
 import '../../domain/value_objects/subscription_status.dart';
+import 'staggered_animations.dart';
 
 class SubscriptionStatusBadge extends StatelessWidget {
   final bool isSubscribed;
@@ -18,22 +19,42 @@ class SubscriptionStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isSubscribed) {
-      return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.gray200,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'Available',
-            style: AppTypography.labelMedium.copyWith(
-              color: AppColors.gray700,
-              fontWeight: FontWeight.w600,
+      return FadeInAnimation(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.gray200.withValues(alpha: 0.8),
+                AppColors.gray200.withValues(alpha: 0.6),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.gray300.withValues(alpha: 0.5),
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.gray200.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Available',
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.gray700,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -43,40 +64,66 @@ class SubscriptionStatusBadge extends StatelessWidget {
     final status = subscription?.status ?? SubscriptionStatus.active;
     final (color, backgroundColor, text) = _getStatusProperties(status);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+    return FadeInAnimation(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              backgroundColor,
+              backgroundColor.withValues(alpha: 0.7),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(width: AppSpacing.xs),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                text,
-                style: AppTypography.labelMedium.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  text,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

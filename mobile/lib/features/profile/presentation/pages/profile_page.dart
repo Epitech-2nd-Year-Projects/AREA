@@ -10,6 +10,7 @@ import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../auth/presentation/blocs/auth_bloc.dart';
 import '../../../auth/presentation/blocs/auth_event.dart';
+import '../../../services/presentation/widgets/staggered_animations.dart';
 import '../cubits/profile_cubit.dart';
 import '../cubits/profile_state.dart';
 import '../widgets/edit_profile_sheet.dart';
@@ -112,129 +113,172 @@ class _ProfileView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Card(
-                                elevation: 2,
-                                shadowColor: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black.withValues(alpha: 0.3)
-                                    : AppColors.gray300.withValues(alpha: 0.2),
-                                color: AppColors.getSurfaceColor(context),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  side: BorderSide(
-                                    color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                              StaggeredAnimation(
+                                delay: 0,
+                                child: Card(
+                                  elevation: 2,
+                                  shadowColor: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.black.withValues(alpha: 0.3)
+                                      : AppColors.gray300.withValues(alpha: 0.2),
+                                  color: AppColors.getSurfaceColor(context),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                    side: BorderSide(
+                                      color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                                    ),
                                   ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(AppSpacing.xl),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Semantics(
-                                        label: 'Profile avatar',
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.primary.withValues(alpha: 0.2),
-                                                blurRadius: 16,
-                                                offset: const Offset(0, 4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(AppSpacing.xl),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Semantics(
+                                          label: 'Profile avatar',
+                                          child: TweenAnimationBuilder<double>(
+                                            tween: Tween(begin: 0, end: 1),
+                                            duration: const Duration(milliseconds: 800),
+                                            curve: Curves.elasticOut,
+                                            builder: (context, scale, child) {
+                                              return Transform.scale(
+                                                scale: 0.5 + (scale * 0.5),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: AppColors.primary.withValues(alpha: 0.25),
+                                                        blurRadius: 20,
+                                                        offset: const Offset(0, 8),
+                                                      ),
+                                                      BoxShadow(
+                                                        color: AppColors.primary.withValues(alpha: 0.12),
+                                                        blurRadius: 40,
+                                                        offset: const Offset(0, 16),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: CircleAvatar(
+                                                    radius: 56,
+                                                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        gradient: LinearGradient(
+                                                          colors: [
+                                                            AppColors.primary.withValues(alpha: 0.2),
+                                                            AppColors.primary.withValues(alpha: 0.05),
+                                                          ],
+                                                          begin: Alignment.topLeft,
+                                                          end: Alignment.bottomRight,
+                                                        ),
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          displayName.isNotEmpty
+                                                              ? displayName[0].toUpperCase()
+                                                              : user.email.isNotEmpty
+                                                                  ? user.email[0].toUpperCase()
+                                                                  : '?',
+                                                          style: AppTypography.displayLarge.copyWith(
+                                                            fontSize: 48,
+                                                            color: AppColors.primary,
+                                                            fontWeight: FontWeight.w800,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.lg),
+                                        FadeInAnimation(
+                                          duration: const Duration(milliseconds: 700),
+                                          child: Column(
+                                            children: [
+                                              Semantics(
+                                                header: true,
+                                                child: Text(
+                                                  displayName,
+                                                  style: AppTypography.displayMedium.copyWith(
+                                                    color: AppColors.getTextPrimaryColor(context),
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                              const SizedBox(height: AppSpacing.xs),
+                                              Text(
+                                                user.email,
+                                                style: AppTypography.bodyLarge.copyWith(
+                                                  color: AppColors.getTextSecondaryColor(context),
+                                                ),
+                                                textAlign: TextAlign.center,
                                               ),
                                             ],
                                           ),
-                                          child: CircleAvatar(
-                                            radius: 56,
-                                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                            child: Text(
-                                              displayName.isNotEmpty
-                                                  ? displayName[0].toUpperCase()
-                                                  : user.email.isNotEmpty
-                                                      ? user.email[0].toUpperCase()
-                                                      : '?',
-                                              style: AppTypography.displayLarge.copyWith(
-                                                fontSize: 48,
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.lg),
-                                      Semantics(
-                                        header: true,
-                                        child: Text(
-                                          displayName,
-                                          style: AppTypography.displayMedium.copyWith(
-                                            color: AppColors.getTextPrimaryColor(context),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.xs),
-                                      Text(
-                                        user.email,
-                                        style: AppTypography.bodyLarge.copyWith(
-                                          color: AppColors.getTextSecondaryColor(context),
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: AppSpacing.xl),
-                                      Semantics(
-                                        label: 'Edit profile button',
-                                        button: true,
-                                        child: SizedBox(
-                                          width: double.infinity,
-                                          height: 56,
-                                          child: FilledButton.icon(
-                                            onPressed: services.isEmpty ? null : () async {
-                                              final saved = await showModalBottomSheet<bool>(
-                                                context: context,
-                                                isScrollControlled: true,
-                                                useSafeArea: true,
-                                                showDragHandle: true,
-                                                shape: const RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.vertical(
-                                                    top: Radius.circular(28),
+                                        const SizedBox(height: AppSpacing.xl),
+                                        FadeInAnimation(
+                                          duration: const Duration(milliseconds: 800),
+                                          child: Semantics(
+                                            label: 'Edit profile button',
+                                            button: true,
+                                            child: SizedBox(
+                                              width: double.infinity,
+                                              height: 56,
+                                              child: FilledButton.icon(
+                                                onPressed: services.isEmpty ? null : () async {
+                                                  final saved = await showModalBottomSheet<bool>(
+                                                    context: context,
+                                                    isScrollControlled: true,
+                                                    useSafeArea: true,
+                                                    showDragHandle: true,
+                                                    shape: const RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.vertical(
+                                                        top: Radius.circular(28),
+                                                      ),
+                                                    ),
+                                                    builder: (_) => BlocProvider.value(
+                                                      value: context.read<ProfileCubit>(),
+                                                      child: EditProfileSheet(state: state),
+                                                    ),
+                                                  );
+                                                  if (saved == true && context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(l10n.profileUpdated),
+                                                        behavior: SnackBarBehavior.floating,
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.edit_rounded, size: 24),
+                                                label: Text(
+                                                  l10n.edit,
+                                                  style: AppTypography.labelLarge.copyWith(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
-                                                builder: (_) => BlocProvider.value(
-                                                  value: context.read<ProfileCubit>(),
-                                                  child: EditProfileSheet(state: state),
-                                                ),
-                                              );
-                                              if (saved == true && context.mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(l10n.profileUpdated),
-                                                    behavior: SnackBarBehavior.floating,
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor: AppColors.primary,
+                                                  foregroundColor: AppColors.white,
+                                                  disabledBackgroundColor:
+                                                      AppColors.primary.withValues(alpha: 0.5),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
                                                   ),
-                                                );
-                                              }
-                                            },
-                                            icon: const Icon(Icons.edit_rounded, size: 24),
-                                            label: Text(
-                                              l10n.edit,
-                                              style: AppTypography.labelLarge.copyWith(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
+                                                  elevation: 3,
+                                                ),
                                               ),
-                                            ),
-                                            style: FilledButton.styleFrom(
-                                              backgroundColor: AppColors.primary,
-                                              foregroundColor: AppColors.white,
-                                              disabledBackgroundColor:
-                                                  AppColors.primary.withValues(alpha: 0.5),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
-                                              elevation: 2,
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

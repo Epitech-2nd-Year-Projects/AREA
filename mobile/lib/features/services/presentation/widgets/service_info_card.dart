@@ -4,6 +4,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/service_provider.dart';
+import 'staggered_animations.dart';
 
 class ServiceInfoCard extends StatelessWidget {
   final ServiceProvider service;
@@ -17,40 +18,49 @@ class ServiceInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      margin: const EdgeInsets.all(AppSpacing.lg),
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.getBorderColor(context),
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.gray200.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return StaggeredAnimation(
+      delay: 100,
+      child: Container(
+        margin: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.getBorderColor(context).withValues(alpha: 0.5),
+            width: 1,
           ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isExtremelyCompact = constraints.maxWidth < 250;
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: AppColors.gray200.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isExtremelyCompact = constraints.maxWidth < 250;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isExtremelyCompact)
-                _buildCompactHeader(context, l10n)
-              else
-                _buildNormalHeader(context, constraints.maxWidth, l10n),
-              const SizedBox(height: AppSpacing.xl),
-              _buildAuthenticationSection(context, constraints.maxWidth, l10n),
-            ],
-          );
-        },
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isExtremelyCompact)
+                  _buildCompactHeader(context, l10n)
+                else
+                  _buildNormalHeader(context, constraints.maxWidth, l10n),
+                const SizedBox(height: AppSpacing.xl),
+                _buildAuthenticationSection(context, constraints.maxWidth, l10n),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -129,17 +139,24 @@ class ServiceInfoCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.8),
+            AppColors.primaryLight.withValues(alpha: 0.9),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+            spreadRadius: 4,
           ),
         ],
       ),
@@ -176,12 +193,26 @@ class ServiceInfoCard extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-          width: 0.5,
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.12),
+            AppColors.primary.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         service.category.displayName,
@@ -207,22 +238,42 @@ class ServiceInfoCard extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.2),
-          width: 0.5,
+        gradient: LinearGradient(
+          colors: [
+            statusColor.withValues(alpha: 0.12),
+            statusColor.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.25),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(
               color: statusColor,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withValues(alpha: 0.5),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -243,73 +294,113 @@ class ServiceInfoCard extends StatelessWidget {
     final authInfo = _getAuthInfo(l10n);
     final isSmall = width < 350;
 
-    return Container(
-      padding: EdgeInsets.all(isSmall ? AppSpacing.md : AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+    return StaggeredAnimation(
+      delay: 200,
+      child: Container(
+        padding: EdgeInsets.all(isSmall ? AppSpacing.md : AppSpacing.lg),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              authInfo.color.withValues(alpha: 0.08),
+              authInfo.color.withValues(alpha: 0.03),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: authInfo.color.withValues(alpha: 0.15),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: authInfo.color.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(isSmall ? AppSpacing.sm : AppSpacing.md),
-            decoration: BoxDecoration(
-              color: authInfo.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              authInfo.icon,
-              color: authInfo.color,
-              size: isSmall ? 16 : 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.authentication,
-                  style: AppTypography.labelLarge.copyWith(
-                    color: AppColors.getTextSecondaryColor(context),
-                    fontWeight: FontWeight.w500,
-                    fontSize: isSmall ? 12 : null,
-                  ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(isSmall ? AppSpacing.sm : AppSpacing.md),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    authInfo.color.withValues(alpha: 0.15),
+                    authInfo.color.withValues(alpha: 0.08),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  authInfo.text,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w600,
-                    fontSize: isSmall ? 14 : null,
-                  ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: authInfo.color.withValues(alpha: 0.2),
+                  width: 0.5,
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isSmall ? AppSpacing.xs : AppSpacing.sm,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: authInfo.color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              authInfo.badge,
-              style: AppTypography.labelMedium.copyWith(
+              ),
+              child: Icon(
+                authInfo.icon,
                 color: authInfo.color,
-                fontWeight: FontWeight.w600,
-                fontSize: isSmall ? 11 : null,
+                size: isSmall ? 16 : 20,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.authentication,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: AppColors.getTextSecondaryColor(context),
+                      fontWeight: FontWeight.w500,
+                      fontSize: isSmall ? 12 : null,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    authInfo.text,
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: isSmall ? 14 : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmall ? AppSpacing.xs : AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    authInfo.color.withValues(alpha: 0.12),
+                    authInfo.color.withValues(alpha: 0.06),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: authInfo.color.withValues(alpha: 0.2),
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                authInfo.badge,
+                style: AppTypography.labelMedium.copyWith(
+                  color: authInfo.color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: isSmall ? 11 : null,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../services/domain/entities/service_with_status.dart';
 import '../../../services/domain/value_objects/service_category.dart';
+import '../../../services/presentation/widgets/staggered_animations.dart';
 
 class SubscribedServicesList extends StatelessWidget {
   final List<ServiceWithStatus> subscribedServices;
@@ -23,93 +24,115 @@ class SubscribedServicesList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (subscribedServices.isEmpty)
-          _EmptySubscriptions(l10n: l10n)
+          FadeInAnimation(
+            duration: const Duration(milliseconds: 600),
+            child: _EmptySubscriptions(l10n: l10n),
+          )
         else
-          Card(
-            elevation: 2,
-            shadowColor: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black.withValues(alpha: 0.3)
-                : AppColors.gray300.withValues(alpha: 0.2),
-            color: AppColors.getSurfaceColor(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(
-                color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+          StaggeredAnimation(
+            delay: 100,
+            child: Card(
+              elevation: 2,
+              shadowColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : AppColors.gray300.withValues(alpha: 0.2),
+              color: AppColors.getSurfaceColor(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(
+                  color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withValues(alpha: 0.15),
+                                AppColors.primary.withValues(alpha: 0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.extension_rounded,
+                            size: 24,
+                            color: AppColors.primary,
+                          ),
                         ),
-                        child: Icon(
-                          Icons.extension_rounded,
-                          size: 24,
-                          color: AppColors.primary,
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              l10n.yourSubscriptions,
+                              style: AppTypography.headlineMedium.copyWith(
+                                color: AppColors.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Semantics(
-                          header: true,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.success.withValues(alpha: 0.2),
+                                AppColors.success.withValues(alpha: 0.1),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: Text(
-                            l10n.yourSubscriptions,
-                            style: AppTypography.headlineMedium.copyWith(
-                              color: AppColors.getTextPrimaryColor(context),
+                            '${subscribedServices.length}',
+                            style: AppTypography.labelMedium.copyWith(
+                              color: AppColors.success,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${subscribedServices.length}',
-                          style: AppTypography.labelMedium.copyWith(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Divider(
-                  height: 1,
-                  color: AppColors.getDividerColor(context)
-                      .withValues(alpha: 0.5),
-                ),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: subscribedServices.length,
-                  separatorBuilder: (_, __) => Divider(
+                  Divider(
                     height: 1,
                     color: AppColors.getDividerColor(context)
                         .withValues(alpha: 0.3),
                   ),
-                  itemBuilder: (context, index) {
-                    final service = subscribedServices[index];
-                    return _ServiceListItem(
-                      service: service,
-                    );
-                  },
-                ),
-              ],
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: subscribedServices.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      color: AppColors.getDividerColor(context)
+                          .withValues(alpha: 0.2),
+                    ),
+                    itemBuilder: (context, index) {
+                      final service = subscribedServices[index];
+                      // Cascade animation: base delay + stagger
+                      final delay = 150 + (index * 50);
+                      return FadeInAnimation(
+                        duration: const Duration(milliseconds: 500),
+                        child: _ServiceListItem(
+                          service: service,
+                          delay: delay,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -119,9 +142,11 @@ class SubscribedServicesList extends StatelessWidget {
 
 class _ServiceListItem extends StatelessWidget {
   final ServiceWithStatus service;
+  final int delay;
 
   const _ServiceListItem({
     required this.service,
+    this.delay = 0,
   });
 
   Color _getCategoryColor(ServiceCategory category) {
@@ -177,8 +202,22 @@ class _ServiceListItem extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      colors: [
+                        categoryColor.withValues(alpha: 0.2),
+                        categoryColor.withValues(alpha: 0.08),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: categoryColor.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     categoryIcon,
@@ -197,7 +236,7 @@ class _ServiceListItem extends StatelessWidget {
                           service.provider.displayName,
                           style: AppTypography.bodyLarge.copyWith(
                             color: AppColors.getTextPrimaryColor(context),
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -209,6 +248,7 @@ class _ServiceListItem extends StatelessWidget {
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.getTextTertiaryColor(context),
                           fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -223,8 +263,20 @@ class _ServiceListItem extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.success.withValues(alpha: 0.2),
+                            AppColors.success.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -239,7 +291,7 @@ class _ServiceListItem extends StatelessWidget {
                             'Active',
                             style: AppTypography.labelMedium.copyWith(
                               color: AppColors.success,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               fontSize: 11,
                             ),
                           ),

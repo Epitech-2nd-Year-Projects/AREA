@@ -15,6 +15,7 @@ import '../widgets/service_card.dart';
 import '../widgets/services_loading_shimmer.dart';
 import '../widgets/services_error_widget.dart';
 import '../widgets/empty_services_state.dart';
+import '../widgets/staggered_animations.dart';
 
 class ServicesListPage extends StatelessWidget {
   const ServicesListPage({super.key});
@@ -81,25 +82,43 @@ class _ServicesListPageContent extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.connectYourServices,
-            style: AppTypography.displayMedium.copyWith(
-              color: AppColors.getTextPrimaryColor(context),
+    return StaggeredAnimation(
+      delay: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.connectYourServices,
+              style: AppTypography.displayMedium.copyWith(
+                color: AppColors.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.subscribeToServices,
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.getTextSecondaryColor(context),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              height: 4,
+              width: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.subscribeToServices,
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.getTextSecondaryColor(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -110,28 +129,34 @@ class _ServicesListPageContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ServicesSearchBar(
-            onSearch: (query) {
-              context.read<ServicesListBloc>().add(SearchServices(query));
-            },
-            initialValue: state is ServicesListLoaded ? state.searchQuery : '',
-            onClear: () {
-              context.read<ServicesListBloc>().add(ClearFilters());
-            },
-            hasActiveFilters: state is ServicesListLoaded &&
-                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+          StaggeredAnimation(
+            delay: 50,
+            child: ServicesSearchBar(
+              onSearch: (query) {
+                context.read<ServicesListBloc>().add(SearchServices(query));
+              },
+              initialValue: state is ServicesListLoaded ? state.searchQuery : '',
+              onClear: () {
+                context.read<ServicesListBloc>().add(ClearFilters());
+              },
+              hasActiveFilters: state is ServicesListLoaded &&
+                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ServicesFilterChips(
-            selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
-            onCategorySelected: (category) {
-              context.read<ServicesListBloc>().add(FilterByCategory(category));
-            },
-            hasActiveFilters: state is ServicesListLoaded &&
-                (state.selectedCategory != null || state.searchQuery.isNotEmpty),
-            onClearFilters: () {
-              context.read<ServicesListBloc>().add(ClearFilters());
-            },
+          StaggeredAnimation(
+            delay: 100,
+            child: ServicesFilterChips(
+              selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
+              onCategorySelected: (category) {
+                context.read<ServicesListBloc>().add(FilterByCategory(category));
+              },
+              hasActiveFilters: state is ServicesListLoaded &&
+                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+              onClearFilters: () {
+                context.read<ServicesListBloc>().add(ClearFilters());
+              },
+            ),
           ),
         ],
       ),
@@ -186,11 +211,14 @@ class _ServicesListPageContent extends StatelessWidget {
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
                   final service = state.filteredServices[index];
+                  // Cascade animation: base delay + stagger based on index
+                  final delay = 150 + (index * 50);
                   return ServiceCard(
                     service: service,
                     onTap: () {
                       context.push('/services/${service.provider.id}');
                     },
+                    delay: delay,
                   );
                 },
                 childCount: state.filteredServices.length,
