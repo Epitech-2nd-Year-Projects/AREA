@@ -91,6 +91,7 @@ oauth:
       scopes:
         - email
         - profile
+        - https://www.googleapis.com/auth/gmail.send
     github:
       clientIDEnv: GITHUB_OAUTH_CLIENT_ID
       clientSecretEnv: GITHUB_OAUTH_CLIENT_SECRET
@@ -98,6 +99,7 @@ oauth:
       scopes:
         - read:user
         - user:email
+        - repo
 
 security:
   jwt:
