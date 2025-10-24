@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -276,6 +277,9 @@ func (h *Handler) ExchangeOAuth(c *gin.Context, provider string) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "code is required"})
 		return
 	}
+	if decoded, err := url.QueryUnescape(code); err == nil && decoded != "" {
+		code = decoded
+	}
 
 	req := identityport.ExchangeRequest{
 		RedirectURI:  stringValue(payload.RedirectUri),
@@ -393,6 +397,9 @@ func (h *Handler) SubscribeServiceExchange(c *gin.Context, provider string) {
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "code is required"})
 		return
+	}
+	if decoded, err := url.QueryUnescape(code); err == nil && decoded != "" {
+		code = decoded
 	}
 
 	req := identityport.ExchangeRequest{
