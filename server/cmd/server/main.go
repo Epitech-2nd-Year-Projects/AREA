@@ -247,7 +247,10 @@ func run() error {
 		)
 
 		timerScheduler = areaapp.NewTimerScheduler(actionRepo, areaService, nil, areaapp.WithTimerLogger(logger))
-		pollingRunner = areaapp.NewPollingRunner(actionRepo, componentRepo, areaService, nil, nil, areaapp.WithPollingLogger(logger))
+		pollingHandlers := []areaapp.ComponentPollingHandler{
+			areaapp.NewHTTPPollingHandler(&http.Client{Timeout: 20 * time.Second}, logger),
+		}
+		pollingRunner = areaapp.NewPollingRunner(actionRepo, componentRepo, areaService, nil, pollingHandlers, areaapp.WithPollingLogger(logger))
 
 		reactionHandlers := []areaapp.ComponentReactionHandler{
 			httpreaction.Executor{
