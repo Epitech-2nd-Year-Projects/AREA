@@ -81,6 +81,7 @@ SELECT
         ),
         'ingestion', jsonb_build_object(
             'mode', 'polling',
+            'intervalSeconds', 5,
             'handler', 'http',
             'http', jsonb_build_object(
                 'endpoint', 'https://api.github.com/repos/{{params.owner}}/{{params.repository}}/stargazers',
