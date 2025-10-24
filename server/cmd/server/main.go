@@ -249,7 +249,7 @@ func run() error {
 
 		timerScheduler = areaapp.NewTimerScheduler(actionRepo, areaService, nil, areaapp.WithTimerLogger(logger))
 		pollingHandlers := []areaapp.ComponentPollingHandler{
-			areaapp.NewHTTPPollingHandler(&http.Client{Timeout: 20 * time.Second}, logger),
+			areaapp.NewHTTPPollingHandler(&http.Client{Timeout: 20 * time.Second}, logger, repo.Identities(), oauthManager),
 		}
 		pollingRunner = areaapp.NewPollingRunner(actionRepo, componentRepo, areaService, nil, pollingHandlers, areaapp.WithPollingLogger(logger))
 
