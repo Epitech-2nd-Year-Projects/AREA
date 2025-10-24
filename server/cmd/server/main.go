@@ -20,6 +20,7 @@ import (
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
 	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
+	githubexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/github"
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
@@ -268,6 +269,16 @@ func run() error {
 			)
 			if gmailExecutor != nil {
 				reactionHandlers = append(reactionHandlers, gmailExecutor)
+			}
+			githubExecutor := githubexecutor.NewIssueExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if githubExecutor != nil {
+				reactionHandlers = append(reactionHandlers, githubExecutor)
 			}
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
