@@ -14,6 +14,9 @@ import (
 	"time"
 
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
+	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
+	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -23,23 +26,34 @@ const (
 	httpPollingCursorSourceFingerprint = "fingerprint"
 )
 
-var placeholderPattern = regexp.MustCompile(`\{\{\s*(params|cursor)\.([a-zA-Z0-9_\-]+)\s*\}\}`)
+var placeholderPattern = regexp.MustCompile(`\{\{\s*(params|cursor|identity)\.([a-zA-Z0-9_\-]+)\s*\}\}`)
 
 // HTTPPollingHandler polls HTTP endpoints defined in component metadata to produce action events
 type HTTPPollingHandler struct {
-	client *http.Client
-	logger *zap.Logger
+	client     *http.Client
+	logger     *zap.Logger
+	identities identityport.Repository
+	providers  oauthProviderResolver
+}
+
+type oauthProviderResolver interface {
+	Provider(name string) (identityport.Provider, bool)
 }
 
 // NewHTTPPollingHandler assembles an HTTP polling handler
-func NewHTTPPollingHandler(client *http.Client, logger *zap.Logger) *HTTPPollingHandler {
+func NewHTTPPollingHandler(client *http.Client, logger *zap.Logger, identities identityport.Repository, providers oauthProviderResolver) *HTTPPollingHandler {
 	if client == nil {
 		client = &http.Client{Timeout: 15 * time.Second}
 	}
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-	return &HTTPPollingHandler{client: client, logger: logger}
+	return &HTTPPollingHandler{
+		client:     client,
+		logger:     logger,
+		identities: identities,
+		providers:  providers,
+	}
 }
 
 // Supports reports whether the component declares a compatible HTTP polling ingestion
@@ -56,6 +70,12 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 	}
 	if !ok {
 		return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: component %q not supported", req.Component.Name)
+	}
+
+	if config.Auth != nil && strings.EqualFold(config.Auth.Kind, "oauth") {
+		if err := h.injectIdentity(ctx, &req, config); err != nil {
+			return PollingResult{}, err
+		}
 	}
 
 	endpoint, err := renderTemplate(config.EndpointTemplate, req)
@@ -249,6 +269,14 @@ type httpPollingConfig struct {
 	Query              []httpQuerySpec
 	Headers            []httpHeaderSpec
 	BodyTemplate       string
+	Auth               *httpPollingAuthConfig
+}
+
+type httpPollingAuthConfig struct {
+	Kind          string
+	IdentityParam string
+	Provider      string
+	Scopes        []string
 }
 
 type httpQuerySpec struct {
@@ -367,6 +395,31 @@ func parseHTTPPollingConfig(component *componentdomain.Component) (httpPollingCo
 		Headers:            headerSpecs,
 		BodyTemplate:       bodyTemplate,
 	}
+	authRaw, hasAuth := configMap["auth"]
+	if !hasAuth {
+		authRaw, hasAuth = ingestion["auth"]
+	}
+	if hasAuth {
+		authMap, err := toMapStringAny(authRaw)
+		if err != nil {
+			return httpPollingConfig{}, false, fmt.Errorf("auth metadata invalid: %w", err)
+		}
+		kind := strings.TrimSpace(strings.ToLower(stringOrDefault(authMap, "type", "")))
+		if kind != "" {
+			identityParam := strings.TrimSpace(stringOrDefault(authMap, "identityParam", "identityId"))
+			providerName := strings.TrimSpace(stringOrDefault(authMap, "provider", component.Provider.Name))
+			scopes, err := toStringSlice(authMap["scopes"])
+			if err != nil {
+				return httpPollingConfig{}, false, fmt.Errorf("auth metadata invalid: %w", err)
+			}
+			config.Auth = &httpPollingAuthConfig{
+				Kind:          kind,
+				IdentityParam: identityParam,
+				Provider:      providerName,
+				Scopes:        scopes,
+			}
+		}
+	}
 	return config, true, nil
 }
 
@@ -484,6 +537,49 @@ func parseHTTPHeaderSpecs(raw any) ([]httpHeaderSpec, error) {
 	return result, nil
 }
 
+func toStringSlice(raw any) ([]string, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	switch values := raw.(type) {
+	case []string:
+		out := make([]string, 0, len(values))
+		for _, item := range values {
+			if trimmed := strings.TrimSpace(item); trimmed != "" {
+				out = append(out, trimmed)
+			}
+		}
+		return out, nil
+	case []any:
+		out := make([]string, 0, len(values))
+		for _, item := range values {
+			str, err := toString(item)
+			if err != nil {
+				return nil, err
+			}
+			if trimmed := strings.TrimSpace(str); trimmed != "" {
+				out = append(out, trimmed)
+			}
+		}
+		return out, nil
+	case string:
+		trimmed := strings.TrimSpace(values)
+		if trimmed == "" {
+			return nil, nil
+		}
+		parts := strings.Split(trimmed, ",")
+		out := make([]string, 0, len(parts))
+		for _, part := range parts {
+			if candidate := strings.TrimSpace(part); candidate != "" {
+				out = append(out, candidate)
+			}
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unexpected type %T for string slice", raw)
+	}
+}
+
 func selectTemplate(values map[string]any) string {
 	if value, err := toString(values["template"]); err == nil {
 		return value
@@ -530,6 +626,105 @@ func sanitizeCursorKey(component *componentdomain.Component) string {
 	return joined
 }
 
+func (h *HTTPPollingHandler) injectIdentity(ctx context.Context, req *PollingRequest, config httpPollingConfig) error {
+	if config.Auth == nil || !strings.EqualFold(config.Auth.Kind, "oauth") {
+		return nil
+	}
+	if h.identities == nil {
+		return fmt.Errorf("identity repository unavailable")
+	}
+	identityParam := strings.TrimSpace(config.Auth.IdentityParam)
+	if identityParam == "" {
+		identityParam = "identityId"
+	}
+	rawValue, ok := req.Binding.Config.Params[identityParam]
+	if !ok {
+		return fmt.Errorf("identity param %q missing", identityParam)
+	}
+	identityStr, err := toString(rawValue)
+	if err != nil {
+		return fmt.Errorf("identity param %q invalid: %w", identityParam, err)
+	}
+	identityStr = strings.TrimSpace(identityStr)
+	if identityStr == "" {
+		return fmt.Errorf("identity param %q empty", identityParam)
+	}
+	identityID, err := uuid.Parse(identityStr)
+	if err != nil {
+		return fmt.Errorf("identity param %q parse: %w", identityParam, err)
+	}
+	identity, err := h.identities.FindByID(ctx, identityID)
+	if err != nil {
+		return fmt.Errorf("identity lookup: %w", err)
+	}
+	if identity.UserID != req.Binding.UserID {
+		return fmt.Errorf("identity not owned by user")
+	}
+	providerName := strings.TrimSpace(config.Auth.Provider)
+	if providerName == "" {
+		providerName = identity.Provider
+	}
+	updatedIdentity, token, err := h.ensureIdentityAccessToken(ctx, identity, providerName)
+	if err != nil {
+		return err
+	}
+	req.Identity = map[string]any{
+		"id":          updatedIdentity.ID.String(),
+		"accessToken": token,
+		"provider":    updatedIdentity.Provider,
+		"scopes":      cloneStrings(updatedIdentity.Scopes),
+	}
+	if updatedIdentity.ExpiresAt != nil {
+		req.Identity["expiresAt"] = updatedIdentity.ExpiresAt.UTC().Format(time.RFC3339Nano)
+	}
+	req.Binding.Config.Params[identityParam] = updatedIdentity.ID.String()
+	return nil
+}
+
+func (h *HTTPPollingHandler) ensureIdentityAccessToken(ctx context.Context, identity identitydomain.Identity, providerName string) (identitydomain.Identity, string, error) {
+	token := strings.TrimSpace(identity.AccessToken)
+	if token != "" && !identity.TokenExpired(time.Now().UTC()) {
+		return identity, token, nil
+	}
+	if h.providers == nil {
+		return identity, "", fmt.Errorf("oauth provider resolver unavailable")
+	}
+	providerKey := strings.TrimSpace(strings.ToLower(providerName))
+	if providerKey == "" {
+		providerKey = strings.TrimSpace(strings.ToLower(identity.Provider))
+	}
+	if providerKey == "" {
+		return identity, "", fmt.Errorf("oauth provider missing")
+	}
+	provider, ok := h.providers.Provider(providerKey)
+	if !ok {
+		return identity, "", fmt.Errorf("oauth provider %s not configured", providerKey)
+	}
+	exchange, err := provider.Refresh(ctx, identity)
+	if err != nil {
+		return identity, "", fmt.Errorf("refresh token: %w", err)
+	}
+	refreshToken := exchange.Token.RefreshToken
+	if refreshToken == "" {
+		refreshToken = identity.RefreshToken
+	}
+	expiresAt := identity.ExpiresAt
+	if !exchange.Token.ExpiresAt.IsZero() {
+		expires := exchange.Token.ExpiresAt.UTC()
+		expiresAt = &expires
+	}
+	scopes := exchange.Token.Scope
+	if len(scopes) == 0 {
+		scopes = identity.Scopes
+	}
+	updated := identity.WithTokens(exchange.Token.AccessToken, refreshToken, expiresAt, scopes)
+	updated.UpdatedAt = time.Now().UTC()
+	if err := h.identities.Update(ctx, updated); err != nil {
+		return identity, "", fmt.Errorf("update identity: %w", err)
+	}
+	return updated, updated.AccessToken, nil
+}
+
 func renderTemplate(template string, req PollingRequest) (string, error) {
 	if template == "" {
 		return "", nil
@@ -544,6 +739,11 @@ func renderTemplate(template string, req PollingRequest) (string, error) {
 			return stringify(req.Binding.Config.Params[submatches[2]])
 		case "cursor":
 			return stringify(req.Cursor[submatches[2]])
+		case "identity":
+			if req.Identity == nil {
+				return ""
+			}
+			return stringify(req.Identity[submatches[2]])
 		default:
 			return ""
 		}
@@ -618,6 +818,15 @@ func stringify(value any) string {
 		}
 		return string(bytes)
 	}
+}
+
+func cloneStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, len(values))
+	copy(out, values)
+	return out
 }
 
 func hashItem(value map[string]any) (string, error) {

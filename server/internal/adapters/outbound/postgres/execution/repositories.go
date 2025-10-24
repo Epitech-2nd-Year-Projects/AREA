@@ -49,9 +49,20 @@ func (r EventRepository) Create(ctx context.Context, event actiondomain.Event) (
 	}
 
 	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		if isUniqueViolation(err) {
+			return actiondomain.Event{}, outbound.ErrConflict
+		}
 		return actiondomain.Event{}, fmt.Errorf("postgres.execution.EventRepository.Create: %w", err)
 	}
 	return model.toDomain(), nil
+}
+
+func isUniqueViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+	lowered := strings.ToLower(err.Error())
+	return strings.Contains(lowered, "duplicate") || strings.Contains(lowered, "unique")
 }
 
 // TriggerRepository persists triggers using Postgres

@@ -101,7 +101,7 @@ var _defaultConfig = Config{
 				ClientIDEnv:     "GITHUB_OAUTH_CLIENT_ID",
 				ClientSecretEnv: "GITHUB_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/github/callback",
-				Scopes:          []string{"read:user", "user:email"},
+				Scopes:          []string{"read:user", "user:email", "repo"},
 			},
 		},
 	},
