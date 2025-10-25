@@ -185,7 +185,10 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     });
 
     if (changed && component != null) {
-      _primeActionDefaults(component);
+      _primeComponentDefaults(
+        component: component,
+        kind: ServiceComponentKind.action,
+      );
     }
   }
 
@@ -203,7 +206,10 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     });
 
     if (changed && component != null) {
-      _primeReactionDefaults(component);
+      _primeComponentDefaults(
+        component: component,
+        kind: ServiceComponentKind.reaction,
+      );
     }
   }
 
@@ -253,29 +259,35 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  Future<void> _primeActionDefaults(ServiceComponent component) async {
+  Future<void> _primeComponentDefaults({
+    required ServiceComponent component,
+    required ServiceComponentKind kind,
+  }) async {
     final cubit = context.read<AreaFormCubit>();
     final suggestions = await cubit.suggestParametersFor(component);
+    
     if (!mounted) return;
-    if (_actionComponent?.id != component.id) return;
-    if (_actionParams.isNotEmpty) return;
+
+    final currentComponentId = kind == ServiceComponentKind.action
+        ? _actionComponent?.id
+        : _reactionComponent?.id;
+    
+    if (currentComponentId != component.id) return;
+
     if (suggestions.isEmpty) return;
 
     setState(() {
-      _actionParams = Map<String, dynamic>.from(suggestions);
-    });
-  }
-
-  Future<void> _primeReactionDefaults(ServiceComponent component) async {
-    final cubit = context.read<AreaFormCubit>();
-    final suggestions = await cubit.suggestParametersFor(component);
-    if (!mounted) return;
-    if (_reactionComponent?.id != component.id) return;
-    if (_reactionParams.isNotEmpty) return;
-    if (suggestions.isEmpty) return;
-
-    setState(() {
-      _reactionParams = Map<String, dynamic>.from(suggestions);
+      if (kind == ServiceComponentKind.action) {
+        _actionParams = {
+          ..._actionParams,
+          ...suggestions,
+        };
+      } else {
+        _reactionParams = {
+          ..._reactionParams,
+          ...suggestions,
+        };
+      }
     });
   }
 
