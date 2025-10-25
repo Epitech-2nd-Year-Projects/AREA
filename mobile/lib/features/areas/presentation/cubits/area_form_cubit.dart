@@ -64,6 +64,13 @@ class AreaFormCubit extends Cubit<AreaFormState> {
   Map<String, bool> get subscriptionCache => Map.unmodifiable(_subscriptionCache);
 
   Future<void> primeSubscriptionCache() async {
+    await Future.wait([
+      _primeSubscriptions(),
+      _loadConnectedIdentities(),
+    ]);
+  }
+
+  Future<void> _primeSubscriptions() async {
     final either = await _getServicesWithStatus.call(null);
     either.fold(
       (_) => _subscriptionCache.clear(),
