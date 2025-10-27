@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -337,13 +338,25 @@ func (p *provider) fetchProfile(ctx context.Context, accessToken string) (identi
 		return identitydomain.Profile{}, nil, fmt.Errorf("access token missing")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.descriptor.UserInfoURL, nil)
+	method := strings.ToUpper(strings.TrimSpace(p.descriptor.UserInfoMethod))
+	if method == "" {
+		method = http.MethodGet
+	}
+	bodyTemplate := strings.TrimSpace(p.descriptor.UserInfoBody)
+	var body io.Reader
+	if bodyTemplate != "" {
+		body = strings.NewReader(bodyTemplate)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, p.descriptor.UserInfoURL, body)
 	if err != nil {
 		return identitydomain.Profile{}, nil, fmt.Errorf("userinfo request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", p.userAgent)
+	if bodyTemplate != "" && req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	for key, value := range p.descriptor.UserInfoHeaders {
 		if strings.EqualFold(key, "authorization") || strings.EqualFold(key, "accept") || strings.EqualFold(key, "user-agent") {
 			continue
@@ -360,7 +373,8 @@ func (p *provider) fetchProfile(ctx context.Context, accessToken string) (identi
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return identitydomain.Profile{}, nil, fmt.Errorf("userinfo status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return identitydomain.Profile{}, nil, fmt.Errorf("userinfo status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
 	decoder := json.NewDecoder(resp.Body)
