@@ -6,7 +6,8 @@ import {
   clearSession,
   assertSession,
   toUserDTO,
-  issueVerificationToken
+  issueVerificationToken,
+  currentSessionExpiry
 } from '../state'
 import { mockLoginUser, mockMarkUserEmailVerified } from '../data'
 import type {
@@ -43,9 +44,13 @@ export async function loginMock(
 
   const user = result.user
   markActiveUser(user)
-  setCurrentSession(user.email)
+  const expiresAt = setCurrentSession(user.email)
 
-  return { user: toUserDTO(user) }
+  return {
+    tokenType: 'session',
+    expiresAt: new Date(expiresAt ?? Date.now()).toISOString(),
+    user: toUserDTO(user)
+  }
 }
 
 export async function verifyEmailMock(
@@ -59,9 +64,13 @@ export async function verifyEmailMock(
   }
 
   markActiveUser(user)
-  setCurrentSession(user.email)
+  const expiresAt = setCurrentSession(user.email)
 
-  return { user: toUserDTO(user) }
+  return {
+    tokenType: 'session',
+    expiresAt: new Date(expiresAt ?? Date.now()).toISOString(),
+    user: toUserDTO(user)
+  }
 }
 
 export async function logoutMock(): Promise<void> {
@@ -70,5 +79,10 @@ export async function logoutMock(): Promise<void> {
 
 export async function currentUserMock(): Promise<UserResponseDTO> {
   const user = assertSession()
+  const expiresAt = currentSessionExpiry()
+  if (expiresAt && expiresAt < Date.now()) {
+    clearSession()
+    throw new ApiError(401, 'notAuthenticated', 'Session missing or expired')
+  }
   return { user: toUserDTO(user) }
 }

@@ -44,6 +44,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler'
+import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
+import { ApiError } from '@/lib/api/http/errors'
 
 type MenuItem = {
   title: string
@@ -100,8 +102,14 @@ export function PublicNavbar({
   onLogout
 }: LandingNavbarProps) {
   const [scrolled, setScrolled] = React.useState(false)
+  const {
+    data: currentUserData,
+    error: currentUserError
+  } = useCurrentUserQuery({ retry: false })
 
-  const handleLogout = () => {}
+  const handleLogout = React.useCallback(() => {
+    onLogout?.()
+  }, [onLogout])
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -110,10 +118,15 @@ export function PublicNavbar({
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // TODO: Authentication useMe hook
-  const me = false
-
-  isAuthenticated = !!me
+  const isUnauthorized =
+    currentUserError instanceof ApiError && currentUserError.status === 401
+  const currentUser =
+    !isUnauthorized && currentUserData?.user
+      ? mapUserDTOToUser(currentUserData.user)
+      : null
+  const effectiveIsAuthenticated = currentUser ? true : isAuthenticated
+  const effectiveUserName = currentUser?.email ?? userName
+  const effectiveAvatarUrl = currentUser?.imageUrl ?? userAvatarUrl
 
   return (
     <div className="sticky top-0 z-50">
@@ -160,7 +173,7 @@ export function PublicNavbar({
 
               <div className="flex shrink-0 items-center gap-2">
                 <AnimatedThemeToggler />
-                {!isAuthenticated ? (
+                {!effectiveIsAuthenticated ? (
                   <>
                     <Button
                       asChild
@@ -194,8 +207,8 @@ export function PublicNavbar({
                   </>
                 ) : (
                   <UserDropdown
-                    userName={userName}
-                    userAvatarUrl={userAvatarUrl}
+                    userName={effectiveUserName}
+                    userAvatarUrl={effectiveAvatarUrl}
                     onLogout={handleLogout}
                   />
                 )}
@@ -258,7 +271,7 @@ export function PublicNavbar({
 
                       <div className="flex flex-col gap-3">
                         <AnimatedThemeToggler />
-                        {!isAuthenticated ? (
+                        {!effectiveIsAuthenticated ? (
                           <>
                             <Button
                               asChild
@@ -290,9 +303,9 @@ export function PublicNavbar({
                           </>
                         ) : (
                           <MobileUserCard
-                            userName={userName}
-                            userAvatarUrl={userAvatarUrl}
-                            onLogout={onLogout}
+                            userName={effectiveUserName}
+                            userAvatarUrl={effectiveAvatarUrl}
+                            onLogout={handleLogout}
                           />
                         )}
                       </div>

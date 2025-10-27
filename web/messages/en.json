@@ -1,6 +1,38 @@
 {
   "HomePage": {
-    "title": "Hello world!"
+    "title": "Home",
+    "badgeLabel": "Automate everything",
+    "headline": "Build reliable automations without touching a server.",
+    "subheadline": "Stop waiting for developers to bring order to your apps. Take control with AREA, streamline your tasks, and achieve more with less effort.",
+    "primaryCta": "Get started for free",
+    "secondaryCta": "Browse workflows",
+    "features": {
+      "instantTriggers": {
+        "title": "Instant triggers",
+        "description": "Connect to hundreds of services and react to events in real time with zero queue management."
+      },
+      "unifiedData": {
+        "title": "Unified data",
+        "description": "Bring everything together with prebuilt connectors, reusable tokens, and shared environment variables."
+      },
+      "teamReady": {
+        "title": "Team ready",
+        "description": "Invite teammates, review changes, and deploy safely with built-in versioning and staging spaces."
+      }
+    },
+    "cta": {
+      "title": "See AREA power your next launch.",
+      "description": "AREA helps you automate the most tedious parts of your day-to-day job. With 8,000+ integrations and service offerings, we empower businesses everywhere to create processes and systems that let computers do what they are best at doing and let humans do what they are best at doing.",
+      "button": "Talk to our team"
+    },
+    "footer": {
+      "copy": "© {year} AREA. All rights reserved.",
+      "links": {
+        "about": "About",
+        "explore": "Explore",
+        "contact": "Contact"
+      }
+    }
   },
   "LoginPage": {
     "welcomeBack": "Welcome back",
@@ -60,6 +92,8 @@
     "verificationEmailInstructions": "Please confirm your address before trying to sign in.",
     "errors": {
       "emailRequired": "Please enter your email address.",
+      "passwordRequired": "Please enter your password.",
+      "passwordTooShort": "Your password must be at least {minLength} characters long.",
       "passwordMismatch": "Passwords do not match.",
       "emailAlreadyUsed": "An account already exists for {email}.",
       "generic": "Something went wrong. Please try again."

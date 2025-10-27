@@ -111,11 +111,10 @@ export function ServiceCard({
 
   if (isMinimal) {
     return (
-      <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
+      <Card className="w-full gap-0 overflow-hidden border-none p-0 shadow-none">
         <MagicCard
           gradientColor={gradientColor}
-          className="h-full"
-          innerClassName="flex h-full w-full flex-col overflow-hidden"
+          innerClassName="flex w-full flex-col overflow-hidden"
         >
           <CardHeader className="border-border p-4 [.border-b]:pb-4">
             <CardTitle>{service.displayName}</CardTitle>
@@ -127,11 +126,10 @@ export function ServiceCard({
   }
 
   return (
-    <Card className="h-full w-full gap-0 overflow-hidden border-none p-0 shadow-none">
+    <Card className="w-full gap-0 overflow-hidden border-none p-0 shadow-none">
       <MagicCard
         gradientColor={gradientColor}
-        className="h-full"
-        innerClassName="flex h-full w-full flex-col overflow-hidden"
+        innerClassName="flex w-full flex-col overflow-hidden"
       >
         <CardHeader className="border-b border-border p-4 [.border-b]:pb-4">
           <CardTitle>{service.displayName}</CardTitle>

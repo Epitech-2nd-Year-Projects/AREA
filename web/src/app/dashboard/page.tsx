@@ -4,7 +4,11 @@ import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
-import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
+import {
+  mapUserDTOToUser,
+  useCurrentUserQuery,
+  useIdentitiesQuery
+} from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -12,13 +16,31 @@ export default function DashboardPage() {
   const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
   const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
+  const isUserAuthenticated = Boolean(user)
+
   const services = useMemo(
     () => (aboutData ? extractServices(aboutData) : []),
     [aboutData]
   )
-  const userLinkedServices = user?.connectedServices ?? []
-  const isLoading = isAboutLoading || isUserLoading
-  const isUserAuthenticated = Boolean(user)
+
+  const { data: identitiesData, isLoading: isIdentitiesLoading } =
+    useIdentitiesQuery({
+      enabled: isUserAuthenticated
+    })
+
+  const userLinkedServices = useMemo(() => {
+    if (!isUserAuthenticated) {
+      return []
+    }
+
+    const identityProviders =
+      identitiesData?.identities?.map((identity) => identity.provider) ?? []
+
+    return Array.from(new Set(identityProviders))
+  }, [identitiesData, isUserAuthenticated])
+
+  const isLoading =
+    isAboutLoading || isUserLoading || (isIdentitiesLoading && isUserAuthenticated)
 
   const [searchValue, setSearchValue] = useState('')
 

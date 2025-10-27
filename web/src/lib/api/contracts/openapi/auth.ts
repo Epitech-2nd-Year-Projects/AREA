@@ -17,6 +17,8 @@ export type UserDTO = {
 }
 
 export type AuthSessionResponseDTO = {
+  tokenType?: string
+  expiresAt?: string
   user: UserDTO
 }
 

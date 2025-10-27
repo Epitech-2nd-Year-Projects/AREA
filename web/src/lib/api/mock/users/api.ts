@@ -27,6 +27,7 @@ export async function registerUserMock(
   const { expiresAt } = issueVerificationToken(user.email)
 
   return {
+    userId: user.id,
     expiresAt: new Date(expiresAt).toISOString()
   }
 }
