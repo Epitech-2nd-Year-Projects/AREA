@@ -201,5 +201,25 @@
   "dashboardAreasSummaryPaused": "En pause",
   "dashboardAreasSummaryFailures": "Échecs (24h)",
   "dashboardTemplatesTitle": "Modèles recommandés",
-  "dashboardTemplatesUseTemplate": "Utiliser le modèle"
+  "dashboardTemplatesUseTemplate": "Utiliser le modèle",
+  "addReaction": "Ajouter une réaction",
+  "removeReaction": "Supprimer",
+  "reactionNumber": "Réaction n°{number}",
+  "@reactionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reactionConfigurationNumber": "Configuration de la réaction n°{number}",
+  "@reactionConfigurationNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "completeReactionSelection": "Veuillez compléter la sélection du service et du composant pour chaque réaction.",
+  "atLeastOneReaction": "Ajoutez au moins une réaction avant d'enregistrer."
 }
