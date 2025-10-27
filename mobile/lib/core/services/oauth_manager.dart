@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../../features/auth/domain/entities/oauth_provider.dart';
-import '../../features/auth/domain/use_cases/start_oauth_login.dart';
 import '../../features/auth/domain/use_cases/complete_oauth_login.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/data/datasources/oauth_remote_datasource.dart';
@@ -12,7 +11,6 @@ class OAuthManager {
   factory OAuthManager() => _instance;
   OAuthManager._internal();
 
-  late final StartOAuthLogin _startOAuthLogin;
   late final CompleteOAuthLogin _completeOAuthLogin;
   late final DeepLinkService _deepLinkService;
   late final OAuthRemoteDataSource _oauthDataSource;
@@ -27,7 +25,6 @@ class OAuthManager {
       AuthRepository repository,
       OAuthRemoteDataSource oauthDataSource,
       ) {
-    _startOAuthLogin = StartOAuthLogin(repository);
     _completeOAuthLogin = CompleteOAuthLogin(repository);
     _oauthDataSource = oauthDataSource;
     _deepLinkService = DeepLinkService();

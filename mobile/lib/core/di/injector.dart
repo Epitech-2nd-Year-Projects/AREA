@@ -31,4 +31,10 @@ class Injector {
       ..clear()
       ..addAll(testModules);
   }
+
+  /// Reset dependency injection for testing
+  @visibleForTesting
+  static Future<void> reset() async {
+    await sl.reset();
+  }
 }
