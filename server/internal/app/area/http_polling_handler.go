@@ -187,7 +187,23 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		result.Cursor = map[string]any{}
 	}
 
-	var lastCursorValue string
+	prevCutoffRaw := strings.TrimSpace(stringify(req.Cursor["last_seen_ts"]))
+	if prevCutoffRaw == "" {
+		prevCutoffRaw = strings.TrimSpace(stringify(req.Cursor[config.CursorKey]))
+	}
+	var prevCutoffValue float64
+	hasPrevCutoff := false
+	if prevCutoffRaw != "" {
+		if parsed, err := strconv.ParseFloat(prevCutoffRaw, 64); err == nil {
+			prevCutoffValue = parsed
+			hasPrevCutoff = true
+		}
+	}
+
+	var latestCursorValue string
+	var latestCursorFloat float64
+	hasLatestCursor := false
+
 	for _, rawItem := range items {
 		itemMap, itemErr := toMapStringAny(rawItem)
 		if itemErr != nil {
@@ -196,6 +212,21 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 				zap.String("provider", req.Component.Provider.Name),
 			)
 			continue
+		}
+
+		candidateTS := strings.TrimSpace(stringify(itemMap["ts"]))
+		if strings.EqualFold(req.Component.Provider.Name, "slack") {
+			if botID := strings.TrimSpace(stringify(itemMap["bot_id"])); botID != "" {
+				continue
+			}
+			if subtype := strings.TrimSpace(strings.ToLower(stringify(itemMap["subtype"]))); subtype != "" && subtype != "message" {
+				continue
+			}
+			if hasPrevCutoff && candidateTS != "" {
+				if currValue, err := strconv.ParseFloat(candidateTS, 64); err == nil && currValue <= prevCutoffValue {
+					continue
+				}
+			}
 		}
 
 		fingerprint := ""
@@ -230,23 +261,66 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		switch config.CursorSource {
 		case httpPollingCursorSourceItem:
 			if rawValue, valueErr := resolvePath(itemMap, config.CursorItemPath); valueErr == nil {
-				lastCursorValue = stringify(rawValue)
+				cursorCandidate := stringify(rawValue)
+				if cursorCandidate != "" {
+					if numericCandidate, err := strconv.ParseFloat(cursorCandidate, 64); err == nil {
+						if !hasLatestCursor || numericCandidate > latestCursorFloat {
+							latestCursorFloat = numericCandidate
+							latestCursorValue = cursorCandidate
+							hasLatestCursor = true
+						}
+					} else if !hasLatestCursor {
+						latestCursorValue = cursorCandidate
+						hasLatestCursor = true
+					}
+				}
 			}
 		case httpPollingCursorSourceFingerprint:
 			if fingerprint != "" {
-				lastCursorValue = fingerprint
+				latestCursorValue = fingerprint
+				hasLatestCursor = true
+			}
+		}
+
+		if candidateTS != "" {
+			if numericCandidate, err := strconv.ParseFloat(candidateTS, 64); err == nil {
+				if !hasLatestCursor || numericCandidate > latestCursorFloat {
+					latestCursorFloat = numericCandidate
+					latestCursorValue = candidateTS
+					hasLatestCursor = true
+				}
+			} else if !hasLatestCursor {
+				latestCursorValue = candidateTS
+				hasLatestCursor = true
 			}
 		}
 	}
 
 	if config.CursorSource == httpPollingCursorSourceResponse {
 		if rawValue, valueErr := resolvePath(payload, config.CursorResponsePath); valueErr == nil {
-			lastCursorValue = stringify(rawValue)
+			cursorCandidate := stringify(rawValue)
+			if cursorCandidate != "" {
+				if numericCandidate, err := strconv.ParseFloat(cursorCandidate, 64); err == nil {
+					if !hasLatestCursor || numericCandidate > latestCursorFloat {
+						latestCursorFloat = numericCandidate
+						latestCursorValue = cursorCandidate
+						hasLatestCursor = true
+					}
+				} else if !hasLatestCursor {
+					latestCursorValue = cursorCandidate
+					hasLatestCursor = true
+				}
+			}
 		}
 	}
 
-	if lastCursorValue != "" {
-		result.Cursor[config.CursorKey] = lastCursorValue
+	if hasLatestCursor && latestCursorValue != "" {
+		result.Cursor[config.CursorKey] = latestCursorValue
+		result.Cursor["last_seen_ts"] = latestCursorValue
+	} else if strings.EqualFold(req.Component.Provider.Name, "slack") {
+		slackNow := formatSlackTimestamp(req.Now)
+		result.Cursor[config.CursorKey] = slackNow
+		result.Cursor["last_seen_ts"] = slackNow
 	} else if _, exists := result.Cursor[config.CursorKey]; !exists && config.CursorInitial != "" {
 		result.Cursor[config.CursorKey] = config.CursorInitial
 	}
@@ -818,6 +892,11 @@ func stringify(value any) string {
 		}
 		return string(bytes)
 	}
+}
+
+func formatSlackTimestamp(t time.Time) string {
+	seconds := float64(t.UTC().UnixNano()) / 1e9
+	return fmt.Sprintf("%.6f", seconds)
 }
 
 func cloneStrings(values []string) []string {
