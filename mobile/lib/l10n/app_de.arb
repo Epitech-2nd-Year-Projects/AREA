@@ -201,5 +201,25 @@
   "dashboardAreasSummaryPaused": "Pausiert",
   "dashboardAreasSummaryFailures": "Fehler (24h)",
   "dashboardTemplatesTitle": "Empfohlene Vorlagen",
-  "dashboardTemplatesUseTemplate": "Vorlage verwenden"
+  "dashboardTemplatesUseTemplate": "Vorlage verwenden",
+  "addReaction": "Reaktion hinzufügen",
+  "removeReaction": "Entfernen",
+  "reactionNumber": "Reaktion Nr. {number}",
+  "@reactionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reactionConfigurationNumber": "Reaktionskonfiguration Nr. {number}",
+  "@reactionConfigurationNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "completeReactionSelection": "Bitte wähle für jede Reaktion einen Dienst und eine Komponente aus.",
+  "atLeastOneReaction": "Füge mindestens eine Reaktion hinzu, bevor du speicherst."
 }
