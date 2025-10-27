@@ -43,13 +43,15 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080
           API_PROXY_TARGET: http://localhost:8080
           CORS_ALLOWED_ORIGIN: http://localhost:8081
-          NEXT_PUBLIC_API_MODE: live
+          NEXT_PUBLIC_API_MODE: mock
+          CI: "1"
         run: |
           npm ci
           npm run format --if-present
           npm run typecheck --if-present
           npm run lint --if-present
-          npm test --if-present -- --ci
+          npm test --if-present
+          npm run test:e2e --if-present
 
       # Mobile
       - uses: subosito/flutter-action@v2
@@ -93,7 +95,7 @@ jobs:
           NEXT_PUBLIC_API_MODE: live
         run: |
           npm ci
-          npm run build
+          npm run build:ci
       - name: Docker build web
         run: |
           docker build \
