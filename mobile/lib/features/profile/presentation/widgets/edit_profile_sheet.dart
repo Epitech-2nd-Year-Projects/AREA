@@ -249,9 +249,12 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                               );
                               if (!mounted) return;
                               if (ok) {
+                                // ignore: use_build_context_synchronously
                                 Navigator.of(context).pop(true);
                               } else {
                                 setState(() => _saving = false);
+                                if (!mounted) return;
+                                // ignore: use_build_context_synchronously
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(l10n.failedToUpdateProfile),

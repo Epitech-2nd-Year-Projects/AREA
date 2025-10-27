@@ -11,13 +11,13 @@ class ParallaxSliverAppBar extends StatelessWidget {
   final double expandedHeight;
 
   const ParallaxSliverAppBar({
+    super.key,
     required this.title,
     required this.onBackPressed,
     this.actionWidget,
     this.actions,
     this.expandedHeight = 160,
-    Key? key,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

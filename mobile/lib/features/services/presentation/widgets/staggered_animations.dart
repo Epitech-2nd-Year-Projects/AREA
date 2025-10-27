@@ -8,14 +8,13 @@ class StaggeredAnimation extends StatefulWidget {
   final Curve curve;
 
   StaggeredAnimation({
+    super.key,
     required this.child,
     this.delay = 0,
     Duration? duration,
     Curve? curve,
-    Key? key,
   })  : duration = duration ?? AnimationConstants.mediumDuration,
-        curve = curve ?? AnimationConstants.curve,
-        super(key: key);
+        curve = curve ?? AnimationConstants.curve;
 
   @override
   State<StaggeredAnimation> createState() => _StaggeredAnimationState();
@@ -81,13 +80,12 @@ class FadeInAnimation extends StatefulWidget {
   final Curve curve;
 
   FadeInAnimation({
+    super.key,
     required this.child,
     Duration? duration,
     Curve? curve,
-    Key? key,
   })  : duration = duration ?? AnimationConstants.mediumDuration,
-        curve = curve ?? AnimationConstants.curve,
-        super(key: key);
+        curve = curve ?? AnimationConstants.curve;
 
   @override
   State<FadeInAnimation> createState() => _FadeInAnimationState();
