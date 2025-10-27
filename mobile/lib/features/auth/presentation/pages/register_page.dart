@@ -71,6 +71,8 @@ class _RegisterPageContent extends StatelessWidget {
               if (state is OAuthRedirectReady) {
                 final url = Uri.parse(state.redirectUrl.toString());
                 if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  if (!context.mounted) return;
+                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(l10n.couldNotLaunchOAuth),
@@ -129,7 +131,7 @@ class _RegisterPageContent extends StatelessWidget {
         Text(
           l10n.createAccount,
           style: AppTypography.displayMedium.copyWith(
-            color: theme.colorScheme.onBackground,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
