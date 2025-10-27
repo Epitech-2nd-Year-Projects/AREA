@@ -43,7 +43,8 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080
           API_PROXY_TARGET: http://localhost:8080
           CORS_ALLOWED_ORIGIN: http://localhost:8081
-          NEXT_PUBLIC_API_MODE: live
+          NEXT_PUBLIC_API_MODE: mock
+          CI: "1"
         run: |
           npm ci
           npm run format --if-present
