@@ -44,8 +44,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler'
-import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
+import {
+  useCurrentUserQuery,
+  mapUserDTOToUser,
+  useLogoutMutation
+} from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
+import { useRouter } from 'next/navigation'
 
 type MenuItem = {
   title: string
@@ -104,10 +109,17 @@ export function PublicNavbar({
   const [scrolled, setScrolled] = React.useState(false)
   const { data: currentUserData, error: currentUserError } =
     useCurrentUserQuery({ retry: false })
+  const { mutate: logout } = useLogoutMutation()
+  const router = useRouter()
 
   const handleLogout = React.useCallback(() => {
-    onLogout?.()
-  }, [onLogout])
+    logout(undefined, {
+      onSuccess: () => {
+        onLogout?.()
+        router.push('/login')
+      }
+    })
+  }, [logout, onLogout, router])
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)

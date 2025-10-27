@@ -150,15 +150,7 @@ export default function OAuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [
-    aboutKeys,
-    authKeys,
-    exchangeOAuth,
-    exchangeSubscription,
-    params,
-    queryClient,
-    router
-  ])
+  }, [exchangeOAuth, exchangeSubscription, params, queryClient, router])
 
   return (
     <div className="flex h-[60vh] flex-col items-center justify-center gap-3">

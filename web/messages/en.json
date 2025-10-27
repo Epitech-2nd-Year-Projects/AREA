@@ -6,6 +6,10 @@
     "subheadline": "Stop waiting for developers to bring order to your apps. Take control with AREA, streamline your tasks, and achieve more with less effort.",
     "primaryCta": "Get started for free",
     "secondaryCta": "Browse workflows",
+    "downloadCta": {
+      "label": "Download the Android app",
+      "helper": "Grab the latest AREA APK directly from the web client."
+    },
     "features": {
       "instantTriggers": {
         "title": "Instant triggers",

@@ -21,6 +21,8 @@ import {
 import type { User } from '@/lib/api/contracts/users'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { useLogoutMutation } from '@/lib/api/openapi/auth'
+import { useRouter } from 'next/navigation'
 
 function getUserAvatarFallback(user: User) {
   return user.email.slice(0, 2).toUpperCase()
@@ -29,6 +31,16 @@ function getUserAvatarFallback(user: User) {
 export function UserDropdown({ user }: { user: User }) {
   const t = useTranslations('SidebarUserNavigation')
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const { mutate: logout } = useLogoutMutation()
+
+  const handleLogout = () => {
+    logout(undefined, {
+      onSuccess: () => {
+        router.push('/login')
+      }
+    })
+  }
 
   return (
     <SidebarMenu>
@@ -88,9 +100,9 @@ export function UserDropdown({ user }: { user: User }) {
               <HomeIcon />
               <Link href="/">{t('backToHome')}</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut />
-              <Link href="/login">{t('logout')}</Link>
+              <span>{t('logout')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

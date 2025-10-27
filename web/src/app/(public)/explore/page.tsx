@@ -1,8 +1,13 @@
 'use client'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
-import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
+import {
+  useCurrentUserQuery,
+  mapUserDTOToUser,
+  useIdentitiesQuery
+} from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
 import { ServiceCardList } from '@/components/services/service-card-list'
 
@@ -20,10 +25,29 @@ export default function ExplorePage() {
     userError instanceof ApiError && userError.status === 401
   const user =
     !isUnauthorized && userData?.user ? mapUserDTOToUser(userData.user) : null
-  const userLinkedServices = user?.connectedServices ?? []
   const services = data ? extractServices(data) : []
   const isUserAuthenticated = Boolean(user)
-  const isLoading = isServicesLoading || (isUserLoading && !isUnauthorized)
+
+  const { data: identitiesData, isLoading: isIdentitiesLoading } =
+    useIdentitiesQuery({
+      enabled: isUserAuthenticated
+    })
+
+  const userLinkedServices = useMemo(() => {
+    if (!isUserAuthenticated) {
+      return []
+    }
+
+    const identityProviders =
+      identitiesData?.identities?.map((identity) => identity.provider) ?? []
+
+    return Array.from(new Set(identityProviders))
+  }, [identitiesData, isUserAuthenticated])
+
+  const isLoading =
+    isServicesLoading ||
+    (isUserLoading && !isUnauthorized) ||
+    (isIdentitiesLoading && isUserAuthenticated)
 
   if (isLoading) {
     return (

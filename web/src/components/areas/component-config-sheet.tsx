@@ -86,7 +86,10 @@ export function ComponentConfigSheet({
   const { data: identitiesData } = useIdentitiesQuery({
     enabled: open
   })
-  const identitySummaries = identitiesData?.identities ?? []
+  const identitySummaries = useMemo(
+    () => identitiesData?.identities ?? [],
+    [identitiesData]
+  )
 
   const identitiesByProvider = useMemo(() => {
     const map = new Map<string, IdentitySummaryDTO[]>()

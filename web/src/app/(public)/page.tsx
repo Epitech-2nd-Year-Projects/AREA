@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const featureKeys = ['instantTriggers', 'unifiedData', 'teamReady'] as const
@@ -22,6 +22,12 @@ export default function Home() {
           <p className="text-muted-foreground text-lg">{t('subheadline')}</p>
         </div>
         <div className="flex flex-col items-center gap-3 sm:flex-row">
+          <Button asChild size="lg" className="w-full sm:w-auto gap-2">
+            <Link href="/client.apk" prefetch={false} download>
+              {t('downloadCta.label')}
+              <Download className="h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/login">{t('primaryCta')}</Link>
           </Button>
@@ -34,6 +40,9 @@ export default function Home() {
             <Link href="/explore">{t('secondaryCta')}</Link>
           </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          {t('downloadCta.helper')}
+        </p>
       </section>
 
       <section className="grid gap-6 md:grid-cols-3">
