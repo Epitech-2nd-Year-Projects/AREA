@@ -40,7 +40,9 @@ export default function DashboardPage() {
   }, [identitiesData, isUserAuthenticated])
 
   const isLoading =
-    isAboutLoading || isUserLoading || (isIdentitiesLoading && isUserAuthenticated)
+    isAboutLoading ||
+    isUserLoading ||
+    (isIdentitiesLoading && isUserAuthenticated)
 
   const [searchValue, setSearchValue] = useState('')
 

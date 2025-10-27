@@ -102,10 +102,8 @@ export function PublicNavbar({
   onLogout
 }: LandingNavbarProps) {
   const [scrolled, setScrolled] = React.useState(false)
-  const {
-    data: currentUserData,
-    error: currentUserError
-  } = useCurrentUserQuery({ retry: false })
+  const { data: currentUserData, error: currentUserError } =
+    useCurrentUserQuery({ retry: false })
 
   const handleLogout = React.useCallback(() => {
     onLogout?.()

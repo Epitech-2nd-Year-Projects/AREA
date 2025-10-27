@@ -69,9 +69,7 @@ export default function ProfilePage() {
       return []
     }
 
-    return services.filter((service) =>
-      linkedProviders.includes(service.name)
-    )
+    return services.filter((service) => linkedProviders.includes(service.name))
   }, [linkedProviders, services])
 
   const [profileForm, setProfileForm] = useState({ email: '', imageUrl: '' })

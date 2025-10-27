@@ -16,14 +16,21 @@ export default function Home() {
           {t('badgeLabel')}
         </span>
         <div className="flex flex-col gap-4">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{t('headline')}</h1>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            {t('headline')}
+          </h1>
           <p className="text-muted-foreground text-lg">{t('subheadline')}</p>
         </div>
         <div className="flex flex-col items-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/login">{t('primaryCta')}</Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="w-full sm:w-auto"
+          >
             <Link href="/explore">{t('secondaryCta')}</Link>
           </Button>
         </div>
@@ -31,7 +38,10 @@ export default function Home() {
 
       <section className="grid gap-6 md:grid-cols-3">
         {featureKeys.map((key) => (
-          <div key={key} className="flex h-full flex-col gap-3 rounded-2xl border bg-card p-6">
+          <div
+            key={key}
+            className="flex h-full flex-col gap-3 rounded-2xl border bg-card p-6"
+          >
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
               {t(`features.${key}.title`)}
@@ -45,8 +55,12 @@ export default function Home() {
 
       <section className="overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/5 via-background to-secondary/20 p-10">
         <div className="flex flex-col items-center gap-6 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('cta.title')}</h2>
-          <p className="max-w-2xl text-muted-foreground text-base">{t('cta.description')}</p>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {t('cta.title')}
+          </h2>
+          <p className="max-w-2xl text-muted-foreground text-base">
+            {t('cta.description')}
+          </p>
           <Button asChild size="lg" variant="secondary" className="gap-2">
             <Link href="/contact">
               {t('cta.button')}
