@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../core/design_system/app_colors.dart';
 import '../../../../../core/design_system/app_spacing.dart';
-import '../../../../../core/design_system/app_typography.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../blocs/login/login_cubit.dart';
 import '../../blocs/login/login_state.dart';
