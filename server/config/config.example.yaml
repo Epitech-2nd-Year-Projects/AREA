@@ -85,6 +85,7 @@ oauth:
     - github
     - gitlab
     - dropbox
+    - slack
   providers:
     google:
       clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
@@ -118,6 +119,17 @@ oauth:
         - files.metadata.read
         - files.metadata.write
         - files.content.write
+    slack:
+      clientIDEnv: SLACK_OAUTH_CLIENT_ID
+      clientSecretEnv: SLACK_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - chat:write
+        - channels:history
+        - groups:history
+        - im:history
+        - mpim:history
+        - users:read
 
 security:
   jwt:

@@ -89,7 +89,7 @@ var _defaultConfig = Config{
 		Path:     ".env",
 	},
 	OAuth: OAuthConfig{
-		AllowedProviders: []string{"google", "github", "gitlab", "dropbox"},
+		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack"},
 		Providers: map[string]OAuthProviderConfig{
 			"google": {
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
@@ -114,6 +114,20 @@ var _defaultConfig = Config{
 				ClientSecretEnv: "DROPBOX_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/dropbox/callback",
 				Scopes:          []string{"account_info.read", "files.metadata.read", "files.metadata.write"},
+			},
+			"slack": {
+				ClientIDEnv:     "SLACK_OAUTH_CLIENT_ID",
+				ClientSecretEnv: "SLACK_OAUTH_CLIENT_SECRET",
+				RedirectURI:     "http://localhost:8080/oauth/slack/callback",
+				Scopes: []string{
+					"chat:write",
+					"channels:history",
+					"groups:history",
+					"im:history",
+					"mpim:history",
+					"users:read",
+					"offline_access",
+				},
 			},
 		},
 	},
@@ -227,6 +241,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("oauth.providers.dropbox.clientSecretEnv", _defaultConfig.OAuth.Providers["dropbox"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.dropbox.redirectURI", _defaultConfig.OAuth.Providers["dropbox"].RedirectURI)
 	v.SetDefault("oauth.providers.dropbox.scopes", _defaultConfig.OAuth.Providers["dropbox"].Scopes)
+	v.SetDefault("oauth.providers.slack.clientIDEnv", _defaultConfig.OAuth.Providers["slack"].ClientIDEnv)
+	v.SetDefault("oauth.providers.slack.clientSecretEnv", _defaultConfig.OAuth.Providers["slack"].ClientSecretEnv)
+	v.SetDefault("oauth.providers.slack.redirectURI", _defaultConfig.OAuth.Providers["slack"].RedirectURI)
+	v.SetDefault("oauth.providers.slack.scopes", _defaultConfig.OAuth.Providers["slack"].Scopes)
 
 	v.SetDefault("security.jwt.issuer", _defaultConfig.Security.JWT.Issuer)
 	v.SetDefault("security.jwt.accessTokenTTL", _defaultConfig.Security.JWT.AccessTokenTTL.String())

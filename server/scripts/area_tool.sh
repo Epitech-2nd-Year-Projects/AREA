@@ -221,7 +221,7 @@ subscribe_provider() {
     local provider scopes_input payload status
     provider=$(prompt "Provider to subscribe (e.g. github, google): ")
     provider=$(trim "$provider")
-    provider=${provider,,}
+    provider=$(printf '%s' "$provider" | tr '[:upper:]' '[:lower:]')
     if [[ -z "$provider" ]]; then
         echo "Provider name is required." >&2
         return 1
