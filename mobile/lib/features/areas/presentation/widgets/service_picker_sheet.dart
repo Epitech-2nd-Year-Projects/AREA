@@ -79,8 +79,9 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
     final l10n = AppLocalizations.of(context)!;
 
     final filtered = _items.where((s) {
-      final dn = (s.provider.displayName?.toLowerCase() ??
-          s.provider.name.toLowerCase());
+      final dn = (s.provider.displayName.isNotEmpty)
+          ? s.provider.displayName.toLowerCase()
+          : s.provider.name.toLowerCase();
       if (_query.isNotEmpty && !dn.contains(_query)) return false;
       if (_onlySubscribed && !s.isSubscribed) return false;
       return true;
@@ -292,8 +293,8 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                   separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (_, i) {
                     final s = filtered[i];
-                    final name = s.provider.displayName?.isNotEmpty == true
-                        ? s.provider.displayName!
+                    final name = ((s.provider.displayName.isNotEmpty) == true)
+                        ? s.provider.displayName
                         : s.provider.name;
                     final icon = s.isSubscribed
                         ? Icons.check_circle_rounded

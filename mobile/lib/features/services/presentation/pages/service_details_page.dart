@@ -18,7 +18,6 @@ import '../widgets/components_section.dart';
 import '../widgets/service_details_loading.dart';
 import '../widgets/service_details_error.dart';
 import '../widgets/staggered_animations.dart';
-import '../widgets/parallax_header.dart';
 
 class ServiceDetailsPage extends StatelessWidget {
   final String serviceId;
@@ -143,6 +142,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
         if (mounted) {
           _showErrorSnackBar(l10n.couldNotLaunchAuthorizationUrl);
           if (mounted) {
+            // ignore: use_build_context_synchronously
             context
                 .read<ServiceSubscriptionCubit>()
                 .emit(ServiceSubscriptionInitial());
@@ -156,6 +156,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       if (mounted) {
         _showErrorSnackBar('Error launching authorization: $e');
         if (mounted) {
+          // ignore: use_build_context_synchronously
           context
               .read<ServiceSubscriptionCubit>()
               .emit(ServiceSubscriptionInitial());
