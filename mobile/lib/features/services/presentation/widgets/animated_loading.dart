@@ -114,8 +114,6 @@ class ServiceCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return ProfessionalShimmer(
       child: Card(
         elevation: 0,

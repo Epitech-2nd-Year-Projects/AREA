@@ -20,7 +20,9 @@ import (
 	componentpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/component"
 	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
+	dropboxexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/dropbox"
 	githubexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/github"
+	gitlabexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gitlab"
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
@@ -279,6 +281,26 @@ func run() error {
 			)
 			if githubExecutor != nil {
 				reactionHandlers = append(reactionHandlers, githubExecutor)
+			}
+			gitlabExecutor := gitlabexecutor.NewIssueExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gitlabExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gitlabExecutor)
+			}
+			dropboxExecutor := dropboxexecutor.NewFolderExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if dropboxExecutor != nil {
+				reactionHandlers = append(reactionHandlers, dropboxExecutor)
 			}
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
