@@ -83,11 +83,12 @@ oauth:
   allowedProviders:
     - google
     - github
+    - gitlab
   providers:
     google:
       clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
       clientSecretEnv: GOOGLE_OAUTH_CLIENT_SECRET
-      redirectURI: http://localhost:8080/oauth/google/callback
+      redirectURI: http://localhost:3000/oauth/callback
       scopes:
         - email
         - profile
@@ -95,11 +96,18 @@ oauth:
     github:
       clientIDEnv: GITHUB_OAUTH_CLIENT_ID
       clientSecretEnv: GITHUB_OAUTH_CLIENT_SECRET
-      redirectURI: http://localhost:8080/oauth/github/callback
+      redirectURI: http://localhost:3000/oauth/callback
       scopes:
         - read:user
         - user:email
         - repo
+    gitlab:
+      clientIDEnv: GITLAB_OAUTH_CLIENT_ID
+      clientSecretEnv: GITLAB_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - read_user
+        - api
 
 security:
   jwt:
