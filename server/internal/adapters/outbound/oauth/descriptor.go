@@ -59,6 +59,17 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: githubProfileExtractor,
 		},
+		"gitlab": {
+			DisplayName:      "GitLab",
+			AuthorizationURL: "https://gitlab.com/oauth/authorize",
+			TokenURL:         "https://gitlab.com/oauth/token",
+			UserInfoURL:      "https://gitlab.com/api/v4/user",
+			DefaultScopes:    []string{"read_user", "api"},
+			UserInfoHeaders: map[string]string{
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: gitlabProfileExtractor,
+		},
 	}
 }
 
@@ -108,6 +119,29 @@ func githubProfileExtractor(raw map[string]any) (identitydomain.Profile, error) 
 
 	profile := identitydomain.Profile{
 		Provider:   "github",
+		Subject:    subject,
+		Email:      stringFrom(raw["email"]),
+		Name:       name,
+		PictureURL: stringFrom(raw["avatar_url"]),
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func gitlabProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	subject := stringFrom(raw["id"])
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("gitlab: id missing")
+	}
+
+	username := stringFrom(raw["username"])
+	name := strings.TrimSpace(stringFrom(raw["name"]))
+	if name == "" {
+		name = username
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "gitlab",
 		Subject:    subject,
 		Email:      stringFrom(raw["email"]),
 		Name:       name,
