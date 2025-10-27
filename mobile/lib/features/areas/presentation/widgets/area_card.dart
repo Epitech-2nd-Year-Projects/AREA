@@ -220,7 +220,6 @@ class AreaCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(BuildContext context, AreaStatus status, AppLocalizations l10n) {
-    final isActive = status == AreaStatus.enabled;
     final color = switch (status) {
       AreaStatus.enabled => AppColors.success,
       AreaStatus.disabled => AppColors.gray600,

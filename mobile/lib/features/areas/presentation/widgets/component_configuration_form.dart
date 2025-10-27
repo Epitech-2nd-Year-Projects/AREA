@@ -35,7 +35,6 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
   final Map<String, TextEditingController> _textControllers = {};
   final Map<String, dynamic> _values = {};
   TextEditingController? _nameController;
-  String? _componentId;
 
   @override
   void initState() {
@@ -73,7 +72,6 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
   void _syncWithComponent({required bool notify}) {
     _disposeControllers();
     _values.clear();
-    _componentId = widget.component?.id;
 
     final component = widget.component;
     if (component == null) {
@@ -404,7 +402,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                   )
                 : null,
             value: current,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             onChanged: widget.enabled
                 ? (value) {
                     setState(() {
@@ -423,7 +421,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       return Semantics(
         label: '${param.label} dropdown',
         child: DropdownButtonFormField<String>(
-          value: param.options.any((o) => o.value == current)
+          initialValue: param.options.any((o) => o.value == current)
               ? current
               : (param.options.isNotEmpty ? param.options.first.value : null),
           icon: Icon(
@@ -837,12 +835,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       lastDate: DateTime(2100),
     );
     if (date == null) return;
+    if (!mounted) return;
 
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
     );
     if (time == null) return;
+    if (!mounted) return;
 
     final combined = DateTime(
       date.year,

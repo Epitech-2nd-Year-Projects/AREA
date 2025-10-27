@@ -59,8 +59,6 @@ class _SettingsScreenState extends State<_SettingsScreen> {
         }
       },
       builder: (context, state) {
-        final theme = Theme.of(context);
-
         if (state is SettingsLoading) {
           return Scaffold(
             backgroundColor: AppColors.getBackgroundColor(context),

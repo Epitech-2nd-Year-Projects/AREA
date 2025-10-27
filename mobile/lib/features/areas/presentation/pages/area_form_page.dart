@@ -108,9 +108,11 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
     if (!res.isSubscribed) {
       final go = await _confirmSubscribe(res.providerName);
-      if (go) {
+      if (go && mounted) {
         await context.push('/services/${res.providerId}');
-        await context.read<AreaFormCubit>().primeSubscriptionCache();
+        if (mounted) {
+          await context.read<AreaFormCubit>().primeSubscriptionCache();
+        }
       }
       return;
     }
@@ -129,9 +131,11 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
     if (!res.isSubscribed) {
       final go = await _confirmSubscribe(res.providerName);
-      if (go) {
+      if (go && mounted) {
         await context.push('/services');
-        await context.read<AreaFormCubit>().primeSubscriptionCache();
+        if (mounted) {
+          await context.read<AreaFormCubit>().primeSubscriptionCache();
+        }
       }
       return;
     }

@@ -98,7 +98,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
               focusedBorder: _buildBorder(context, theme.colorScheme.primary),
               errorBorder: _buildBorder(context, AppColors.error),
               focusedErrorBorder: _buildBorder(context, AppColors.error),
-              disabledBorder: _buildBorder(context, AppColors.getBorderColor(context).withOpacity(0.5)),
+              disabledBorder: _buildBorder(context, AppColors.getBorderColor(context).withValues(alpha: 0.5)),
             ),
           ),
         ),

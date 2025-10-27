@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
-import 'package:go_router/go_router.dart';
 
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();
@@ -13,8 +12,6 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSubscription;
   bool _initialized = false;
 
-  GoRouter? _router;
-
   final List<void Function(String provider, String code, String? state, String? returnTo)>
   _oauthCallbackListeners = [];
   final List<void Function(String? provider, String error)>
@@ -24,10 +21,6 @@ class DeepLinkService {
   _serviceCallbackListeners = [];
   final List<void Function(String? provider, String error)>
   _serviceErrorListeners = [];
-
-  void setRouter(GoRouter router) {
-    _router = router;
-  }
 
   Future<void> initialize() async {
     if (_initialized) return;
