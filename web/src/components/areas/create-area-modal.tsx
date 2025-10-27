@@ -190,7 +190,7 @@ function coerceParamValue(field: ConfigParamField): unknown {
   if (type === 'array' || type === 'object' || type === 'json') {
     try {
       return JSON.parse(rawValue)
-    } catch (error) {
+    } catch {
       return rawValue
     }
   }

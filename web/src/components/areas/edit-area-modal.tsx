@@ -183,6 +183,7 @@ export function EditAreaModal({
   const [areaDescription, setAreaDescription] = useState(area.description)
 
   const getComponentParameters = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (_componentId: string): ComponentParameterDTO[] => [],
     []
   )

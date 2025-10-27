@@ -1,28 +1,12 @@
 'use client'
-import { useTheme } from 'next-themes'
+
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Play, Repeat } from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card'
-import { MagicCard } from '@/components/ui/magic-card'
+
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Service } from '@/lib/api/contracts/services'
-import { DisconnectModal } from '@/components/services/disconnect-modal'
 import { useSubscribeServiceMutation } from '@/lib/api/openapi/services'
 import type { SubscribeServiceResponseDTO } from '@/lib/api/contracts/openapi/services'
 import {
@@ -30,24 +14,29 @@ import {
   createClientOAuthState,
   persistOAuthState
 } from '@/lib/auth/oauth'
+import { DisconnectModal } from './disconnect-modal'
 
 type ServiceCardProps = {
   service: Service
   authenticated: boolean
   linked: boolean
-  isMinimal?: boolean
+}
+
+// This is a temporary type to extend the Service type with properties
+// that are expected based on the user's request but may not be in the base type.
+type ExtendedService = Service & {
+  category?: string
+  needsConnection?: boolean
 }
 
 export function ServiceCard({
   service,
   authenticated,
-  linked,
-  isMinimal = false
+  linked
 }: ServiceCardProps) {
+  const extendedService = service as ExtendedService
   const t = useTranslations('ServiceCard')
-  const { theme } = useTheme()
   const router = useRouter()
-  const gradientColor = theme === 'dark' ? '#262626' : '#D9D9D955'
   const { mutateAsync: subscribeService, isPending: isSubscribing } =
     useSubscribeServiceMutation()
 
@@ -109,129 +98,44 @@ export function ServiceCard({
       }
     : () => router.push('/register')
 
-  if (isMinimal) {
-    return (
-      <Card className="w-full gap-0 overflow-hidden border-none p-0 shadow-none">
-        <MagicCard
-          gradientColor={gradientColor}
-          innerClassName="flex w-full flex-col overflow-hidden"
-        >
-          <CardHeader className="border-border p-4 [.border-b]:pb-4">
-            <CardTitle>{service.displayName}</CardTitle>
-            <CardDescription>{service.description}</CardDescription>
-          </CardHeader>
-        </MagicCard>
-      </Card>
-    )
-  }
-
   return (
-    <Card className="w-full gap-0 overflow-hidden border-none p-0 shadow-none">
-      <MagicCard
-        gradientColor={gradientColor}
-        innerClassName="flex w-full flex-col overflow-hidden"
-      >
-        <CardHeader className="border-b border-border p-4 [.border-b]:pb-4">
-          <CardTitle>{service.displayName}</CardTitle>
-          <CardDescription>{service.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col gap-4 p-4">
-          <div className="flex flex-wrap gap-2">
+    <Card className="flex h-full w-full flex-col overflow-hidden">
+      <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <span className="text-2xl font-bold">
+            {service.displayName.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <h3 className="text-lg font-semibold">{service.displayName}</h3>
+        <div className="flex flex-wrap justify-center gap-2">
+          {extendedService.category && (
             <Badge variant="secondary" className="uppercase">
-              {service.actions.length} {t('actions')}
+              {extendedService.category}
             </Badge>
-            <Badge variant="secondary" className="uppercase">
-              {service.reactions.length} {t('reactions')}
-            </Badge>
-          </div>
-
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="details">
-              <AccordionTrigger className="text-left text-sm font-semibold uppercase tracking-wide">
-                {t('viewCapabilities')}
-              </AccordionTrigger>
-              <AccordionContent>
-                <ScrollArea className="h-[14rem] w-full overflow-hidden rounded-lg border bg-background/40 sm:h-[16rem]">
-                  <div className="flex flex-col gap-3 p-4 pr-6">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="flex flex-col gap-3 rounded-lg border bg-background/60 p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-                            <Play className="h-4 w-4" aria-hidden />
-                            {t('actions')}
-                          </div>
-                          <Badge variant="outline">
-                            {service.actions.length}
-                          </Badge>
-                        </div>
-                        <ul className="space-y-3 text-left">
-                          {service.actions.map((action) => (
-                            <li
-                              key={action.id}
-                              className="rounded-md border border-dashed bg-background/80 p-3"
-                            >
-                              <p className="text-sm font-medium">
-                                {action.name}
-                              </p>
-                              <p className="text-muted-foreground text-xs leading-snug">
-                                {action.description}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="flex flex-col gap-3 rounded-lg border bg-background/60 p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-                            <Repeat className="h-4 w-4" aria-hidden />
-                            {t('reactions')}
-                          </div>
-                          <Badge variant="outline">
-                            {service.reactions.length}
-                          </Badge>
-                        </div>
-                        <ul className="space-y-3 text-left">
-                          {service.reactions.map((reaction) => (
-                            <li
-                              key={reaction.id}
-                              className="rounded-md border border-dashed bg-background/80 p-3"
-                            >
-                              <p className="text-sm font-medium">
-                                {reaction.name}
-                              </p>
-                              <p className="text-muted-foreground text-xs leading-snug">
-                                {reaction.description}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </ScrollArea>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-        <CardFooter className="mt-auto p-4">
-          {linked ? (
-            <DisconnectModal
-              serviceName={service.displayName}
-              onConfirm={handleDisconnectConfirm}
-            />
-          ) : (
-            <Button
-              className="w-full cursor-pointer"
-              variant={connectButtonState.variant}
-              onClick={handleConnectClick}
-              disabled={linked || isSubscribing}
-              aria-disabled={linked || isSubscribing}
-            >
-              {connectButtonState.label}
-            </Button>
           )}
-        </CardFooter>
-      </MagicCard>
+          {extendedService.needsConnection && (
+            <Badge variant="outline">OAuth2</Badge>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter className="p-4">
+        {linked ? (
+          <DisconnectModal
+            serviceName={service.displayName}
+            onConfirm={handleDisconnectConfirm}
+          />
+        ) : (
+          <Button
+            className="w-full cursor-pointer"
+            variant={connectButtonState.variant}
+            onClick={handleConnectClick}
+            disabled={linked || isSubscribing}
+            aria-disabled={linked || isSubscribing}
+          >
+            {connectButtonState.label}
+          </Button>
+        )}
+      </CardFooter>
     </Card>
   )
 }

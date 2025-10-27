@@ -45,7 +45,10 @@ export default function ProfilePage() {
   const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
 
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
-  const services = aboutData ? extractServices(aboutData) : []
+  const services = useMemo(
+    () => (aboutData ? extractServices(aboutData) : []),
+    [aboutData]
+  )
   const isUserAuthenticated = Boolean(user)
 
   const { data: identitiesData, isLoading: isIdentitiesLoading } =
@@ -378,7 +381,6 @@ export default function ProfilePage() {
               services={connectedServices}
               userLinkedServices={linkedProviders}
               isUserAuthenticated={isUserAuthenticated}
-              isMinimal
             />
           ) : (
             <p className="text-muted-foreground text-sm">{t('noServices')}</p>
