@@ -7,6 +7,8 @@ cd web || exit
 npx lint-staged || exit 1
 npm run lint || exit 1
 npm run typecheck || exit 1
+npm run test:unit || exit 1
+npm run test:e2e || exit 1
 
 printf "Done: web pre-commit checks\n"
 

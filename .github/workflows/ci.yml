@@ -50,6 +50,7 @@ jobs:
           npm run typecheck --if-present
           npm run lint --if-present
           npm test --if-present -- --ci
+          npm run test:e2e --if-present -- --ci
 
       # Mobile
       - uses: subosito/flutter-action@v2
