@@ -89,7 +89,7 @@ var _defaultConfig = Config{
 		Path:     ".env",
 	},
 	OAuth: OAuthConfig{
-		AllowedProviders: []string{"google", "github"},
+		AllowedProviders: []string{"google", "github", "gitlab"},
 		Providers: map[string]OAuthProviderConfig{
 			"google": {
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
@@ -102,6 +102,12 @@ var _defaultConfig = Config{
 				ClientSecretEnv: "GITHUB_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/github/callback",
 				Scopes:          []string{"read:user", "user:email", "repo"},
+			},
+			"gitlab": {
+				ClientIDEnv:     "GITLAB_OAUTH_CLIENT_ID",
+				ClientSecretEnv: "GITLAB_OAUTH_CLIENT_SECRET",
+				RedirectURI:     "http://localhost:8080/oauth/gitlab/callback",
+				Scopes:          []string{"read_user", "api"},
 			},
 		},
 	},
@@ -207,6 +213,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("oauth.providers.github.clientSecretEnv", _defaultConfig.OAuth.Providers["github"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.github.redirectURI", _defaultConfig.OAuth.Providers["github"].RedirectURI)
 	v.SetDefault("oauth.providers.github.scopes", _defaultConfig.OAuth.Providers["github"].Scopes)
+	v.SetDefault("oauth.providers.gitlab.clientIDEnv", _defaultConfig.OAuth.Providers["gitlab"].ClientIDEnv)
+	v.SetDefault("oauth.providers.gitlab.clientSecretEnv", _defaultConfig.OAuth.Providers["gitlab"].ClientSecretEnv)
+	v.SetDefault("oauth.providers.gitlab.redirectURI", _defaultConfig.OAuth.Providers["gitlab"].RedirectURI)
+	v.SetDefault("oauth.providers.gitlab.scopes", _defaultConfig.OAuth.Providers["gitlab"].Scopes)
 
 	v.SetDefault("security.jwt.issuer", _defaultConfig.Security.JWT.Issuer)
 	v.SetDefault("security.jwt.accessTokenTTL", _defaultConfig.Security.JWT.AccessTokenTTL.String())
