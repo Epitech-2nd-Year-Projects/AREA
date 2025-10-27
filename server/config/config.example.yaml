@@ -84,6 +84,7 @@ oauth:
     - google
     - github
     - gitlab
+    - dropbox
   providers:
     google:
       clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
@@ -108,6 +109,15 @@ oauth:
       scopes:
         - read_user
         - api
+    dropbox:
+      clientIDEnv: DROPBOX_OAUTH_CLIENT_ID
+      clientSecretEnv: DROPBOX_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - account_info.read
+        - files.metadata.read
+        - files.metadata.write
+        - files.content.write
 
 security:
   jwt:
