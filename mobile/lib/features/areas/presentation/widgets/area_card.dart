@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_colors.dart';
@@ -26,6 +28,20 @@ class AreaCard extends StatelessWidget {
     final statusBadge = _buildStatusBadge(context, area.status, l10n);
     final actionSummary = _formatComponent(area.action);
     final reactionSummaries = area.reactions.map(_formatComponent).toList();
+    final reactionRowWidgets = reactionSummaries.asMap().entries.map((entry) {
+      final label = entry.key == 0
+          ? l10n.reaction
+          : l10n.reactionNumber(entry.key + 1);
+      return _buildSummaryRow(
+        context,
+        label,
+        entry.value,
+        Icons.settings_suggest,
+      );
+    }).toList();
+    final bool useScrollableReactions = reactionRowWidgets.length > 3;
+    final double estimatedRowHeight = 56.0;
+    final double reactionsMaxHeight = 220.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -100,9 +116,10 @@ class AreaCard extends StatelessWidget {
               ),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSummaryRow(context, l10n.action, actionSummary, Icons.flash_on),
-                if (reactionSummaries.isNotEmpty) ...[
+                if (reactionRowWidgets.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Divider(
@@ -110,15 +127,32 @@ class AreaCard extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  ...reactionSummaries.asMap().entries.map((entry) => Padding(
-                        padding: EdgeInsets.only(top: entry.key == 0 ? 0 : AppSpacing.sm),
-                        child: _buildSummaryRow(
-                          context,
-                          entry.key == 0 ? l10n.reaction : 'Reaction ${entry.key + 1}',
-                          entry.value,
-                          Icons.settings_suggest,
+                  useScrollableReactions
+                      ? SizedBox(
+                          height: math.min(
+                            reactionsMaxHeight,
+                            reactionRowWidgets.length * estimatedRowHeight,
+                          ),
+                          child: Scrollbar(
+                            thumbVisibility: true,
+                            child: ListView.separated(
+                              padding: EdgeInsets.zero,
+                              physics: const ClampingScrollPhysics(),
+                              shrinkWrap: true,
+                              itemBuilder: (context, index) => reactionRowWidgets[index],
+                              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                              itemCount: reactionRowWidgets.length,
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < reactionRowWidgets.length; i++) ...[
+                              if (i != 0) const SizedBox(height: AppSpacing.sm),
+                              reactionRowWidgets[i],
+                            ],
+                          ],
                         ),
-                      )),
                 ],
               ],
             ),

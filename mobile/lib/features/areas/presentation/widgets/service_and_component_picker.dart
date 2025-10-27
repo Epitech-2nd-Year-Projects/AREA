@@ -24,6 +24,8 @@ class ServiceAndComponentPicker extends StatefulWidget {
   final VoidCallback onSelectService;
   final ValueChanged<String?> onComponentChanged;
   final ValueChanged<ServiceComponent?> onComponentSelected;
+  final VoidCallback? onRemove;
+  final String? removeTooltip;
 
   const ServiceAndComponentPicker({
     super.key,
@@ -36,6 +38,8 @@ class ServiceAndComponentPicker extends StatefulWidget {
     required this.onSelectService,
     required this.onComponentChanged,
     required this.onComponentSelected,
+    this.onRemove,
+    this.removeTooltip,
   });
 
   @override
@@ -176,6 +180,19 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                   ),
                 ),
                 badge,
+                if (widget.onRemove != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Semantics(
+                    button: true,
+                    label: widget.removeTooltip ?? l10n.removeReaction,
+                    child: IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      color: AppColors.error,
+                      tooltip: widget.removeTooltip ?? l10n.removeReaction,
+                      onPressed: widget.onRemove,
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
