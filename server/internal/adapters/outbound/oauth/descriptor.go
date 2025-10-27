@@ -20,6 +20,8 @@ type ProviderDescriptor struct {
 	AuthorizationURL    string
 	TokenURL            string
 	UserInfoURL         string
+	UserInfoMethod      string
+	UserInfoBody        string
 	DefaultScopes       []string
 	DefaultPrompt       string
 	Audience            string
@@ -69,6 +71,23 @@ func BuiltIn() Registry {
 				"User-Agent": "AREA-Server",
 			},
 			ProfileExtractor: gitlabProfileExtractor,
+		},
+		"dropbox": {
+			DisplayName:      "Dropbox",
+			AuthorizationURL: "https://www.dropbox.com/oauth2/authorize",
+			TokenURL:         "https://api.dropboxapi.com/oauth2/token",
+			UserInfoURL:      "https://api.dropboxapi.com/2/users/get_current_account",
+			UserInfoMethod:   "POST",
+			UserInfoBody:     "null",
+			DefaultScopes:    []string{"account_info.read", "files.metadata.read", "files.metadata.write"},
+			AuthorizationParams: map[string]string{
+				"token_access_type": "offline",
+			},
+			UserInfoHeaders: map[string]string{
+				"Content-Type": "application/json",
+				"User-Agent":   "AREA-Server",
+			},
+			ProfileExtractor: dropboxProfileExtractor,
 		},
 	}
 }
@@ -146,6 +165,35 @@ func gitlabProfileExtractor(raw map[string]any) (identitydomain.Profile, error) 
 		Email:      stringFrom(raw["email"]),
 		Name:       name,
 		PictureURL: stringFrom(raw["avatar_url"]),
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func dropboxProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	subject := stringFrom(raw["account_id"])
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("dropbox: account_id missing")
+	}
+
+	name := stringFrom(raw["name"])
+	if name == "" {
+		if nested, ok := raw["name"].(map[string]any); ok {
+			name = stringFrom(nested["display_name"])
+			if name == "" {
+				name = stringFrom(nested["abbreviated_name"])
+			}
+		}
+	}
+	email := stringFrom(raw["email"])
+	picture := stringFrom(raw["profile_photo_url"])
+
+	profile := identitydomain.Profile{
+		Provider:   "dropbox",
+		Subject:    subject,
+		Email:      email,
+		Name:       name,
+		PictureURL: picture,
 		Raw:        raw,
 	}
 	return profile, nil
