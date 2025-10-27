@@ -9,7 +9,7 @@ class ServiceSubscriptionManager {
   factory ServiceSubscriptionManager() => _instance;
   ServiceSubscriptionManager._internal();
 
-  final Map<String, _PendingSubscription> _pendingSubscriptions = {};
+  final Map<String, PendingSubscription> _pendingSubscriptions = {};
 
   final Map<String, _PendingCallback> _pendingCallbacks = {};
 
@@ -22,7 +22,7 @@ class ServiceSubscriptionManager {
     required String? redirectUri,
     required String? state,
   }) {
-    _pendingSubscriptions[serviceId] = _PendingSubscription(
+    _pendingSubscriptions[serviceId] = PendingSubscription(
       serviceId: serviceId,
       codeVerifier: codeVerifier,
       redirectUri: redirectUri,
@@ -122,7 +122,7 @@ class ServiceSubscriptionManager {
   void _completeSubscriptionNow({
     required String serviceId,
     required String code,
-    required _PendingSubscription subscription,
+    required PendingSubscription subscription,
     required ServicesRepository repository,
   }) async {
     try {
@@ -153,7 +153,7 @@ class ServiceSubscriptionManager {
     }
   }
 
-  _PendingSubscription? getPendingSubscription(String serviceId) {
+  PendingSubscription? getPendingSubscription(String serviceId) {
     return _pendingSubscriptions[serviceId];
   }
 
@@ -170,13 +170,13 @@ class ServiceSubscriptionManager {
   }
 }
 
-class _PendingSubscription {
+class PendingSubscription {
   final String serviceId;
   final String? codeVerifier;
   final String? redirectUri;
   final String? state;
 
-  _PendingSubscription({
+  PendingSubscription({
     required this.serviceId,
     required this.codeVerifier,
     required this.redirectUri,
