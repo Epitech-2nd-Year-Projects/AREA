@@ -89,6 +89,17 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: dropboxProfileExtractor,
 		},
+		"slack": {
+			DisplayName:      "Slack",
+			AuthorizationURL: "https://slack.com/oauth/v2/authorize",
+			TokenURL:         "https://slack.com/api/oauth.v2.access",
+			UserInfoURL:      "https://slack.com/api/auth.test",
+			DefaultScopes:    []string{"chat:write", "channels:history", "groups:history", "im:history", "mpim:history", "users:read", "offline_access"},
+			UserInfoHeaders: map[string]string{
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: slackProfileExtractor,
+		},
 	}
 }
 
@@ -194,6 +205,56 @@ func dropboxProfileExtractor(raw map[string]any) (identitydomain.Profile, error)
 		Email:      email,
 		Name:       name,
 		PictureURL: picture,
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func slackProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	if raw == nil {
+		return identitydomain.Profile{}, fmt.Errorf("slack: user info payload missing")
+	}
+
+	if okVal, exists := raw["ok"]; exists {
+		switch v := okVal.(type) {
+		case bool:
+			if !v {
+				errMsg := stringFrom(raw["error"])
+				if errMsg == "" {
+					errMsg = "request failed"
+				}
+				return identitydomain.Profile{}, fmt.Errorf("slack: %s", errMsg)
+			}
+		case string:
+			if strings.EqualFold(strings.TrimSpace(v), "false") {
+				errMsg := stringFrom(raw["error"])
+				if errMsg == "" {
+					errMsg = "request failed"
+				}
+				return identitydomain.Profile{}, fmt.Errorf("slack: %s", errMsg)
+			}
+		}
+	}
+
+	subject := stringFrom(raw["user_id"])
+	if subject == "" {
+		subject = stringFrom(raw["bot_id"])
+	}
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("slack: user_id missing")
+	}
+
+	name := stringFrom(raw["user"])
+	if name == "" {
+		name = stringFrom(raw["team"])
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "slack",
+		Subject:    subject,
+		Email:      stringFrom(raw["user_email"]),
+		Name:       name,
+		PictureURL: stringFrom(raw["user_image_72"]),
 		Raw:        raw,
 	}
 	return profile, nil
