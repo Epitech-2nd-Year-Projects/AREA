@@ -93,6 +93,7 @@ jobs:
           API_PROXY_TARGET: http://localhost:8080
           CORS_ALLOWED_ORIGIN: http://localhost:8081
           NEXT_PUBLIC_API_MODE: live
+          NEXT_DISABLE_TURBOPACK: "1"
         run: |
           npm ci
           npm run build
