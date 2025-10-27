@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
+const MIN_PASSWORD_LENGTH = 8
+
 export function RegisterForm({
   className,
   ...props
@@ -38,17 +40,33 @@ export function RegisterForm({
       return
     }
 
+    if (!password) {
+      setErrorMessage(t('errors.passwordRequired'))
+      return
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setErrorMessage(
+        t('errors.passwordTooShort', { minLength: MIN_PASSWORD_LENGTH })
+      )
+      return
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage(t('errors.passwordMismatch'))
       return
     }
 
     try {
-      await registerMutation.mutateAsync({ email, password })
+      const response = await registerMutation.mutateAsync({ email, password })
       form.reset()
-      router.push(
-        `/login?needsVerification=1&email=${encodeURIComponent(email)}`
-      )
+      const next = new URLSearchParams({
+        needsVerification: '1',
+        email
+      })
+      next.set('expiresAt', response.expiresAt)
+      next.set('userId', response.userId)
+      router.push(`/login?${next.toString()}`)
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 409) {
@@ -89,7 +107,13 @@ export function RegisterForm({
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="password">{t('password')}</Label>
-                <Input id="password" name="password" type="password" required />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={MIN_PASSWORD_LENGTH}
+                />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
@@ -97,6 +121,7 @@ export function RegisterForm({
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
+                  minLength={MIN_PASSWORD_LENGTH}
                   required
                 />
               </div>

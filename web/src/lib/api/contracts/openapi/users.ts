@@ -4,5 +4,6 @@ export type RegisterUserRequestDTO = {
 }
 
 export type RegisterUserResponseDTO = {
+  userId: string
   expiresAt: string
 }

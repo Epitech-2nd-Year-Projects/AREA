@@ -5,6 +5,7 @@ import { mockUsers } from './data'
 
 const TOKEN_PREFIX = 'mock-token:'
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000
 
 const verificationTokens = new Map<
   string,
@@ -20,6 +21,7 @@ const userMeta = new Map<
   }
 >()
 let currentSessionEmail: string | null = null
+let currentSessionExpiresAt: number | null = null
 
 const now = () => Date.now()
 
@@ -116,6 +118,8 @@ export function markActiveUser(user: User) {
 
 export function setCurrentSession(email: string | null) {
   currentSessionEmail = email
+  currentSessionExpiresAt = email ? now() + SESSION_TTL_MS : null
+  return currentSessionExpiresAt
 }
 
 export function assertSession(): User {
@@ -129,9 +133,19 @@ export function assertSession(): User {
     currentSessionEmail = null
     throw new ApiError(401, 'notAuthenticated', 'Session missing or expired')
   }
+  if (currentSessionExpiresAt && currentSessionExpiresAt < now()) {
+    currentSessionEmail = null
+    currentSessionExpiresAt = null
+    throw new ApiError(401, 'notAuthenticated', 'Session missing or expired')
+  }
   return user
 }
 
 export function clearSession() {
   currentSessionEmail = null
+  currentSessionExpiresAt = null
+}
+
+export function currentSessionExpiry() {
+  return currentSessionExpiresAt
 }

@@ -1,6 +1,6 @@
 'use client'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,7 +16,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ServiceCardList } from '@/components/services/service-card-list'
 import { useTranslations } from 'next-intl'
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
-import { mapUserDTOToUser, useCurrentUserQuery } from '@/lib/api/openapi/auth'
+import {
+  mapUserDTOToUser,
+  useCurrentUserQuery,
+  useIdentitiesQuery
+} from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
 
@@ -42,7 +46,31 @@ export default function ProfilePage() {
 
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
   const services = aboutData ? extractServices(aboutData) : []
-  const connectedServices = user?.connectedServices ?? []
+  const isUserAuthenticated = Boolean(user)
+
+  const { data: identitiesData, isLoading: isIdentitiesLoading } =
+    useIdentitiesQuery({
+      enabled: isUserAuthenticated
+    })
+
+  const linkedProviders = useMemo(() => {
+    if (!isUserAuthenticated) {
+      return []
+    }
+
+    const identityProviders =
+      identitiesData?.identities?.map((identity) => identity.provider) ?? []
+
+    return Array.from(new Set(identityProviders))
+  }, [identitiesData, isUserAuthenticated])
+
+  const connectedServices = useMemo(() => {
+    if (!linkedProviders.length) {
+      return []
+    }
+
+    return services.filter((service) => linkedProviders.includes(service.name))
+  }, [linkedProviders, services])
 
   const [profileForm, setProfileForm] = useState({ email: '', imageUrl: '' })
   const [passwordForm, setPasswordForm] = useState(getPasswordInitialState)
@@ -121,7 +149,7 @@ export default function ProfilePage() {
     setPasswordForm(getPasswordInitialState())
   }
 
-  const isLoading = isUserLoading || isAboutLoading
+  const isLoading = isUserLoading || isAboutLoading || isIdentitiesLoading
 
   if (isLoading || !user) {
     return (
@@ -345,11 +373,11 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
         <CardContent>
-          {services.length ? (
+          {connectedServices.length ? (
             <ServiceCardList
-              services={services}
-              userLinkedServices={connectedServices}
-              isUserAuthenticated
+              services={connectedServices}
+              userLinkedServices={linkedProviders}
+              isUserAuthenticated={isUserAuthenticated}
               isMinimal
             />
           ) : (
