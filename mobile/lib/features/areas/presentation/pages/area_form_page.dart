@@ -7,12 +7,14 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/area.dart';
+import '../../domain/entities/area_template.dart';
 import '../../domain/entities/area_draft.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../cubits/area_form_cubit.dart';
 import '../cubits/area_form_state.dart';
 import '../../../services/domain/repositories/services_repository.dart';
 import '../../../services/domain/entities/service_component.dart';
+import '../../../services/domain/value_objects/component_kind.dart';
 
 import '../widgets/service_and_component_picker.dart';
 import '../widgets/service_picker_sheet.dart';
@@ -20,7 +22,8 @@ import '../widgets/component_configuration_form.dart';
 
 class AreaFormPage extends StatelessWidget {
   final Area? areaToEdit;
-  const AreaFormPage({super.key, this.areaToEdit});
+  final AreaTemplate? template;
+  const AreaFormPage({super.key, this.areaToEdit, this.template});
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +33,16 @@ class AreaFormPage extends StatelessWidget {
         sl<ServicesRepository>(),
         initialArea: areaToEdit,
       )..primeSubscriptionCache(),
-      child: _AreaFormScreen(),
+      child: _AreaFormScreen(template: template),
     );
   }
 }
 
 class _AreaFormScreen extends StatefulWidget {
+  final AreaTemplate? template;
+
+  const _AreaFormScreen({this.template});
+
   @override
   State<_AreaFormScreen> createState() => _AreaFormScreenState();
 }
@@ -67,8 +74,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     super.initState();
     final initial = context.read<AreaFormCubit>().initialArea;
     _nameCtrl = TextEditingController(text: initial?.name ?? '');
-    _descriptionCtrl =
-        TextEditingController(text: initial?.description ?? '');
+    _descriptionCtrl = TextEditingController(text: initial?.description ?? '');
 
     if (initial != null) {
       final action = initial.action;
@@ -92,6 +98,15 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
         _reactionParams = Map<String, dynamic>.from(reaction.params);
       }
     }
+
+    final template = widget.template;
+    if (template != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _applyTemplate(template);
+        }
+      });
+    }
   }
 
   @override
@@ -102,8 +117,10 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Future<void> _pickActionService() async {
-    final res = await showServicePickerSheet(context, title:  AppLocalizations.of(context)!
-        .selectActionService);
+    final res = await showServicePickerSheet(
+      context,
+      title: AppLocalizations.of(context)!.selectActionService,
+    );
     if (res == null) return;
 
     if (!res.isSubscribed) {
@@ -126,7 +143,10 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }
 
   Future<void> _pickReactionService() async {
-    final res = await showServicePickerSheet(context, title: AppLocalizations.of(context)!.selectReactionService);
+    final res = await showServicePickerSheet(
+      context,
+      title: AppLocalizations.of(context)!.selectReactionService,
+    );
     if (res == null) return;
 
     if (!res.isSubscribed) {
@@ -154,21 +174,23 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(l10n.notSubscribedTitle),
-            content: Text('You are not subscribed to "$serviceName". Subscribe now?'),
+            content: Text(
+              'You are not subscribed to "$serviceName". Subscribe now?',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 child: Text(l10n.cancel),
               ),
               FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                  ),
-                  child: Text(l10n.goToServices)),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                ),
+                child: Text(l10n.goToServices),
+              ),
             ],
           ),
         ) ??
@@ -217,10 +239,101 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     }
   }
 
+  Future<void> _applyTemplate(AreaTemplate template) async {
+    final cubit = context.read<AreaFormCubit>();
+
+    await cubit.primeSubscriptionCache();
+
+    final actionComponents = await cubit.getComponentsFor(
+      template.action.providerId,
+      kind: ComponentKind.action,
+    );
+    final reactionComponents = await cubit.getComponentsFor(
+      template.reaction.providerId,
+      kind: ComponentKind.reaction,
+    );
+
+    ServiceComponent? _matchComponent(
+      List<ServiceComponent> components,
+      String componentName,
+    ) {
+      for (final component in components) {
+        if (component.name == componentName) {
+          return component;
+        }
+      }
+      return null;
+    }
+
+    final actionComponent = _matchComponent(
+      actionComponents,
+      template.action.componentName,
+    );
+    final reactionComponent = _matchComponent(
+      reactionComponents,
+      template.reaction.componentName,
+    );
+
+    if (actionComponent == null || reactionComponent == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Template components are not available right now.'),
+        ),
+      );
+      return;
+    }
+
+    cubit.overwriteSubscriptionInCache(template.action.providerId, true);
+    cubit.overwriteSubscriptionInCache(template.reaction.providerId, true);
+
+    if (!mounted) return;
+
+    setState(() {
+      _nameCtrl.text = template.suggestedName;
+      if (template.suggestedDescription != null) {
+        _descriptionCtrl.text = template.suggestedDescription!;
+      }
+
+      _actionProviderId = template.action.providerId;
+      _actionProviderLabel = actionComponent.provider.displayName;
+      _actionIsSubscribed =
+          cubit.subscriptionCache[template.action.providerId] ?? true;
+      _actionComponent = actionComponent;
+      _actionComponentId = actionComponent.id;
+      _actionComponentName = actionComponent.displayName;
+      _actionParams = Map<String, dynamic>.from(template.action.defaultParams);
+
+      _reactionProviderId = template.reaction.providerId;
+      _reactionProviderLabel = reactionComponent.provider.displayName;
+      _reactionIsSubscribed =
+          cubit.subscriptionCache[template.reaction.providerId] ?? true;
+      _reactionComponent = reactionComponent;
+      _reactionComponentId = reactionComponent.id;
+      _reactionComponentName = reactionComponent.displayName;
+      _reactionParams = Map<String, dynamic>.from(
+        template.reaction.defaultParams,
+      );
+    });
+
+    await _primeComponentDefaults(
+      component: actionComponent,
+      kind: ServiceComponentKind.action,
+    );
+
+    await _primeComponentDefaults(
+      component: reactionComponent,
+      kind: ServiceComponentKind.reaction,
+    );
+
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _submit() {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
-    final l10n =  AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
     if (_actionProviderId == null || _reactionProviderId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -248,13 +361,13 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
 
     context.read<AreaFormCubit>().submit(
-          name: _nameCtrl.text.trim(),
-          description: _descriptionCtrl.text.trim().isEmpty
-              ? null
-              : _descriptionCtrl.text.trim(),
-          action: actionDraft,
-          reactions: [reactionDraft],
-        );
+      name: _nameCtrl.text.trim(),
+      description: _descriptionCtrl.text.trim().isEmpty
+          ? null
+          : _descriptionCtrl.text.trim(),
+      action: actionDraft,
+      reactions: [reactionDraft],
+    );
   }
 
   String? _normalizeName(String? value) {
@@ -269,28 +382,22 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
   }) async {
     final cubit = context.read<AreaFormCubit>();
     final suggestions = await cubit.suggestParametersFor(component);
-    
+
     if (!mounted) return;
 
     final currentComponentId = kind == ServiceComponentKind.action
         ? _actionComponent?.id
         : _reactionComponent?.id;
-    
+
     if (currentComponentId != component.id) return;
 
     if (suggestions.isEmpty) return;
 
     setState(() {
       if (kind == ServiceComponentKind.action) {
-        _actionParams = {
-          ..._actionParams,
-          ...suggestions,
-        };
+        _actionParams = {..._actionParams, ...suggestions};
       } else {
-        _reactionParams = {
-          ..._reactionParams,
-          ...suggestions,
-        };
+        _reactionParams = {..._reactionParams, ...suggestions};
       }
     });
   }
@@ -304,11 +411,14 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     return BlocConsumer<AreaFormCubit, AreaFormState>(
       listener: (context, state) {
         if (state is AreaFormSuccess) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(l10n.areaSaved)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.areaSaved)));
           context.pop(true);
         } else if (state is AreaFormError) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
@@ -339,8 +449,11 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
           body: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 900;
-              final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 900;
-              final horizontalPadding = isWide ? 48.0 : (isTablet ? 24.0 : 16.0);
+              final isTablet =
+                  constraints.maxWidth >= 600 && constraints.maxWidth < 900;
+              final horizontalPadding = isWide
+                  ? 48.0
+                  : (isTablet ? 24.0 : 16.0);
               const maxContentWidth = 1100.0;
 
               final content = Form(
@@ -356,9 +469,13 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: _buildActionPicker(isSubmitting, l10n)),
+                            Expanded(
+                              child: _buildActionPicker(isSubmitting, l10n),
+                            ),
                             const SizedBox(width: 16),
-                            Expanded(child: _buildReactionPicker(isSubmitting, l10n)),
+                            Expanded(
+                              child: _buildReactionPicker(isSubmitting, l10n),
+                            ),
                           ],
                         )
                       else
@@ -386,12 +503,15 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                         initialName: _reactionComponentName,
                         initialValues: _reactionParams,
                         enabled: !isSubmitting,
-                        onNameChanged: (value) => _reactionComponentName = value,
-                        onParametersChanged: (values) => _reactionParams = values,
+                        onNameChanged: (value) =>
+                            _reactionComponentName = value,
+                        onParametersChanged: (values) =>
+                            _reactionParams = values,
                       ),
                       const SizedBox(height: 32),
                       Semantics(
-                        label: '${isEdit ? l10n.editButton : l10n.createButton} button',
+                        label:
+                            '${isEdit ? l10n.editButton : l10n.createButton} button',
                         button: true,
                         child: SizedBox(
                           width: double.infinity,
@@ -403,7 +523,9 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Icon(Icons.save_rounded, size: 24),
@@ -418,7 +540,8 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: AppColors.white,
-                              disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                              disabledBackgroundColor: AppColors.primary
+                                  .withValues(alpha: 0.6),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -435,11 +558,11 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
               return SafeArea(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: content,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: 16,
                   ),
+                  child: Align(alignment: Alignment.topCenter, child: content),
                 ),
               );
             },
@@ -449,19 +572,24 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context, bool isSubmitting, AppLocalizations l10n) {
+  Widget _buildHeaderCard(
+    BuildContext context,
+    bool isSubmitting,
+    AppLocalizations l10n,
+  ) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: AppColors.getBorderColor(context), width: 2),
+      borderSide: BorderSide(
+        color: AppColors.getBorderColor(context),
+        width: 2,
+      ),
     );
     return Card(
       elevation: 0,
       color: AppColors.getSurfaceColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: AppColors.getBorderColor(context),
-        ),
+        side: BorderSide(color: AppColors.getBorderColor(context)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),

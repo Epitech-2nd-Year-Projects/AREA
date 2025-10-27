@@ -6,6 +6,7 @@ import 'modules/network_module.dart';
 import 'modules/auth_module.dart';
 import 'modules/services_module.dart';
 import 'modules/areas_module.dart';
+import 'modules/dashboard_module.dart';
 import 'modules/settings_module.dart';
 
 final sl = GetIt.instance;
@@ -16,6 +17,7 @@ class Injector {
     NetworkModule(),
     AuthModule(),
     ServicesModule(),
+    DashboardModule(),
     AreasModule(),
     SettingsModule(),
   ];
@@ -31,7 +33,6 @@ class Injector {
       ..clear()
       ..addAll(testModules);
   }
-
   /// Reset dependency injection for testing
   @visibleForTesting
   static Future<void> reset() async {

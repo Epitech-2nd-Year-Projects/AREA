@@ -39,7 +39,8 @@ class ServiceAndComponentPicker extends StatefulWidget {
   });
 
   @override
-  State<ServiceAndComponentPicker> createState() => _ServiceAndComponentPickerState();
+  State<ServiceAndComponentPicker> createState() =>
+      _ServiceAndComponentPickerState();
 }
 
 class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
@@ -63,8 +64,10 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
       _loading = widget.providerId != null;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onComponentChanged(null);
-        widget.onComponentSelected(null);
+        if (widget.selectedComponentId == null) {
+          widget.onComponentChanged(null);
+          widget.onComponentSelected(null);
+        }
 
         if (widget.providerId != null && mounted) {
           _loadComponents(widget.providerId!);
@@ -104,7 +107,9 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     } else if (widget.selectedComponentId != null) {
       ServiceComponent? selected;
       try {
-        selected = _components.firstWhere((c) => c.id == widget.selectedComponentId);
+        selected = _components.firstWhere(
+          (c) => c.id == widget.selectedComponentId,
+        );
       } catch (_) {
         selected = null;
       }
@@ -186,10 +191,14 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
+                      color: AppColors.getSurfaceVariantColor(
+                        context,
+                      ).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                        color: AppColors.getBorderColor(
+                          context,
+                        ).withValues(alpha: 0.4),
                         width: 1.5,
                       ),
                     ),
@@ -210,7 +219,8 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            widget.providerLabel ?? 'Select ${widget.title.toLowerCase()} service',
+                            widget.providerLabel ??
+                                'Select ${widget.title.toLowerCase()} service',
                             style: AppTypography.bodyLarge.copyWith(
                               color: widget.providerLabel != null
                                   ? AppColors.getTextPrimaryColor(context)
@@ -289,8 +299,11 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                         label: 'Component selection dropdown',
                         child: DropdownButtonFormField<String>(
                           isExpanded: true,
-                          initialValue: (widget.selectedComponentId != null &&
-                                  _components.any((e) => e.id == widget.selectedComponentId))
+                          initialValue:
+                              (widget.selectedComponentId != null &&
+                                  _components.any(
+                                    (e) => e.id == widget.selectedComponentId,
+                                  ))
                               ? widget.selectedComponentId
                               : null,
                           hint: Text(l10n.chooseComponent),
@@ -299,14 +312,16 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                             color: AppColors.primary,
                           ),
                           items: _components
-                              .map((component) => DropdownMenuItem<String>(
-                                    value: component.id,
-                                    child: Text(
-                                      component.displayName,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTypography.bodyMedium,
-                                    ),
-                                  ))
+                              .map(
+                                (component) => DropdownMenuItem<String>(
+                                  value: component.id,
+                                  child: Text(
+                                    component.displayName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodyMedium,
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             widget.onComponentChanged(value);
@@ -320,20 +335,27 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
                               widget.onComponentSelected(component);
                             }
                           },
-                          validator: (v) => v == null ? l10n.selectComponent : null,
+                          validator: (v) =>
+                              v == null ? l10n.selectComponent : null,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                            fillColor: AppColors.getSurfaceVariantColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                                color: AppColors.getBorderColor(
+                                  context,
+                                ).withValues(alpha: 0.4),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                                color: AppColors.getBorderColor(
+                                  context,
+                                ).withValues(alpha: 0.4),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -417,9 +439,7 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.4),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -440,5 +460,3 @@ class _ServiceAndComponentPickerState extends State<ServiceAndComponentPicker> {
     );
   }
 }
-
-

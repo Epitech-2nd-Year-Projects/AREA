@@ -6,10 +6,12 @@ import '../../../../core/navigation/app_navigation.dart';
 import '../../../areas/presentation/pages/areas_page.dart';
 import '../../../areas/presentation/pages/area_form_page.dart';
 import '../../../areas/domain/entities/area.dart';
+import '../../../areas/domain/entities/area_template.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
+import '../../../dashboard/presentation/pages/dashboard_page.dart';
 import '../blocs/auth_bloc.dart';
 import '../pages/email_verification_page.dart';
 import '../pages/login_page.dart';
@@ -54,7 +56,10 @@ class AuthRouter {
             GoRoute(
               name: 'area-new',
               path: 'new',
-              builder: (_, __) => const AreaFormPage(),
+              builder: (_, state) {
+                final template = state.extra as AreaTemplate?;
+                return AreaFormPage(template: template);
+              },
             ),
             GoRoute(
               name: 'area-edit',
@@ -106,7 +111,8 @@ class AuthRouter {
         final provider = state.pathParameters['provider']!;
         final code = state.uri.queryParameters['code'];
         final error = state.uri.queryParameters['error'];
-        final returnTo = state.uri.queryParameters['returnTo'] ?? '/services/$provider';
+        final returnTo =
+            state.uri.queryParameters['returnTo'] ?? '/services/$provider';
 
         return BlocProvider(
           create: (context) => sl<AuthBloc>(),
@@ -151,19 +157,8 @@ class AuthRouter {
       path: '/',
       builder: (context, state) => BlocProvider(
         create: (context) => AuthBloc(sl()),
-        child: const AuthWrapperPage(
-          authenticatedChild: SizedBox(),
-        ),
+        child: const AuthWrapperPage(authenticatedChild: SizedBox()),
       ),
     ),
   ];
-}
-
-class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Dashboard Page 🚀'));
-  }
 }
