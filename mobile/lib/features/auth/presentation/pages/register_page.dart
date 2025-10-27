@@ -151,16 +151,6 @@ class _RegisterPageContent extends StatelessWidget {
         provider: OAuthProvider.google,
         onPressed: () => context.read<OAuthCubit>().startOAuth(OAuthProvider.google),
       ),
-      const SizedBox(height: AppSpacing.md),
-      OAuthProviderButton(
-        provider: OAuthProvider.apple,
-        onPressed: () => context.read<OAuthCubit>().startOAuth(OAuthProvider.apple),
-      ),
-      const SizedBox(height: AppSpacing.md),
-      OAuthProviderButton(
-        provider: OAuthProvider.facebook,
-        onPressed: () => context.read<OAuthCubit>().startOAuth(OAuthProvider.facebook),
-      ),
     ],
   );
 

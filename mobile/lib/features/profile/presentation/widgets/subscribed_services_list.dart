@@ -109,27 +109,29 @@ class SubscribedServicesList extends StatelessWidget {
                     color: AppColors.getDividerColor(context)
                         .withValues(alpha: 0.3),
                   ),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: subscribedServices.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      color: AppColors.getDividerColor(context)
-                          .withValues(alpha: 0.2),
+                  SizedBox(
+                    height: 310,
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: subscribedServices.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: AppColors.getDividerColor(context)
+                            .withValues(alpha: 0.2),
+                      ),
+                      itemBuilder: (context, index) {
+                        final service = subscribedServices[index];
+                        final delay = 150 + (index * 50);
+                        return FadeInAnimation(
+                          duration: const Duration(milliseconds: 500),
+                          child: _ServiceListItem(
+                            service: service,
+                            delay: delay,
+                          ),
+                        );
+                      },
                     ),
-                    itemBuilder: (context, index) {
-                      final service = subscribedServices[index];
-                      // Cascade animation: base delay + stagger
-                      final delay = 150 + (index * 50);
-                      return FadeInAnimation(
-                        duration: const Duration(milliseconds: 500),
-                        child: _ServiceListItem(
-                          service: service,
-                          delay: delay,
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
@@ -194,7 +196,7 @@ class _ServiceListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/services'),
+          onTap: () => context.push('/services/${service.provider.id}'),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Row(
