@@ -485,6 +485,55 @@ func TestService_CreateValidatesParams(t *testing.T) {
 	}
 }
 
+func TestService_DeleteRemovesArea(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	areaID := uuid.New()
+	clock := stubClock{now: time.Unix(1720000500, 0).UTC()}
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{
+		areaID: {
+			ID:        areaID,
+			UserID:    userID,
+			Name:      "Weekly summary",
+			Status:    areadomain.StatusEnabled,
+			CreatedAt: clock.now,
+			UpdatedAt: clock.now,
+		},
+	}}
+	svc := NewService(repo, nil, nil, nil, nil, clock, nil)
+
+	if err := svc.Delete(ctx, userID, areaID); err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if _, ok := repo.items[areaID]; ok {
+		t.Fatalf("area still present after deletion")
+	}
+}
+
+func TestService_DeleteRejectsForeignArea(t *testing.T) {
+	ctx := context.Background()
+	ownerID := uuid.New()
+	otherUser := uuid.New()
+	areaID := uuid.New()
+	repo := &memoryAreaRepo{items: map[uuid.UUID]areadomain.Area{
+		areaID: {
+			ID:     areaID,
+			UserID: ownerID,
+			Name:   "Confidential",
+			Status: areadomain.StatusEnabled,
+		},
+	}}
+	svc := NewService(repo, nil, nil, nil, nil, stubClock{now: time.Unix(1720000600, 0).UTC()}, nil)
+
+	err := svc.Delete(ctx, otherUser, areaID)
+	if !errors.Is(err, ErrAreaNotOwned) {
+		t.Fatalf("expected ErrAreaNotOwned, got %v", err)
+	}
+	if _, ok := repo.items[areaID]; !ok {
+		t.Fatalf("area should remain stored after failed deletion")
+	}
+}
+
 type memoryAreaRepo struct {
 	items map[uuid.UUID]areadomain.Area
 }

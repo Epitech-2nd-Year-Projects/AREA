@@ -436,6 +436,26 @@ func (s *Service) Get(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) (
 	return areas[0], nil
 }
 
+// Delete removes an automation owned by the given user
+func (s *Service) Delete(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error {
+	if s.repo == nil {
+		return fmt.Errorf("area.Service.Delete: repository unavailable")
+	}
+
+	area, err := s.repo.FindByID(ctx, areaID)
+	if err != nil {
+		return fmt.Errorf("area.Service.Delete: repo.FindByID: %w", err)
+	}
+	if !area.OwnedBy(userID) {
+		return fmt.Errorf("area.Service.Delete: %w", ErrAreaNotOwned)
+	}
+
+	if err := s.repo.Delete(ctx, areaID); err != nil {
+		return fmt.Errorf("area.Service.Delete: repo.Delete: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) populateComponents(ctx context.Context, areas []areadomain.Area) ([]areadomain.Area, error) {
 	if s.components == nil {
 		return areas, nil
