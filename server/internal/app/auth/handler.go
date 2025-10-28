@@ -10,9 +10,11 @@ import (
 
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/inbound/http/openapi"
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
+	servicedomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/service"
 	sessiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/session"
 	subscriptiondomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/subscription"
 	userdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/user"
+	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	identityport "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound/identity"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -205,6 +207,82 @@ func (h *Handler) ListIdentities(c *gin.Context) {
 
 	response := openapi.IdentityListResponse{Identities: mapIdentities(items)}
 	c.JSON(http.StatusOK, response)
+}
+
+// ListServiceProviders handles GET /v1/services
+func (h *Handler) ListServiceProviders(c *gin.Context) {
+	if h.oauth == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	providers, err := h.oauth.ListProviders(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list providers"})
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.ServiceProviderListResponse{Providers: mapProviderDetails(providers)})
+}
+
+// ListServiceSubscriptions handles GET /v1/services/subscriptions
+func (h *Handler) ListServiceSubscriptions(c *gin.Context) {
+	if h.oauth == nil || h.service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	records, err := h.oauth.ListSubscriptions(c.Request.Context(), usr.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list subscriptions"})
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+
+	c.JSON(http.StatusOK, openapi.SubscriptionListResponse{Subscriptions: mapUserSubscriptions(records)})
+}
+
+// UnsubscribeService handles DELETE /v1/services/{provider}/subscription
+func (h *Handler) UnsubscribeService(c *gin.Context, provider string) {
+	if h.oauth == nil || h.service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "oauth not configured"})
+		return
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return
+	}
+
+	if _, err := h.oauth.Unsubscribe(c.Request.Context(), usr.ID, provider); err != nil {
+		h.handleSubscriptionError(c, err)
+		return
+	}
+
+	h.refreshSessionCookie(c, sess)
+	c.Status(http.StatusNoContent)
 }
 
 // AuthorizeOAuth handles POST /v1/oauth/{provider}/authorize
@@ -490,6 +568,8 @@ func (h *Handler) handleSubscriptionError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "subscription not supported"})
 	case errors.Is(err, ErrOAuthEmailMissing):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email missing from provider"})
+	case errors.Is(err, outbound.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
 	default:
 		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth provider error"})
 	}
@@ -534,6 +614,31 @@ func mapIdentities(items []identitydomain.Identity) []openapi.IdentitySummary {
 	return result
 }
 
+func mapProviderDetails(items []servicedomain.Provider) []openapi.ServiceProviderDetail {
+	if len(items) == 0 {
+		return make([]openapi.ServiceProviderDetail, 0)
+	}
+	result := make([]openapi.ServiceProviderDetail, 0, len(items))
+	for _, item := range items {
+		result = append(result, toOpenAPIProviderDetail(item))
+	}
+	return result
+}
+
+func mapUserSubscriptions(items []SubscriptionOverview) []openapi.UserSubscription {
+	if len(items) == 0 {
+		return make([]openapi.UserSubscription, 0)
+	}
+	result := make([]openapi.UserSubscription, 0, len(items))
+	for _, item := range items {
+		result = append(result, openapi.UserSubscription{
+			Subscription: toOpenAPISubscription(item.Subscription),
+			Provider:     toOpenAPIProviderDetail(item.Provider),
+		})
+	}
+	return result
+}
+
 func toOpenAPIIdentity(identity identitydomain.Identity) openapi.IdentitySummary {
 	scopesCopy := append([]string(nil), identity.Scopes...)
 
@@ -571,6 +676,12 @@ func toOpenAPISubscription(subscription subscriptiondomain.Subscription) openapi
 		scopeGrants = &copyScopes
 	}
 
+	var updatedAt *time.Time
+	if !subscription.UpdatedAt.IsZero() {
+		value := subscription.UpdatedAt.UTC()
+		updatedAt = &value
+	}
+
 	return openapi.SubscriptionSummary{
 		Id:          subscription.ID,
 		ProviderId:  subscription.ProviderID,
@@ -578,7 +689,26 @@ func toOpenAPISubscription(subscription subscriptiondomain.Subscription) openapi
 		Status:      string(subscription.Status),
 		ScopeGrants: scopeGrants,
 		CreatedAt:   subscription.CreatedAt.UTC(),
-		UpdatedAt:   subscription.UpdatedAt.UTC(),
+		UpdatedAt:   updatedAt,
+	}
+}
+
+func toOpenAPIProviderDetail(provider servicedomain.Provider) openapi.ServiceProviderDetail {
+	var category *string
+	if trimmed := strings.TrimSpace(provider.Category); trimmed != "" {
+		copyValue := trimmed
+		category = &copyValue
+	}
+
+	return openapi.ServiceProviderDetail{
+		Id:          openapitypes.UUID(provider.ID),
+		Name:        provider.Name,
+		DisplayName: provider.DisplayName,
+		Category:    category,
+		OauthType:   openapi.ServiceProviderDetailOauthType(provider.OAuthType),
+		Enabled:     provider.Enabled,
+		CreatedAt:   provider.CreatedAt.UTC(),
+		UpdatedAt:   provider.UpdatedAt.UTC(),
 	}
 }
 
