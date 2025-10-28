@@ -3,7 +3,7 @@ enum ServiceCategory {
   productivity('productivity'),
   communication('communication'),
   storage('storage'),
-  automation('automation'),
+  development('development'),
   other('other');
 
   const ServiceCategory(this.value);
@@ -26,8 +26,8 @@ enum ServiceCategory {
         return 'Communication';
       case ServiceCategory.storage:
         return 'Cloud Storage';
-      case ServiceCategory.automation:
-        return 'Automation';
+      case ServiceCategory.development:
+        return 'Development';
       case ServiceCategory.other:
         return 'Other';
     }

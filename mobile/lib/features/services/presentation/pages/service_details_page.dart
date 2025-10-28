@@ -357,16 +357,14 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
                   subscriptionState is ServiceSubscriptionAwaitingAuthorization,
               onSubscribe: () {
                 context.read<ServiceSubscriptionCubit>().subscribe(
-                  serviceId: state.service.id,
-                  requestedScopes: _getRequestedScopes(state.service.id),
+                  serviceId: state.service.name,
+                  requestedScopes: _getRequestedScopes(state.service.name),
                 );
               },
               onUnsubscribe: () {
-                if (state.subscription != null) {
-                  context.read<ServiceSubscriptionCubit>().unsubscribe(
-                    state.subscription!.id,
-                  );
-                }
+                context.read<ServiceSubscriptionCubit>().unsubscribe(
+                  state.service.name,
+                );
               },
             ),
           ),

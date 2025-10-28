@@ -161,7 +161,7 @@ class _ServiceListItem extends StatelessWidget {
         return AppColors.communication;
       case ServiceCategory.storage:
         return AppColors.storage;
-      case ServiceCategory.automation:
+      case ServiceCategory.development:
         return AppColors.automation;
       case ServiceCategory.other:
         return AppColors.primary;
@@ -178,7 +178,7 @@ class _ServiceListItem extends StatelessWidget {
         return Icons.mail_rounded;
       case ServiceCategory.storage:
         return Icons.cloud_rounded;
-      case ServiceCategory.automation:
+      case ServiceCategory.development:
         return Icons.build_rounded;
       case ServiceCategory.other:
         return Icons.extension_rounded;
