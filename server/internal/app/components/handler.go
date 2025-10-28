@@ -85,7 +85,7 @@ func (h *Handler) ListComponents(c *gin.Context, params openapi.ListComponentsPa
 }
 
 // ListAvailableComponents handles GET /v1/components/available
-func (h *Handler) ListAvailableComponents(c *gin.Context, params openapi.ListComponentsParams) {
+func (h *Handler) ListAvailableComponents(c *gin.Context, params openapi.ListAvailableComponentsParams) {
 	if h.service == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "catalog unavailable"})
 		return
