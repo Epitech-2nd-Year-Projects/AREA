@@ -60,6 +60,46 @@ func (r providerRepo) FindByName(ctx context.Context, name string) (servicedomai
 	return model.toDomain(), nil
 }
 
+func (r providerRepo) FindByID(ctx context.Context, id uuid.UUID) (servicedomain.Provider, error) {
+	if r.db == nil {
+		return servicedomain.Provider{}, fmt.Errorf("postgres.service.providerRepo.FindByID: nil db handle")
+	}
+	if id == uuid.Nil {
+		return servicedomain.Provider{}, outbound.ErrNotFound
+	}
+
+	var model providerModel
+	if err := r.db.WithContext(ctx).
+		Where("id = ?", id).
+		Take(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return servicedomain.Provider{}, outbound.ErrNotFound
+		}
+		return servicedomain.Provider{}, fmt.Errorf("postgres.service.providerRepo.FindByID: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+func (r providerRepo) List(ctx context.Context) ([]servicedomain.Provider, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("postgres.service.providerRepo.List: nil db handle")
+	}
+
+	var models []providerModel
+	if err := r.db.WithContext(ctx).
+		Order("display_name ASC").
+		Find(&models).Error; err != nil {
+		return nil, fmt.Errorf("postgres.service.providerRepo.List: %w", err)
+	}
+
+	providers := make([]servicedomain.Provider, 0, len(models))
+	for _, model := range models {
+		providers = append(providers, model.toDomain())
+	}
+	return providers, nil
+}
+
 type subscriptionRepo struct {
 	db *gorm.DB
 }
