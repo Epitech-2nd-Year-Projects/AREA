@@ -85,10 +85,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     );
   }
 
-  Future<void> unsubscribe(String subscriptionId) async {
+  Future<void> unsubscribe(String providerId) async {
     emit(ServiceSubscriptionLoading());
 
-    final result = await _unsubscribeFromService(subscriptionId);
+    final normalizedProvider = _normalizeProvider(providerId);
+    final result = await _unsubscribeFromService(normalizedProvider);
 
     result.fold(
           (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),

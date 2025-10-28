@@ -208,7 +208,7 @@ class ServiceCard extends StatelessWidget {
         return AppColors.communication;
       case ServiceCategory.storage:
         return AppColors.storage;
-      case ServiceCategory.automation:
+      case ServiceCategory.development:
         return AppColors.automation;
       case ServiceCategory.other:
         return isDark ? AppColors.otherDark : AppColors.otherWhite;

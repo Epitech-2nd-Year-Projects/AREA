@@ -18,6 +18,12 @@ abstract class ServicesRemoteDataSource {
 
   Future<List<IdentitySummaryModel>> listIdentities();
 
+  Future<List<Map<String, dynamic>>> listServiceProviders();
+
+  Future<List<Map<String, dynamic>>> listServiceSubscriptions();
+
+  Future<void> unsubscribeFromService(String provider);
+
   Future<SubscribeServiceResponseModel> subscribeToService({
     required String provider,
     List<String>? scopes,
@@ -94,6 +100,55 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
           .toList();
     } catch (e) {
       throw NetworkFailure('Failed to fetch identities: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listServiceProviders() async {
+    try {
+      final response =
+          await apiClient.get<Map<String, dynamic>>('/v1/services');
+      final data = response.data;
+      if (data == null || data['providers'] is! List) {
+        throw const NetworkFailure('Invalid services response');
+      }
+
+      final providers = data['providers'] as List;
+      return providers
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } catch (e) {
+      throw NetworkFailure('Failed to fetch service providers: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listServiceSubscriptions() async {
+    try {
+      final response =
+          await apiClient.get<Map<String, dynamic>>('/v1/services/subscriptions');
+      final data = response.data;
+      if (data == null || data['subscriptions'] is! List) {
+        throw const NetworkFailure('Invalid subscriptions response');
+      }
+
+      final subscriptions = data['subscriptions'] as List;
+      return subscriptions
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } catch (e) {
+      throw NetworkFailure('Failed to fetch subscriptions: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> unsubscribeFromService(String provider) async {
+    try {
+      await apiClient.delete<void>('/v1/services/$provider/subscription');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw NetworkFailure('Failed to unsubscribe: ${e.toString()}');
     }
   }
 

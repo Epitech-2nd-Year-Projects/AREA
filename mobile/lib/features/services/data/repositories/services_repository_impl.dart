@@ -17,6 +17,7 @@ import '../datasources/services_remote_datasource.dart';
 import '../models/about_info_model.dart';
 import '../models/service_component_model.dart';
 import '../models/service_provider_model.dart';
+import '../models/user_service_subscription_model.dart';
 
 class ServicesRepositoryImpl implements ServicesRepository {
   final ServicesRemoteDataSource remoteDataSource;
@@ -39,9 +40,9 @@ class ServicesRepositoryImpl implements ServicesRepository {
     ServiceCategory? category,
   }) async {
     try {
-      final aboutInfoModel = await remoteDataSource.getAboutInfo();
-      final services = aboutInfoModel.server.services
-          .map((s) => ServiceProviderModel.fromServiceName(s.name).toEntity())
+      final serviceDataList = await remoteDataSource.listServiceProviders();
+      final services = serviceDataList
+          .map((data) => ServiceProviderModel.fromJson(data).toEntity())
           .toList();
 
       if (category != null) {
@@ -60,15 +61,20 @@ class ServicesRepositoryImpl implements ServicesRepository {
       String serviceId,
       ) async {
     try {
-      final aboutInfoModel = await remoteDataSource.getAboutInfo();
-      final service = aboutInfoModel.server.services.firstWhere(
-            (s) => s.name.toLowerCase() == serviceId.toLowerCase() ||
-            s.name.toLowerCase().replaceAll('_', '') == serviceId.toLowerCase(),
+      final serviceDataList = await remoteDataSource.listServiceProviders();
+      
+      final normalizedId = _normalizeServiceKey(serviceId);
+      final serviceData = serviceDataList.firstWhere(
+        (data) {
+          final id = data['id']?.toString().toLowerCase() ?? '';
+          final name = data['name']?.toString().toLowerCase() ?? '';
+          return _normalizeServiceKey(id) == normalizedId ||
+              _normalizeServiceKey(name) == normalizedId;
+        },
         orElse: () => throw Exception('Service not found'),
       );
 
-      final serviceProvider =
-      ServiceProviderModel.fromServiceName(service.name).toEntity();
+      final serviceProvider = ServiceProviderModel.fromJson(serviceData).toEntity();
       return Right(serviceProvider);
     } catch (e) {
       return Left(_mapError(e));
@@ -204,42 +210,16 @@ class ServicesRepositoryImpl implements ServicesRepository {
   Future<Either<Failure, List<UserServiceSubscription>>>
       getUserSubscriptions() async {
     try {
-      final availableComponentsResult = await remoteDataSource.listComponents(
-        onlyAvailable: true,
-      );
+      final subscriptionDataList = await remoteDataSource.listServiceSubscriptions();
       
-      final Map<String, ServiceProviderSummaryModel> subscribedProviders = {};
-      for (final component in availableComponentsResult) {
-        final normalizedId = _normalizeServiceKey(component.provider.id);
-        subscribedProviders[normalizedId] = component.provider;
-        
-        final normalizedName = _normalizeServiceKey(component.provider.name);
-        if (!subscribedProviders.containsKey(normalizedName)) {
-          subscribedProviders[normalizedName] = component.provider;
-        }
-        
-        final normalizedDisplayName = _normalizeServiceKey(component.provider.displayName);
-        if (!subscribedProviders.containsKey(normalizedDisplayName)) {
-          subscribedProviders[normalizedDisplayName] = component.provider;
-        }
+      final subscriptions = subscriptionDataList
+          .map((data) => UserServiceSubscriptionModel.fromJson(data).toEntity())
+          .toList();
+      
+      // Update cache
+      for (final subscription in subscriptions) {
+        _subscriptionCache[_normalizeServiceKey(subscription.id)] = subscription;
       }
-      
-      final subscriptions = subscribedProviders.entries.map((entry) {
-        final cachedSubscription = _subscriptionCache[entry.key];
-        if (cachedSubscription != null) {
-          return cachedSubscription;
-        }
-        
-        final now = DateTime.now();
-        return UserServiceSubscription(
-          id: entry.key,
-          providerId: entry.key,
-          status: SubscriptionStatus.active,
-          scopeGrants: const [],
-          createdAt: now,
-          updatedAt: now,
-        );
-      }).toList();
       
       return Right(subscriptions);
     } catch (e) {
@@ -353,7 +333,8 @@ class ServicesRepositoryImpl implements ServicesRepository {
       String subscriptionId,
       ) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      // The subscriptionId is typically the provider name (normalized)
+      await remoteDataSource.unsubscribeFromService(subscriptionId);
       _subscriptionCache.removeWhere(
         (_, subscription) => subscription.id == subscriptionId,
       );
