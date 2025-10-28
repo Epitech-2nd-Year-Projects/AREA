@@ -365,12 +365,210 @@ func TestOAuthServiceListIdentitiesSuccess(t *testing.T) {
 	}
 }
 
+func TestOAuthServiceListProviders(t *testing.T) {
+	now := time.Unix(1720000000, 0).UTC()
+	githubID := uuid.New()
+	timerID := uuid.New()
+	repo := &memoryServiceProviderRepo{
+		items: map[string]servicedomain.Provider{
+			"github": {
+				ID:          githubID,
+				Name:        "github",
+				DisplayName: "GitHub",
+				Category:    "developer-tools",
+				OAuthType:   servicedomain.OAuthTypeOAuth2,
+				Enabled:     true,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+			"timer": {
+				ID:          timerID,
+				Name:        "timer",
+				DisplayName: "Timer",
+				Category:    "automation",
+				OAuthType:   servicedomain.OAuthTypeNone,
+				Enabled:     true,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+		},
+	}
+
+	svc := NewOAuthService(nil, nil, nil, nil, repo, nil, nil, nil, Config{})
+
+	providers, err := svc.ListProviders(context.Background())
+	if err != nil {
+		t.Fatalf("ListProviders returned error: %v", err)
+	}
+	if len(providers) != 2 {
+		t.Fatalf("expected 2 providers, got %d", len(providers))
+	}
+
+	seen := map[uuid.UUID]struct{}{}
+	for _, provider := range providers {
+		seen[provider.ID] = struct{}{}
+	}
+	if _, ok := seen[githubID]; !ok {
+		t.Fatalf("missing github provider in response")
+	}
+	if _, ok := seen[timerID]; !ok {
+		t.Fatalf("missing timer provider in response")
+	}
+}
+
+func TestOAuthServiceListSubscriptions(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1720000100, 0).UTC()
+	userID := uuid.New()
+	providerID := uuid.New()
+	subscriptionID := uuid.New()
+
+	provider := servicedomain.Provider{
+		ID:          providerID,
+		Name:        "github",
+		DisplayName: "GitHub",
+		Category:    "developer-tools",
+		OAuthType:   servicedomain.OAuthTypeOAuth2,
+		Enabled:     true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	providers := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{"github": provider}}
+
+	subscription := subscriptiondomain.Subscription{
+		ID:         subscriptionID,
+		UserID:     userID,
+		ProviderID: providerID,
+		Status:     subscriptiondomain.StatusActive,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	subscriptions := &memorySubscriptionRepo{
+		items: map[uuid.UUID]subscriptiondomain.Subscription{
+			subscriptionID: subscription,
+		},
+		byKey: map[string]uuid.UUID{},
+	}
+	subscriptions.byKey[subscriptions.key(userID, providerID)] = subscriptionID
+
+	svc := NewOAuthService(nil, nil, nil, nil, providers, subscriptions, fixedClock{now: now}, nil, Config{})
+
+	records, err := svc.ListSubscriptions(ctx, userID)
+	if err != nil {
+		t.Fatalf("ListSubscriptions returned error: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 subscription, got %d", len(records))
+	}
+	record := records[0]
+	if record.Subscription.ID != subscriptionID {
+		t.Fatalf("unexpected subscription id %s", record.Subscription.ID)
+	}
+	if record.Provider.ID != providerID {
+		t.Fatalf("unexpected provider id %s", record.Provider.ID)
+	}
+}
+
+func TestOAuthServiceUnsubscribe(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1720000200, 0).UTC()
+	userID := uuid.New()
+	providerID := uuid.New()
+	subscriptionID := uuid.New()
+	identityID := uuid.New()
+
+	provider := servicedomain.Provider{
+		ID:          providerID,
+		Name:        "github",
+		DisplayName: "GitHub",
+		Category:    "developer-tools",
+		OAuthType:   servicedomain.OAuthTypeOAuth2,
+		Enabled:     true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	providers := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{"github": provider}}
+
+	subscription := subscriptiondomain.Subscription{
+		ID:          subscriptionID,
+		UserID:      userID,
+		ProviderID:  providerID,
+		IdentityID:  &identityID,
+		Status:      subscriptiondomain.StatusActive,
+		ScopeGrants: []string{"repo"},
+		CreatedAt:   now.Add(-time.Hour),
+		UpdatedAt:   now.Add(-time.Hour),
+	}
+	subscriptions := &memorySubscriptionRepo{
+		items: map[uuid.UUID]subscriptiondomain.Subscription{
+			subscriptionID: subscription,
+		},
+		byKey: map[string]uuid.UUID{},
+	}
+	subscriptions.byKey[subscriptions.key(userID, providerID)] = subscriptionID
+
+	identity := identitydomain.Identity{
+		ID:       identityID,
+		UserID:   userID,
+		Provider: "github",
+		Subject:  "user-123",
+	}
+	identities := &memoryIdentityRepo{
+		items: map[uuid.UUID]identitydomain.Identity{
+			identityID: identity,
+		},
+		byKey: map[string]uuid.UUID{},
+	}
+	identities.byKey[identities.key(identity.Provider, identity.Subject)] = identityID
+
+	clock := fixedClock{now: now.Add(5 * time.Minute)}
+	svc := NewOAuthService(nil, identities, nil, nil, providers, subscriptions, clock, nil, Config{})
+
+	updated, err := svc.Unsubscribe(ctx, userID, "github")
+	if err != nil {
+		t.Fatalf("Unsubscribe returned error: %v", err)
+	}
+	if updated.Status != subscriptiondomain.StatusRevoked {
+		t.Fatalf("expected status revoked, got %s", updated.Status)
+	}
+	if updated.IdentityID != nil {
+		t.Fatalf("expected identity to be cleared, got %v", updated.IdentityID)
+	}
+	if len(updated.ScopeGrants) != 0 {
+		t.Fatalf("expected scope grants to be cleared, got %v", updated.ScopeGrants)
+	}
+	if !updated.UpdatedAt.Equal(clock.now) {
+		t.Fatalf("expected updated at to use clock now, got %v", updated.UpdatedAt)
+	}
+
+	stored, err := subscriptions.FindByUserAndProvider(ctx, userID, providerID)
+	if err != nil {
+		t.Fatalf("FindByUserAndProvider returned error: %v", err)
+	}
+	if stored.Status != subscriptiondomain.StatusRevoked {
+		t.Fatalf("expected stored status revoked, got %s", stored.Status)
+	}
+	if stored.IdentityID != nil {
+		t.Fatalf("expected stored identity cleared, got %v", stored.IdentityID)
+	}
+
+	if _, err := identities.FindByID(ctx, identityID); !errors.Is(err, outbound.ErrNotFound) {
+		t.Fatalf("expected identity to be deleted, got err=%v", err)
+	}
+}
+
 type staticProviderResolver map[string]identityport.Provider
 
 func (m staticProviderResolver) Provider(name string) (identityport.Provider, bool) {
 	p, ok := m[name]
 	return p, ok
 }
+
+type fixedClock struct {
+	now time.Time
+}
+
+func (c fixedClock) Now() time.Time { return c.now }
 
 type stubProvider struct {
 	name     string
@@ -412,6 +610,29 @@ func (m *memoryServiceProviderRepo) FindByName(ctx context.Context, name string)
 		return provider, nil
 	}
 	return servicedomain.Provider{}, outbound.ErrNotFound
+}
+
+func (m *memoryServiceProviderRepo) FindByID(ctx context.Context, id uuid.UUID) (servicedomain.Provider, error) {
+	if m.items == nil {
+		return servicedomain.Provider{}, outbound.ErrNotFound
+	}
+	for _, provider := range m.items {
+		if provider.ID == id {
+			return provider, nil
+		}
+	}
+	return servicedomain.Provider{}, outbound.ErrNotFound
+}
+
+func (m *memoryServiceProviderRepo) List(ctx context.Context) ([]servicedomain.Provider, error) {
+	if m.items == nil {
+		return []servicedomain.Provider{}, nil
+	}
+	result := make([]servicedomain.Provider, 0, len(m.items))
+	for _, provider := range m.items {
+		result = append(result, provider)
+	}
+	return result, nil
 }
 
 type memorySubscriptionRepo struct {

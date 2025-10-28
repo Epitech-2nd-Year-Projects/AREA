@@ -125,6 +125,21 @@ func (h *Handler) ExecuteArea(c *gin.Context, areaID openapitypes.UUID) {
 	c.Status(http.StatusAccepted)
 }
 
+// DeleteArea handles DELETE /v1/areas/{areaId}
+func (h *Handler) DeleteArea(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	if err := h.service.Delete(c.Request.Context(), usr.ID, areaID); err != nil {
+		h.handleDeleteError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *Handler) authorize(c *gin.Context) (userdomain.User, sessiondomain.Session, bool) {
 	value, err := c.Cookie(h.cookies.Name)
 	if err != nil {
@@ -187,6 +202,18 @@ func (h *Handler) handleExecuteError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "area misconfigured"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute area"})
+	}
+}
+
+func (h *Handler) handleDeleteError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, outbound.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "area not found"})
+	case errors.Is(err, ErrAreaNotOwned):
+		c.JSON(http.StatusForbidden, gin.H{"error": "not owner"})
+	default:
+		zap.L().Error("area delete error", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete area"})
 	}
 }
 

@@ -95,7 +95,7 @@ func (h compositeHandler) ListComponents(c *gin.Context, params openapi.ListComp
 	h.components.ListComponents(c, params)
 }
 
-func (h compositeHandler) ListAvailableComponents(c *gin.Context, params openapi.ListComponentsParams) {
+func (h compositeHandler) ListAvailableComponents(c *gin.Context, params openapi.ListAvailableComponentsParams) {
 	if h.components == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "component handler missing"})
 		return
@@ -189,4 +189,36 @@ func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapitypes.UUID) 
 		return
 	}
 	h.area.ExecuteArea(c, areaId)
+}
+
+func (h compositeHandler) DeleteArea(c *gin.Context, areaId openapitypes.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.DeleteArea(c, areaId)
+}
+
+func (h compositeHandler) ListServiceProviders(c *gin.Context) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ListServiceProviders(c)
+}
+
+func (h compositeHandler) ListServiceSubscriptions(c *gin.Context) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ListServiceSubscriptions(c)
+}
+
+func (h compositeHandler) UnsubscribeService(c *gin.Context, provider string) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.UnsubscribeService(c, provider)
 }

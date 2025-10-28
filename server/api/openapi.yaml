@@ -59,6 +59,12 @@ tags:
   - name: catalog
     x-displayName: Service catalog
     description: Discover available action and reaction components.
+  - name: areas
+    x-displayName: Automations
+    description: Manage AREA automations configured by users.
+  - name: services
+    x-displayName: Service integrations
+    description: Inspect and manage third-party service subscriptions.
 x-tagGroups:
   - name: Platform Overview
     tags:
@@ -69,6 +75,12 @@ x-tagGroups:
   - name: Automation Catalog
     tags:
       - catalog
+  - name: Automations
+    tags:
+      - areas
+  - name: Integrations
+    tags:
+      - services
 security:
   - sessionAuth: []
 paths:
@@ -714,6 +726,50 @@ paths:
           description: Identity already linked to another user
         '502':
           description: OAuth provider error
+  /v1/services:
+    get:
+      summary: List available service providers
+      operationId: listServiceProviders
+      tags:
+        - services
+      security: []
+      responses:
+        '200':
+          description: Service providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceProviderListResponse'
+  /v1/services/subscriptions:
+    get:
+      summary: List service subscriptions for the current user
+      operationId: listServiceSubscriptions
+      tags:
+        - services
+      responses:
+        '200':
+          description: Active and historical subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionListResponse'
+        '401':
+          description: Authentication required
+  /v1/services/{provider}/subscription:
+    delete:
+      summary: Revoke a service subscription
+      operationId: unsubscribeService
+      tags:
+        - services
+      parameters:
+        - $ref: '#/components/parameters/OAuthProvider'
+      responses:
+        '204':
+          description: Subscription revoked
+        '401':
+          description: Authentication required
+        '404':
+          description: Subscription not found
   /v1/areas:
     get:
       summary: List automations owned by the current user
@@ -749,6 +805,28 @@ paths:
           description: Invalid payload
         '401':
           description: Authentication required
+  /v1/areas/{areaId}:
+    delete:
+      summary: Delete an automation owned by the current user
+      operationId: deleteArea
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Automation deleted
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
   /v1/areas/{areaId}/execute:
     post:
       summary: Execute area reactions immediately
@@ -1216,6 +1294,40 @@ components:
           type: string
         displayName:
           type: string
+    ServiceProviderDetail:
+      type: object
+      description: Detailed attributes of a service provider as stored in the catalog.
+      required: [id, name, displayName, oauthType, enabled, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        displayName:
+          type: string
+        category:
+          type: string
+          nullable: true
+        oauthType:
+          type: string
+          enum: [none, oauth2, apikey]
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ServiceProviderListResponse:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceProviderDetail'
     IdentityListResponse:
       type: object
       required: [identities]
@@ -1316,6 +1428,22 @@ components:
           $ref: '#/components/schemas/SubscriptionSummary'
         identity:
           $ref: '#/components/schemas/IdentitySummary'
+    UserSubscription:
+      type: object
+      required: [subscription, provider]
+      properties:
+        subscription:
+          $ref: '#/components/schemas/SubscriptionSummary'
+        provider:
+          $ref: '#/components/schemas/ServiceProviderDetail'
+    SubscriptionListResponse:
+      type: object
+      required: [subscriptions]
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSubscription'
   parameters:
     OAuthProvider:
       name: provider

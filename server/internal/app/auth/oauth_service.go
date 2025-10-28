@@ -55,6 +55,12 @@ type SubscriptionInitResult struct {
 	Subscription  *subscriptiondomain.Subscription
 }
 
+// SubscriptionOverview couples a persisted subscription with its provider metadata.
+type SubscriptionOverview struct {
+	Subscription subscriptiondomain.Subscription
+	Provider     servicedomain.Provider
+}
+
 // NewOAuthService assembles an OAuth service from persistence stores and provider registry.
 func NewOAuthService(providers ProviderResolver, identities identityport.Repository, users outbound.UserRepository, sessions outbound.SessionRepository, serviceProviders outbound.ServiceProviderRepository, subscriptions outbound.SubscriptionRepository, clock Clock, logger *zap.Logger, cfg Config) *OAuthService {
 	if clock == nil {
@@ -128,6 +134,95 @@ func (s *OAuthService) Exchange(ctx context.Context, provider string, code strin
 	}
 
 	return login, identity, nil
+}
+
+// ListProviders returns every service provider recorded in the catalog.
+func (s *OAuthService) ListProviders(ctx context.Context) ([]servicedomain.Provider, error) {
+	if s.serviceProviders == nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListProviders: serviceProviders repository missing")
+	}
+
+	providers, err := s.serviceProviders.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListProviders: serviceProviders.List: %w", err)
+	}
+	return providers, nil
+}
+
+// ListSubscriptions enumerates the user's subscriptions together with provider metadata.
+func (s *OAuthService) ListSubscriptions(ctx context.Context, userID uuid.UUID) ([]SubscriptionOverview, error) {
+	if s.subscriptions == nil || s.serviceProviders == nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListSubscriptions: repositories missing")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListSubscriptions: missing user id")
+	}
+
+	items, err := s.subscriptions.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("auth.OAuthService.ListSubscriptions: subscriptions.ListByUser: %w", err)
+	}
+
+	overviews := make([]SubscriptionOverview, 0, len(items))
+	for _, item := range items {
+		provider, providerErr := s.serviceProviders.FindByID(ctx, item.ProviderID)
+		if providerErr != nil {
+			return nil, fmt.Errorf("auth.OAuthService.ListSubscriptions: serviceProviders.FindByID: %w", providerErr)
+		}
+		overviews = append(overviews, SubscriptionOverview{
+			Subscription: item,
+			Provider:     provider,
+		})
+	}
+	return overviews, nil
+}
+
+// Unsubscribe revokes the user's access to the provider and clears stored credentials.
+func (s *OAuthService) Unsubscribe(ctx context.Context, userID uuid.UUID, provider string) (subscriptiondomain.Subscription, error) {
+	if s.subscriptions == nil || s.serviceProviders == nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe: repositories missing")
+	}
+	if userID == uuid.Nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe: missing user id")
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(provider))
+	if normalized == "" {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe: provider name empty")
+	}
+
+	providerRecord, err := s.serviceProviders.FindByName(ctx, normalized)
+	if err != nil {
+		if errors.Is(err, outbound.ErrNotFound) {
+			return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe[%s]: %w", normalized, ErrProviderNotConfigured)
+		}
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe[%s]: serviceProviders.FindByName: %w", normalized, err)
+	}
+
+	subscription, err := s.subscriptions.FindByUserAndProvider(ctx, userID, providerRecord.ID)
+	if err != nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe[%s]: subscriptions.FindByUserAndProvider: %w", providerRecord.Name, err)
+	}
+
+	now := s.clock.Now().UTC()
+	subscription.Status = subscriptiondomain.StatusRevoked
+	subscription.ScopeGrants = nil
+	subscription.UpdatedAt = now
+
+	if subscription.IdentityID != nil {
+		if s.identities != nil {
+			if delErr := s.identities.Delete(ctx, *subscription.IdentityID); delErr != nil && !errors.Is(delErr, outbound.ErrNotFound) {
+				return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe[%s]: identities.Delete: %w", providerRecord.Name, delErr)
+			}
+		}
+		subscription.IdentityID = nil
+	}
+
+	if err := s.subscriptions.Update(ctx, subscription); err != nil {
+		return subscriptiondomain.Subscription{}, fmt.Errorf("auth.OAuthService.Unsubscribe[%s]: subscriptions.Update: %w", providerRecord.Name, err)
+	}
+
+	return subscription, nil
 }
 
 // BeginSubscription prepares a subscription flow for the specified provider.
