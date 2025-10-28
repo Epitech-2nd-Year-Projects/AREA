@@ -6,14 +6,23 @@ void main() {
     late DeepLinkService service;
     late List<String> callbackCalls;
     late List<String> errorCalls;
+    late List<String> serviceCallbackCalls;
+    late List<String> serviceErrorCalls;
 
     setUp(() {
       service = DeepLinkService();
       callbackCalls = [];
       errorCalls = [];
+      serviceCallbackCalls = [];
+      serviceErrorCalls = [];
       service.addOAuthCallbackListener(
-              (p, c, s, r) => callbackCalls.add('$p:$c:$r'));
+        (p, c, s, r) => callbackCalls.add('$p:$c:$r'),
+      );
       service.addOAuthErrorListener((p, e) => errorCalls.add('$p:$e'));
+      service.addServiceCallbackListener(
+        (p, c, s) => serviceCallbackCalls.add('$p:$c:$s'),
+      );
+      service.addServiceErrorListener((p, e) => serviceErrorCalls.add('$p:$e'));
     });
 
     tearDown(() {
@@ -22,7 +31,8 @@ void main() {
 
     test('should handle OAuth link with code (length > 10)', () {
       final uri = Uri.parse(
-          'app://area/oauth/google/callback?code=1234567890123&state=s&returnTo=/home');
+        'area:///oauth/google/callback?code=1234567890123&state=s&returnTo=/home',
+      );
       service.handleDeepLinkForTest(uri);
       expect(callbackCalls, isNotEmpty);
       expect(callbackCalls.first, contains('google:1234567890123:/home'));
@@ -30,31 +40,36 @@ void main() {
 
     test('should handle OAuth link with error', () {
       final uri = Uri.parse(
-          'app://area/oauth/facebook/callback?error=denied_error_value&state=a');
+        'area:///oauth/facebook/callback?error=denied_error_value&state=a',
+      );
       service.handleDeepLinkForTest(uri);
       expect(errorCalls.first, contains('facebook:denied_error_value'));
     });
 
     test('should handle OAuth link without code or error', () {
-      final uri = Uri.parse('app://area/oauth/apple/callback');
+      final uri = Uri.parse('area:///oauth/apple/callback');
       service.handleDeepLinkForTest(uri);
-      expect(errorCalls.first, contains('No authorization code'));
+      expect(callbackCalls, isEmpty);
+      expect(errorCalls, isEmpty);
     });
 
     test('should handle Services link with code (length > 10)', () {
       final uri = Uri.parse(
-          'app://area/services/fake/callback?code=abcdefghijklmnop&state=x&returnTo=/ok');
+        'area:///services/fake/callback?code=abcdefghijklmnop&state=x&returnTo=/ok',
+      );
       service.handleDeepLinkForTest(uri);
       expect(
-        callbackCalls.any((e) => e.contains('fake:abcdefghijklmnop:/ok')),
-        true,
+        serviceCallbackCalls.any((e) => e.contains('fake:abcdefghijklmnop:x')),
+        isTrue,
       );
     });
 
     test('dispose should reset internal state', () async {
       service.dispose();
-      expect(() => service.handleDeepLinkForTest(Uri.parse('test://a')),
-          returnsNormally);
+      expect(
+        () => service.handleDeepLinkForTest(Uri.parse('test://a')),
+        returnsNormally,
+      );
     });
 
     test('add/remove listener should work properly', () {
