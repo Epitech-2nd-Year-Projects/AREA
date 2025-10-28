@@ -100,6 +100,16 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: slackProfileExtractor,
 		},
+		"zoom": {
+			DisplayName:      "Zoom",
+			AuthorizationURL: "https://zoom.us/oauth/authorize",
+			TokenURL:         "https://zoom.us/oauth/token",
+			UserInfoURL:      "https://api.zoom.us/v2/users/me",
+			UserInfoHeaders: map[string]string{
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: zoomProfileExtractor,
+		},
 	}
 }
 
@@ -258,6 +268,52 @@ func slackProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
 		Raw:        raw,
 	}
 	return profile, nil
+}
+
+func zoomProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	if raw == nil {
+		return identitydomain.Profile{}, fmt.Errorf("zoom: user info payload missing")
+	}
+
+	subject := stringFrom(raw["id"])
+	if subject == "" {
+		subject = stringFrom(raw["account_id"])
+	}
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("zoom: id missing")
+	}
+
+	displayName := strings.TrimSpace(stringFrom(raw["display_name"]))
+	if displayName == "" {
+		firstName := strings.TrimSpace(stringFrom(raw["first_name"]))
+		lastName := strings.TrimSpace(stringFrom(raw["last_name"]))
+		displayName = strings.TrimSpace(strings.Join(filterNonEmpty([]string{firstName, lastName}), " "))
+	}
+
+	picture := stringFrom(raw["pic_url"])
+	if picture == "" {
+		picture = stringFrom(raw["avatar"])
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "zoom",
+		Subject:    subject,
+		Email:      stringFrom(raw["email"]),
+		Name:       displayName,
+		PictureURL: picture,
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func filterNonEmpty(values []string) []string {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 func stringFrom(value any) string {
