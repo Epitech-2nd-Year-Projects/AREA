@@ -26,6 +26,7 @@ import (
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	slackexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/slack"
+	zoomexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/zoom"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
 	automation "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/automation"
@@ -312,6 +313,16 @@ func run() error {
 			)
 			if slackExecutor != nil {
 				reactionHandlers = append(reactionHandlers, slackExecutor)
+			}
+			zoomExecutor := zoomexecutor.NewMeetingExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if zoomExecutor != nil {
+				reactionHandlers = append(reactionHandlers, zoomExecutor)
 			}
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
