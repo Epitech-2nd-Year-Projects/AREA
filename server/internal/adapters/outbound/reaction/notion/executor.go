@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	notionProviderName       = "notion"
-	createPageComponentName  = "notion_create_page"
-	notionCreatePageEndpoint = "https://api.notion.com/v1/pages"
-	notionVersionHeader      = "2022-06-28"
+	notionProviderName        = "notion"
+	createPageComponentName   = "notion_create_page"
+	notionCreatePageEndpoint  = "https://api.notion.com/v1/pages"
+	notionVersionHeader       = "2022-06-28"
+	notionDefaultTitlePropKey = "title"
 )
 
 // ProviderResolver exposes OAuth providers by name
@@ -137,7 +138,7 @@ func (e *CreatePageExecutor) Execute(ctx context.Context, area areadomain.Area, 
 
 func (e *CreatePageExecutor) createPage(ctx context.Context, accessToken string, cfg pageConfig) (outbound.ReactionResult, bool, error) {
 	properties := map[string]any{}
-	titlePropName := firstNonEmpty(cfg.titleProperty, "title", "Name")
+	titlePropName := firstNonEmpty(cfg.titleProperty, notionDefaultTitlePropKey, "Name")
 	properties[titlePropName] = map[string]any{
 		"title": []map[string]any{
 			{
