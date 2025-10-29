@@ -2,7 +2,7 @@
 import { FilteredServiceCardList } from '@/components/services/filtered-service-card-list'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
+import { useServiceProvidersQuery } from '@/lib/api/openapi/services'
 import {
   mapUserDTOToUser,
   useCurrentUserQuery,
@@ -12,15 +12,11 @@ import { Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
   const t = useTranslations('DashboardPage')
-  const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
+  const { data: services, isLoading: isServicesLoading } =
+    useServiceProvidersQuery()
   const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
   const isUserAuthenticated = Boolean(user)
-
-  const services = useMemo(
-    () => (aboutData ? extractServices(aboutData) : []),
-    [aboutData]
-  )
 
   const { data: identitiesData, isLoading: isIdentitiesLoading } =
     useIdentitiesQuery({
@@ -39,7 +35,7 @@ export default function DashboardPage() {
   }, [identitiesData, isUserAuthenticated])
 
   const isLoading =
-    isAboutLoading ||
+    isServicesLoading ||
     isUserLoading ||
     (isIdentitiesLoading && isUserAuthenticated)
 
@@ -54,7 +50,7 @@ export default function DashboardPage() {
 
   return (
     <FilteredServiceCardList
-      services={services}
+      services={services ?? []}
       userLinkedServices={userLinkedServices}
       isUserAuthenticated={isUserAuthenticated}
     />

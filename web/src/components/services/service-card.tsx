@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -29,17 +30,11 @@ type ServiceCardProps = {
   linked: boolean
 }
 
-type ExtendedService = Service & {
-  category?: string
-  needsConnection?: boolean
-}
-
 export function ServiceCard({
   service,
   authenticated,
   linked
 }: ServiceCardProps) {
-  const extendedService = service as ExtendedService
   const t = useTranslations('ServiceCard')
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -123,9 +118,15 @@ export function ServiceCard({
 
   return (
     <Card
-      className="flex w-full cursor-pointer flex-col overflow-hidden transition-transform duration-200 ease-in-out hover:scale-105"
+      className="relative flex w-full cursor-pointer flex-col overflow-hidden transition-transform duration-200 ease-in-out hover:scale-105"
       onClick={() => router.push(`/explore/${service.name}`)}
     >
+      {service.needsConnection && (
+        <Lock
+          className="absolute right-2 top-2 h-4 w-4 text-muted-foreground"
+          aria-label="Requires connection"
+        />
+      )}
       <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
         {logoUrl ? (
           <Image
@@ -140,13 +141,10 @@ export function ServiceCard({
         )}
         <h3 className="text-base font-semibold">{service.displayName}</h3>
         <div className="flex flex-wrap justify-center gap-2">
-          {extendedService.category && (
+          {service.category && (
             <Badge variant="secondary" className="uppercase">
-              {extendedService.category}
+              {service.category}
             </Badge>
-          )}
-          {extendedService.needsConnection && (
-            <Badge variant="outline">OAuth2</Badge>
           )}
         </div>
       </CardContent>

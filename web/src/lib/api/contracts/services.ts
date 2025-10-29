@@ -7,4 +7,6 @@ export type Service = {
   description: string
   actions: Action[]
   reactions: Reaction[]
+  category?: string
+  needsConnection?: boolean
 }

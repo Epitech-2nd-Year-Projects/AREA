@@ -1,5 +1,6 @@
-const baseKey = ['services'] as const
+const baseKey = ['openapi', 'services'] as const
 
 export const servicesKeys = {
-  root: () => baseKey
+  all: () => baseKey,
+  list: () => [...baseKey, 'list'] as const
 } as const

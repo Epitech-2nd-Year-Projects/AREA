@@ -50,7 +50,8 @@ function mapService(service: ServiceDTO): Service {
     ),
     reactions: service.reactions.map((component) =>
       mapComponentToReaction(component, service.name)
-    )
+    ),
+    needsConnection: true
   }
 }
 

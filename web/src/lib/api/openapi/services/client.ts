@@ -8,6 +8,8 @@ import type {
   SubscribeServiceResponseDTO
 } from '@/lib/api/contracts/openapi/services'
 import { apiRuntime } from '@/lib/api/runtime'
+import { listServiceProvidersMock } from '@/lib/api/mock/services'
+import type { ServiceProviderListResponseDTO } from '@/lib/api/contracts/openapi/services'
 
 export function subscribeServiceClient(
   provider: string,
@@ -59,4 +61,14 @@ export function unsubscribeServiceClient(
     method: 'DELETE',
     ...buildClientOptions(options)
   })
+}
+
+export function listServiceProvidersClient(options?: ClientRequestOptions) {
+  if (apiRuntime.useMocks) {
+    return listServiceProvidersMock()
+  }
+  return apiFetchClient<ServiceProviderListResponseDTO>(
+    '/v1/services',
+    buildClientOptions(options)
+  )
 }
