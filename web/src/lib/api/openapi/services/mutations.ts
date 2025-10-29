@@ -3,7 +3,8 @@ import type { ApiError } from '../../http/errors'
 import type { ClientRequestOptions } from '../common'
 import {
   subscribeServiceClient,
-  subscribeServiceExchangeClient
+  subscribeServiceExchangeClient,
+  unsubscribeServiceClient
 } from './client'
 import type {
   SubscribeExchangeRequestDTO,
@@ -21,6 +22,11 @@ type SubscribeServiceOptions = {
 type SubscribeServiceExchangeOptions = {
   provider: string
   body: SubscribeExchangeRequestDTO
+  clientOptions?: ClientRequestOptions
+}
+
+type UnsubscribeServiceOptions = {
+  provider: string
   clientOptions?: ClientRequestOptions
 }
 
@@ -56,6 +62,19 @@ export function useSubscribeServiceExchangeMutation(
   return useMutation({
     mutationFn: ({ provider, body, clientOptions }) =>
       subscribeServiceExchangeClient(provider, body, clientOptions),
+    ...(options ?? {})
+  })
+}
+
+export function useUnsubscribeServiceMutation(
+  options?: Omit<
+    UseMutationOptions<void, ApiError, UnsubscribeServiceOptions, unknown>,
+    'mutationKey' | 'mutationFn'
+  >
+) {
+  return useMutation({
+    mutationFn: ({ provider, clientOptions }) =>
+      unsubscribeServiceClient(provider, clientOptions),
     ...(options ?? {})
   })
 }

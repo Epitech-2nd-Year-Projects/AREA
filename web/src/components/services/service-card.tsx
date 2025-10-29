@@ -3,12 +3,16 @@
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Service } from '@/lib/api/contracts/services'
-import { useSubscribeServiceMutation } from '@/lib/api/openapi/services'
+import {
+  useSubscribeServiceMutation,
+  useUnsubscribeServiceMutation
+} from '@/lib/api/openapi/services'
 import type { SubscribeServiceResponseDTO } from '@/lib/api/contracts/openapi/services'
 import {
   clearOAuthState,
@@ -16,6 +20,7 @@ import {
   persistOAuthState
 } from '@/lib/auth/oauth'
 import { DisconnectModal } from './disconnect-modal'
+import { authKeys } from '@/lib/api/openapi/auth'
 
 type ServiceCardProps = {
   service: Service
@@ -38,8 +43,17 @@ export function ServiceCard({
   const extendedService = service as ExtendedService
   const t = useTranslations('ServiceCard')
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { mutateAsync: subscribeService, isPending: isSubscribing } =
     useSubscribeServiceMutation()
+  const { mutateAsync: unsubscribeService, isPending: isUnsubscribing } =
+    useUnsubscribeServiceMutation({
+      onSuccess: () => {
+        return queryClient.invalidateQueries({
+          queryKey: authKeys.identities()
+        })
+      }
+    })
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,8 +72,16 @@ export function ServiceCard({
     fetchLogo();
   }, [service.name]);
 
-  const handleDisconnectConfirm = () => {
-    // TODO: Implement service disconnect logic
+  const handleDisconnectConfirm = async () => {
+    if (isUnsubscribing) {
+      return
+    }
+
+    try {
+      await unsubscribeService({ provider: service.name })
+    } catch {
+      // TODO: show an error toast
+    }
   }
 
   const connectButtonState = authenticated
