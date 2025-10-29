@@ -100,6 +100,20 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: slackProfileExtractor,
 		},
+		"linear": {
+			DisplayName:      "Linear",
+			AuthorizationURL: "https://linear.app/oauth/authorize",
+			TokenURL:         "https://api.linear.app/oauth/token",
+			UserInfoURL:      "https://api.linear.app/graphql",
+			UserInfoMethod:   "POST",
+			UserInfoBody:     `{"query":"query Viewer { viewer { id name email avatarUrl } }"}`,
+			DefaultScopes:    []string{"read", "write", "issues:read", "issues:create", "offline_access"},
+			UserInfoHeaders: map[string]string{
+				"Content-Type": "application/json",
+				"User-Agent":   "AREA-Server",
+			},
+			ProfileExtractor: linearProfileExtractor,
+		},
 		"zoom": {
 			DisplayName:      "Zoom",
 			AuthorizationURL: "https://zoom.us/oauth/authorize",
@@ -301,6 +315,32 @@ func zoomProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
 		Email:      stringFrom(raw["email"]),
 		Name:       displayName,
 		PictureURL: picture,
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func linearProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	data, ok := raw["data"].(map[string]any)
+	if !ok {
+		return identitydomain.Profile{}, fmt.Errorf("linear: data missing")
+	}
+	viewer, ok := data["viewer"].(map[string]any)
+	if !ok {
+		return identitydomain.Profile{}, fmt.Errorf("linear: viewer missing")
+	}
+
+	subject := stringFrom(viewer["id"])
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("linear: id missing")
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "linear",
+		Subject:    subject,
+		Email:      stringFrom(viewer["email"]),
+		Name:       stringFrom(viewer["name"]),
+		PictureURL: stringFrom(viewer["avatarUrl"]),
 		Raw:        raw,
 	}
 	return profile, nil
