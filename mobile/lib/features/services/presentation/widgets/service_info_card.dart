@@ -5,6 +5,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/service_provider.dart';
 import 'staggered_animations.dart';
+import 'service_logo.dart';
 
 class ServiceInfoCard extends StatelessWidget {
   final ServiceProvider service;
@@ -132,44 +133,9 @@ class ServiceInfoCard extends StatelessWidget {
   }
 
   Widget _buildServiceIcon(BuildContext context, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primaryLight.withValues(alpha: 0.9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-            spreadRadius: 2,
-          ),
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          service.displayName[0].toUpperCase(),
-          style: AppTypography.displayMedium.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: size * 0.35,
-          ),
-        ),
-      ),
+    return ServiceLogo(
+      serviceName: service.displayName,
+      size: size,
     );
   }
 
