@@ -4,7 +4,6 @@ import 'package:area/features/areas/domain/entities/area_component_binding.dart'
 import 'package:area/features/areas/domain/entities/area_status.dart';
 import 'package:area/features/areas/domain/repositories/area_repository.dart';
 import 'package:area/features/dashboard/data/repositories/dashboard_summary_repository_impl.dart';
-import 'package:area/features/dashboard/domain/entities/dashboard_summary.dart';
 import 'package:area/features/services/domain/entities/about_info.dart';
 import 'package:area/features/services/domain/entities/service_component.dart';
 import 'package:area/features/services/domain/entities/service_identity_summary.dart';
