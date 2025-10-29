@@ -689,9 +689,11 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
               return SafeArea(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: 16,
+                  padding: EdgeInsets.only(
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                    top: 16,
+                    bottom: 90,
                   ),
                   child: Align(alignment: Alignment.topCenter, child: content),
                 ),

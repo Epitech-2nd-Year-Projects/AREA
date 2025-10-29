@@ -230,29 +230,32 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
         ),
         slivers: [
           _buildAppBar(context, state, subscriptionState),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ServiceInfoCard(service: state.service),
-                const SizedBox(height: AppSpacing.md),
-                ComponentsSection(
-                  components: state.filteredComponents,
-                  selectedKind: state.selectedComponentKind,
-                  searchQuery: state.searchQuery,
-                  onFilterChanged: (kind) {
-                    context
-                        .read<ServiceDetailsBloc>()
-                        .add(FilterComponents(kind));
-                  },
-                  onSearchChanged: (query) {
-                    context
-                        .read<ServiceDetailsBloc>()
-                        .add(SearchComponents(query));
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 80),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ServiceInfoCard(service: state.service),
+                  const SizedBox(height: AppSpacing.md),
+                  ComponentsSection(
+                    components: state.filteredComponents,
+                    selectedKind: state.selectedComponentKind,
+                    searchQuery: state.searchQuery,
+                    onFilterChanged: (kind) {
+                      context
+                          .read<ServiceDetailsBloc>()
+                          .add(FilterComponents(kind));
+                    },
+                    onSearchChanged: (query) {
+                      context
+                          .read<ServiceDetailsBloc>()
+                          .add(SearchComponents(query));
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+              ),
             ),
           ),
         ],

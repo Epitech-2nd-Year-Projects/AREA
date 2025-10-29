@@ -102,9 +102,11 @@ class _ProfileView extends StatelessWidget {
                 return RefreshIndicator(
                   onRefresh: () => context.read<ProfileCubit>().loadProfile(),
                   child: ListView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: AppSpacing.lg,
+                    padding: EdgeInsets.only(
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      top: AppSpacing.lg,
+                      bottom: 110,
                     ),
                     children: [
                       Center(
