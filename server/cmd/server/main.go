@@ -26,6 +26,7 @@ import (
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	linearexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/linear"
+	notionexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/notion"
 	slackexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/slack"
 	spotifyexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/spotify"
 	zoomexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/zoom"
@@ -325,6 +326,16 @@ func run() error {
 			)
 			if slackExecutor != nil {
 				reactionHandlers = append(reactionHandlers, slackExecutor)
+			}
+			notionExecutor := notionexecutor.NewCreatePageExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if notionExecutor != nil {
+				reactionHandlers = append(reactionHandlers, notionExecutor)
 			}
 			spotifyExecutor := spotifyexecutor.NewAddTrackExecutor(
 				repo.Identities(),
