@@ -193,16 +193,33 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 	}
 	var prevCutoffValue float64
 	hasPrevCutoff := false
+	var prevCutoffTime time.Time
+	hasPrevCutoffTime := false
 	if prevCutoffRaw != "" {
 		if parsed, err := strconv.ParseFloat(prevCutoffRaw, 64); err == nil {
 			prevCutoffValue = parsed
 			hasPrevCutoff = true
 		}
+		if parsedTime, err := parseTime(prevCutoffRaw); err == nil && !parsedTime.IsZero() {
+			prevCutoffTime = parsedTime.UTC()
+			hasPrevCutoffTime = true
+		}
+	}
+	prevFingerprint := ""
+	if config.CursorSource == httpPollingCursorSourceFingerprint {
+		prevFingerprint = strings.TrimSpace(stringify(req.Cursor[config.CursorKey]))
 	}
 
 	var latestCursorValue string
 	var latestCursorFloat float64
 	hasLatestCursor := false
+	var hasLatestCursorFloat bool
+	var latestCursorTime time.Time
+	var hasLatestCursorTime bool
+	var latestOccurredAt time.Time
+	var hasLatestOccurredAt bool
+
+	seenFingerprints := make(map[string]struct{})
 
 	for _, rawItem := range items {
 		itemMap, itemErr := toMapStringAny(rawItem)
@@ -211,6 +228,10 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 				zap.String("component", req.Component.Name),
 				zap.String("provider", req.Component.Provider.Name),
 			)
+			continue
+		}
+
+		if shouldSkipItem(itemMap, config.SkipRules) {
 			continue
 		}
 
@@ -228,6 +249,13 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 				}
 			}
 		}
+
+		var cursorCandidate string
+		var hasCursorCandidate bool
+		var cursorCandidateFloat float64
+		var hasCursorCandidateFloat bool
+		var cursorCandidateTime time.Time
+		var hasCursorCandidateTime bool
 
 		fingerprint := ""
 		if len(config.FingerprintPath) > 0 {
@@ -251,48 +279,93 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 			}
 		}
 
+		switch config.CursorSource {
+		case httpPollingCursorSourceItem:
+			if rawValue, valueErr := resolvePath(itemMap, config.CursorItemPath); valueErr == nil {
+				candidate := strings.TrimSpace(stringify(rawValue))
+				if candidate != "" {
+					cursorCandidate = candidate
+					hasCursorCandidate = true
+					cursorCandidateFloat, hasCursorCandidateFloat = tryParseFloat(candidate)
+					cursorCandidateTime, hasCursorCandidateTime = tryParseTime(candidate)
+				}
+			}
+		case httpPollingCursorSourceFingerprint:
+			if fingerprint != "" {
+				cursorCandidate = fingerprint
+				hasCursorCandidate = true
+			}
+		}
+
+		if config.CursorSource == httpPollingCursorSourceFingerprint {
+			if fingerprint == "" {
+				continue
+			}
+			if fingerprint == prevFingerprint && prevFingerprint != "" {
+				if !hasPrevCutoff && !hasPrevCutoffTime {
+					break
+				}
+				continue
+			}
+			if hasPrevCutoffTime && !occurredAt.IsZero() && !occurredAt.After(prevCutoffTime) {
+				continue
+			}
+			if _, exists := seenFingerprints[fingerprint]; exists {
+				continue
+			}
+			seenFingerprints[fingerprint] = struct{}{}
+		}
+
+		if config.CursorSource == httpPollingCursorSourceItem {
+			if hasPrevCutoff && hasCursorCandidateFloat && cursorCandidateFloat <= prevCutoffValue {
+				continue
+			}
+			if hasPrevCutoffTime && hasCursorCandidateTime && !cursorCandidateTime.After(prevCutoffTime) {
+				continue
+			}
+		}
+
 		event := PollingEvent{
 			Payload:     cloneMapAny(itemMap),
 			Fingerprint: fingerprint,
 			OccurredAt:  occurredAt,
 		}
 		result.Events = append(result.Events, event)
-
-		switch config.CursorSource {
-		case httpPollingCursorSourceItem:
-			if rawValue, valueErr := resolvePath(itemMap, config.CursorItemPath); valueErr == nil {
-				cursorCandidate := stringify(rawValue)
-				if cursorCandidate != "" {
-					if numericCandidate, err := strconv.ParseFloat(cursorCandidate, 64); err == nil {
-						if !hasLatestCursor || numericCandidate > latestCursorFloat {
-							latestCursorFloat = numericCandidate
-							latestCursorValue = cursorCandidate
-							hasLatestCursor = true
-						}
-					} else if !hasLatestCursor {
-						latestCursorValue = cursorCandidate
-						hasLatestCursor = true
-					}
-				}
-			}
-		case httpPollingCursorSourceFingerprint:
-			if fingerprint != "" {
+		if !occurredAt.IsZero() && (!hasLatestOccurredAt || occurredAt.After(latestOccurredAt)) {
+			latestOccurredAt = occurredAt
+			hasLatestOccurredAt = true
+			if config.CursorSource == httpPollingCursorSourceFingerprint {
 				latestCursorValue = fingerprint
 				hasLatestCursor = true
 			}
 		}
 
-		if candidateTS != "" {
-			if numericCandidate, err := strconv.ParseFloat(candidateTS, 64); err == nil {
-				if !hasLatestCursor || numericCandidate > latestCursorFloat {
-					latestCursorFloat = numericCandidate
-					latestCursorValue = candidateTS
+		if hasCursorCandidate {
+			if hasCursorCandidateFloat {
+				if !hasLatestCursorFloat || cursorCandidateFloat > latestCursorFloat {
+					latestCursorFloat = cursorCandidateFloat
+					latestCursorValue = cursorCandidate
+					hasLatestCursorFloat = true
 					hasLatestCursor = true
 				}
-			} else if !hasLatestCursor {
-				latestCursorValue = candidateTS
+			}
+			if hasCursorCandidateTime {
+				if !hasLatestCursorTime || cursorCandidateTime.After(latestCursorTime) {
+					latestCursorTime = cursorCandidateTime
+					latestCursorValue = cursorCandidateTime.UTC().Format(time.RFC3339Nano)
+					hasLatestCursorTime = true
+					hasLatestCursor = true
+				}
+			}
+			if !hasCursorCandidateFloat && !hasCursorCandidateTime && !hasLatestCursor {
+				latestCursorValue = cursorCandidate
 				hasLatestCursor = true
 			}
+		}
+
+		if config.CursorSource == httpPollingCursorSourceFingerprint && !hasLatestCursor {
+			latestCursorValue = fingerprint
+			hasLatestCursor = true
 		}
 	}
 
@@ -300,15 +373,28 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		if rawValue, valueErr := resolvePath(payload, config.CursorResponsePath); valueErr == nil {
 			cursorCandidate := stringify(rawValue)
 			if cursorCandidate != "" {
-				if numericCandidate, err := strconv.ParseFloat(cursorCandidate, 64); err == nil {
-					if !hasLatestCursor || numericCandidate > latestCursorFloat {
-						latestCursorFloat = numericCandidate
+				cursorCandidate = strings.TrimSpace(cursorCandidate)
+				if cursorCandidate != "" {
+					if numericCandidate, ok := tryParseFloat(cursorCandidate); ok {
+						if !hasLatestCursorFloat || numericCandidate > latestCursorFloat {
+							latestCursorFloat = numericCandidate
+							latestCursorValue = cursorCandidate
+							hasLatestCursorFloat = true
+							hasLatestCursor = true
+						}
+					}
+					if timeCandidate, ok := tryParseTime(cursorCandidate); ok {
+						if !hasLatestCursorTime || timeCandidate.After(latestCursorTime) {
+							latestCursorTime = timeCandidate
+							latestCursorValue = timeCandidate.UTC().Format(time.RFC3339Nano)
+							hasLatestCursorTime = true
+							hasLatestCursor = true
+						}
+					}
+					if !hasLatestCursor && !hasLatestCursorFloat && !hasLatestCursorTime {
 						latestCursorValue = cursorCandidate
 						hasLatestCursor = true
 					}
-				} else if !hasLatestCursor {
-					latestCursorValue = cursorCandidate
-					hasLatestCursor = true
 				}
 			}
 		}
@@ -316,8 +402,10 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 
 	if hasLatestCursor && latestCursorValue != "" {
 		result.Cursor[config.CursorKey] = latestCursorValue
-		result.Cursor["last_seen_ts"] = latestCursorValue
-	} else if strings.EqualFold(req.Component.Provider.Name, "slack") {
+	}
+	if hasLatestOccurredAt {
+		result.Cursor["last_seen_ts"] = latestOccurredAt.UTC().Format(time.RFC3339Nano)
+	} else if strings.EqualFold(req.Component.Provider.Name, "slack") && hasLatestCursor && latestCursorValue != "" {
 		slackNow := formatSlackTimestamp(req.Now)
 		result.Cursor[config.CursorKey] = slackNow
 		result.Cursor["last_seen_ts"] = slackNow
@@ -344,6 +432,7 @@ type httpPollingConfig struct {
 	Headers            []httpHeaderSpec
 	BodyTemplate       string
 	Auth               *httpPollingAuthConfig
+	SkipRules          []httpSkipRule
 }
 
 type httpPollingAuthConfig struct {
@@ -351,6 +440,12 @@ type httpPollingAuthConfig struct {
 	IdentityParam string
 	Provider      string
 	Scopes        []string
+}
+
+type httpSkipRule struct {
+	Path     []string
+	Contains string
+	Equals   string
 }
 
 type httpQuerySpec struct {
@@ -452,6 +547,16 @@ func parseHTTPPollingConfig(component *componentdomain.Component) (httpPollingCo
 		return httpPollingConfig{}, false, fmt.Errorf("headers metadata invalid: %w", err)
 	}
 
+	skipRules, err := parseHTTPSkipRules(ingestion["skipItems"])
+	if err != nil {
+		return httpPollingConfig{}, false, fmt.Errorf("skipItems metadata invalid: %w", err)
+	}
+	if extra, err := parseHTTPSkipRules(configMap["skipItems"]); err != nil {
+		return httpPollingConfig{}, false, fmt.Errorf("skipItems metadata invalid: %w", err)
+	} else if len(extra) > 0 {
+		skipRules = append(skipRules, extra...)
+	}
+
 	bodyTemplate := stringOrDefault(configMap, "bodyTemplate", "")
 
 	config := httpPollingConfig{
@@ -468,6 +573,7 @@ func parseHTTPPollingConfig(component *componentdomain.Component) (httpPollingCo
 		Query:              querySpecs,
 		Headers:            headerSpecs,
 		BodyTemplate:       bodyTemplate,
+		SkipRules:          skipRules,
 	}
 	authRaw, hasAuth := configMap["auth"]
 	if !hasAuth {
@@ -607,6 +713,39 @@ func parseHTTPHeaderSpecs(raw any) ([]httpHeaderSpec, error) {
 			}
 		}
 		result = append(result, spec)
+	}
+	return result, nil
+}
+
+func parseHTTPSkipRules(raw any) ([]httpSkipRule, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("skipItems not an array")
+	}
+	result := make([]httpSkipRule, 0, len(items))
+	for index, item := range items {
+		entry, err := toMapStringAny(item)
+		if err != nil {
+			return nil, fmt.Errorf("skipItems[%d] invalid: %w", index, err)
+		}
+		pathValue, err := toString(entry["path"])
+		if err != nil || strings.TrimSpace(pathValue) == "" {
+			return nil, fmt.Errorf("skipItems[%d] path missing", index)
+		}
+		contains := strings.TrimSpace(stringOrDefault(entry, "contains", ""))
+		equals := strings.TrimSpace(stringOrDefault(entry, "equals", ""))
+		if contains == "" && equals == "" {
+			return nil, fmt.Errorf("skipItems[%d] requires contains or equals", index)
+		}
+		rule := httpSkipRule{
+			Path:     splitPath(pathValue),
+			Contains: contains,
+			Equals:   equals,
+		}
+		result = append(result, rule)
 	}
 	return result, nil
 }
@@ -862,6 +1001,35 @@ func splitPath(value string) []string {
 	return result
 }
 
+func shouldSkipItem(item map[string]any, rules []httpSkipRule) bool {
+	if len(rules) == 0 {
+		return false
+	}
+	for _, rule := range rules {
+		if len(rule.Path) == 0 {
+			continue
+		}
+		value, err := resolvePath(item, rule.Path)
+		if err != nil {
+			continue
+		}
+		text := strings.TrimSpace(stringify(value))
+		if text == "" {
+			continue
+		}
+		if rule.Equals != "" && strings.EqualFold(text, rule.Equals) {
+			return true
+		}
+		if rule.Contains != "" {
+			lowerText := strings.ToLower(text)
+			if strings.Contains(lowerText, strings.ToLower(rule.Contains)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func stringify(value any) string {
 	switch v := value.(type) {
 	case nil:
@@ -918,6 +1086,21 @@ func hashItem(value map[string]any) (string, error) {
 		return "", err
 	}
 	return strconv.FormatUint(hasher.Sum64(), 16), nil
+}
+
+func tryParseFloat(value string) (float64, bool) {
+	if parsed, err := strconv.ParseFloat(value, 64); err == nil {
+		return parsed, true
+	}
+	return 0, false
+}
+
+func tryParseTime(value string) (time.Time, bool) {
+	parsed, err := parseTime(value)
+	if err != nil || parsed.IsZero() {
+		return time.Time{}, false
+	}
+	return parsed.UTC(), true
 }
 
 func parseTime(value any) (time.Time, error) {
