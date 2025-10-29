@@ -65,7 +65,7 @@ void main() {
         id: 'scheduler',
         name: 'Scheduler',
         displayName: 'Scheduler',
-        category: ServiceCategory.automation,
+        category: ServiceCategory.other,
         oauthType: AuthKind.none,
         authConfig: const {},
         isEnabled: true,

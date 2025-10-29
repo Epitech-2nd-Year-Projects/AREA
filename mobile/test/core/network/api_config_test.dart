@@ -1,8 +1,14 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:area/core/network/api_config.dart';
 
 void main() {
   group('ApiConfig', () {
+    setUpAll(() async {
+      await dotenv.load();
+      ApiConfig.initialize();
+    });
+
     test('constants should have expected values', () {
       expect(ApiConfig.baseUrl, "http://10.0.2.2:8080");
       expect(ApiConfig.defaultHeaders["Accept"], "application/json");
