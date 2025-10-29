@@ -88,6 +88,7 @@ oauth:
     - slack
     - zoom
     - linear
+    - spotify
   providers:
     google:
       clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
@@ -145,6 +146,16 @@ oauth:
         - read
         - write
         - issues:create
+    spotify:
+      clientIDEnv: SPOTIFY_OAUTH_CLIENT_ID
+      clientSecretEnv: SPOTIFY_OAUTH_CLIENT_SECRET
+      redirectURI: https://127.0.0.1:3000/oauth/callback
+      scopes:
+        - user-read-email
+        - user-read-private
+        - user-library-read
+        - playlist-modify-public
+        - playlist-modify-private
 
 security:
   jwt:
