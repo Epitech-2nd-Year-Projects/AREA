@@ -38,3 +38,18 @@ export type SubscribeExchangeResponseDTO = {
   }
   identity?: import('./auth').IdentitySummaryDTO | null
 }
+
+export type ServiceProviderDetailDTO = {
+  id: string
+  name: string
+  displayName: string
+  category?: string | null
+  oauthType: 'none' | 'oauth2' | 'apikey'
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type ServiceProviderListResponseDTO = {
+  providers: ServiceProviderDetailDTO[]
+}

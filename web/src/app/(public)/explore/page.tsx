@@ -2,7 +2,7 @@
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
+import { useServiceProvidersQuery } from '@/lib/api/openapi/services'
 import {
   useCurrentUserQuery,
   mapUserDTOToUser,
@@ -14,7 +14,11 @@ import { FilteredServiceCardList } from '@/components/services/filtered-service-
 export default function ExplorePage() {
   const t = useTranslations('ExplorePage')
 
-  const { data, isLoading: isServicesLoading, isError } = useAboutQuery()
+  const {
+    data: services,
+    isLoading: isServicesLoading,
+    isError
+  } = useServiceProvidersQuery()
   const {
     data: userData,
     isLoading: isUserLoading,
@@ -25,7 +29,7 @@ export default function ExplorePage() {
     userError instanceof ApiError && userError.status === 401
   const user =
     !isUnauthorized && userData?.user ? mapUserDTOToUser(userData.user) : null
-  const services = data ? extractServices(data) : []
+
   const isUserAuthenticated = Boolean(user)
 
   const { data: identitiesData, isLoading: isIdentitiesLoading } =
@@ -73,7 +77,7 @@ export default function ExplorePage() {
         <p className="text-muted-foreground text-lg">{t('description')}</p>
       </div>
       <FilteredServiceCardList
-        services={services}
+        services={services ?? []}
         userLinkedServices={userLinkedServices}
         isUserAuthenticated={isUserAuthenticated}
       />
