@@ -89,6 +89,24 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: dropboxProfileExtractor,
 		},
+		"spotify": {
+			DisplayName:      "Spotify",
+			AuthorizationURL: "https://accounts.spotify.com/authorize",
+			TokenURL:         "https://accounts.spotify.com/api/token",
+			UserInfoURL:      "https://api.spotify.com/v1/me",
+			DefaultScopes: []string{
+				"user-read-email",
+				"user-read-private",
+				"user-library-read",
+				"playlist-modify-public",
+				"playlist-modify-private",
+			},
+			UserInfoHeaders: map[string]string{
+				"Accept":     "application/json",
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: spotifyProfileExtractor,
+		},
 		"slack": {
 			DisplayName:      "Slack",
 			AuthorizationURL: "https://slack.com/oauth/v2/authorize",
@@ -228,6 +246,49 @@ func dropboxProfileExtractor(raw map[string]any) (identitydomain.Profile, error)
 		Subject:    subject,
 		Email:      email,
 		Name:       name,
+		PictureURL: picture,
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func spotifyProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	if raw == nil {
+		return identitydomain.Profile{}, fmt.Errorf("spotify: user info payload missing")
+	}
+
+	subject := strings.TrimSpace(stringFrom(raw["id"]))
+	if subject == "" {
+		subject = strings.TrimSpace(stringFrom(raw["uri"]))
+	}
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("spotify: id missing")
+	}
+
+	displayName := strings.TrimSpace(stringFrom(raw["display_name"]))
+	if displayName == "" {
+		displayName = subject
+	}
+
+	email := strings.TrimSpace(stringFrom(raw["email"]))
+
+	picture := ""
+	if images, ok := raw["images"].([]any); ok {
+		for _, item := range images {
+			if image, ok := item.(map[string]any); ok {
+				if url := strings.TrimSpace(stringFrom(image["url"])); url != "" {
+					picture = url
+					break
+				}
+			}
+		}
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "spotify",
+		Subject:    subject,
+		Email:      email,
+		Name:       displayName,
 		PictureURL: picture,
 		Raw:        raw,
 	}
