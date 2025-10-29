@@ -347,5 +347,18 @@
     "duration": "Duration: {duration}",
     "close": "Close",
     "unknownError": "Unknown error"
+  },
+  "ExploreServicePage": {
+    "loading": "Loading service details...",
+    "errorLoading": "There was an error loading the service details.",
+    "serviceNotFound": "The requested service could not be found.",
+    "integrationDetails": "Integration details",
+    "linked": "Linked",
+    "connect": "Connect",
+    "getStarted": "Get Started",
+    "actionsTitle": "Actions",
+    "noActions": "No actions available for this service.",
+    "reactionsTitle": "Reactions",
+    "noReactions": "No reactions available for this service."
   }
 }

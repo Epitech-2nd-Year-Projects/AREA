@@ -1,13 +1,18 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Service } from '@/lib/api/contracts/services'
-import { useSubscribeServiceMutation } from '@/lib/api/openapi/services'
+import {
+  useSubscribeServiceMutation,
+  useUnsubscribeServiceMutation
+} from '@/lib/api/openapi/services'
 import type { SubscribeServiceResponseDTO } from '@/lib/api/contracts/openapi/services'
 import {
   clearOAuthState,
@@ -15,6 +20,8 @@ import {
   persistOAuthState
 } from '@/lib/auth/oauth'
 import { DisconnectModal } from './disconnect-modal'
+import { authKeys } from '@/lib/api/openapi/auth'
+import { useLogoQuery } from '@/lib/api/logo'
 
 type ServiceCardProps = {
   service: Service
@@ -22,8 +29,6 @@ type ServiceCardProps = {
   linked: boolean
 }
 
-// This is a temporary type to extend the Service type with properties
-// that are expected based on the user's request but may not be in the base type.
 type ExtendedService = Service & {
   category?: string
   needsConnection?: boolean
@@ -37,11 +42,29 @@ export function ServiceCard({
   const extendedService = service as ExtendedService
   const t = useTranslations('ServiceCard')
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { mutateAsync: subscribeService, isPending: isSubscribing } =
     useSubscribeServiceMutation()
+  const { mutateAsync: unsubscribeService, isPending: isUnsubscribing } =
+    useUnsubscribeServiceMutation({
+      onSuccess: () => {
+        return queryClient.invalidateQueries({
+          queryKey: authKeys.identities()
+        })
+      }
+    })
+  const { data: logoUrl } = useLogoQuery(service.name)
 
-  const handleDisconnectConfirm = () => {
-    // TODO: Implement service disconnect logic
+  const handleDisconnectConfirm = async () => {
+    if (isUnsubscribing) {
+      return
+    }
+
+    try {
+      await unsubscribeService({ provider: service.name })
+    } catch {
+      // TODO: show an error toast
+    }
   }
 
   const connectButtonState = authenticated
@@ -61,7 +84,7 @@ export function ServiceCard({
           '/oauth/callback',
           window.location.origin
         ).toString()
-        const redirectTarget = '/dashboard/profile'
+        const redirectTarget = window.location.pathname + window.location.search
         const { value: clientState } = createClientOAuthState({
           provider,
           flow: 'service',
@@ -99,14 +122,23 @@ export function ServiceCard({
     : () => router.push('/register')
 
   return (
-    <Card className="flex h-full w-full flex-col overflow-hidden">
-      <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-          <span className="text-2xl font-bold">
-            {service.displayName.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <h3 className="text-lg font-semibold">{service.displayName}</h3>
+    <Card
+      className="flex w-full cursor-pointer flex-col overflow-hidden transition-transform duration-200 ease-in-out hover:scale-105"
+      onClick={() => router.push(`/explore/${service.name}`)}
+    >
+      <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
+        {logoUrl ? (
+          <Image
+            src={logoUrl}
+            alt={`${service.displayName} logo`}
+            className="h-12 w-12 rounded-full"
+            width={48}
+            height={48}
+          />
+        ) : (
+          <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
+        )}
+        <h3 className="text-base font-semibold">{service.displayName}</h3>
         <div className="flex flex-wrap justify-center gap-2">
           {extendedService.category && (
             <Badge variant="secondary" className="uppercase">
@@ -118,7 +150,7 @@ export function ServiceCard({
           )}
         </div>
       </CardContent>
-      <CardFooter className="p-4">
+      <CardFooter className="p-4" onClick={(e) => e.stopPropagation()}>
         {linked ? (
           <DisconnectModal
             serviceName={service.displayName}

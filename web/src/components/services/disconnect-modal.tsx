@@ -15,11 +15,13 @@ import {
 type DisconnectModalProps = {
   serviceName: string
   onConfirm: () => void | Promise<void>
+  fullWidth?: boolean
 }
 
 export function DisconnectModal({
   serviceName,
-  onConfirm
+  onConfirm,
+  fullWidth = true
 }: DisconnectModalProps) {
   const t = useTranslations('DisconnectModal')
   const [open, setOpen] = useState(false)
@@ -32,7 +34,10 @@ export function DisconnectModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full cursor-pointer" variant="destructive">
+        <Button
+          className={`cursor-pointer ${fullWidth ? 'w-full' : ''}`}
+          variant="destructive"
+        >
           {t('trigger')}
         </Button>
       </DialogTrigger>

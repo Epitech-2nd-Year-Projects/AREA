@@ -9,7 +9,7 @@ import {
   useIdentitiesQuery
 } from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
-import { ServiceCardList } from '@/components/services/service-card-list'
+import { FilteredServiceCardList } from '@/components/services/filtered-service-card-list'
 
 export default function ExplorePage() {
   const t = useTranslations('ExplorePage')
@@ -72,7 +72,7 @@ export default function ExplorePage() {
         <h1 className="text-4xl font-bold tracking-tight">{t('title')}</h1>
         <p className="text-muted-foreground text-lg">{t('description')}</p>
       </div>
-      <ServiceCardList
+      <FilteredServiceCardList
         services={services}
         userLinkedServices={userLinkedServices}
         isUserAuthenticated={isUserAuthenticated}

@@ -46,3 +46,17 @@ export function subscribeServiceExchangeClient(
     }
   )
 }
+
+export function unsubscribeServiceClient(
+  provider: string,
+  options?: ClientRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    throw new Error('Service unsubscribe mock not implemented')
+  }
+
+  return apiFetchClient<void>(`/v1/services/${provider}/subscription`, {
+    method: 'DELETE',
+    ...buildClientOptions(options)
+  })
+}
