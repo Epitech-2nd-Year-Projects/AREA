@@ -1,5 +1,5 @@
 import * as React from 'react'
-
+import { redirect } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
 import {
   SidebarInset,
@@ -8,13 +8,18 @@ import {
 } from '@/components/ui/sidebar'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import DynamicBreadcrumb from '@/components/dashboard/dynamic-breadcrumb'
+import { currentUserServer } from '@/lib/api/openapi/auth/server'
 
 export default async function DashboardLayout({
   children
 }: {
   children: React.ReactNode
 }) {
-  // TODO: Check if user is logged in, redirect accordingly
+  try {
+    await currentUserServer()
+  } catch {
+    redirect('/login')
+  }
 
   return (
     <SidebarProvider>
