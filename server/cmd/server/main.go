@@ -27,6 +27,7 @@ import (
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
 	linearexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/linear"
 	slackexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/slack"
+	spotifyexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/spotify"
 	zoomexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/zoom"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
 	authapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/auth"
@@ -324,6 +325,16 @@ func run() error {
 			)
 			if slackExecutor != nil {
 				reactionHandlers = append(reactionHandlers, slackExecutor)
+			}
+			spotifyExecutor := spotifyexecutor.NewAddTrackExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if spotifyExecutor != nil {
+				reactionHandlers = append(reactionHandlers, spotifyExecutor)
 			}
 			zoomExecutor := zoomexecutor.NewMeetingExecutor(
 				repo.Identities(),
