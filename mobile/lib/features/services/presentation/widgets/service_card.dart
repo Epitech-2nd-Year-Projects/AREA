@@ -5,6 +5,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../domain/entities/service_with_status.dart';
 import '../../domain/value_objects/service_category.dart';
 import 'staggered_animations.dart';
+import 'service_logo.dart';
 
 class ServiceCard extends StatelessWidget {
   final ServiceWithStatus service;
@@ -92,42 +93,9 @@ class ServiceCard extends StatelessWidget {
       builder: (context, scale, child) {
         return Transform.scale(
           scale: 0.8 + (scale * 0.2),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.75),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                service.provider.displayName[0].toUpperCase(),
-                style: AppTypography.displayMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: size * 0.4,
-                ),
-              ),
-            ),
+          child: ServiceLogo(
+            serviceName: service.provider.displayName,
+            size: size,
           ),
         );
       },

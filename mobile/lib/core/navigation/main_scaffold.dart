@@ -17,13 +17,22 @@ class MainScaffold extends StatelessWidget {
     final selectedIndex = AppNavigationItems.getIndexFromPath(currentLocation);
 
     return Scaffold(
-      body: child,
-      bottomNavigationBar: AppBottomNavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
-          final destination = AppNavigationItems.destinations[index];
-          context.go(destination.path);
-        },
+      body: Stack(
+        children: [
+          child,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: AppBottomNavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) {
+                final destination = AppNavigationItems.destinations[index];
+                context.go(destination.path);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

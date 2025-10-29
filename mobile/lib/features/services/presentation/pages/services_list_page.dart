@@ -195,7 +195,11 @@ class _ServicesListPageContent extends StatelessWidget {
       }
 
       return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        padding: const EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          bottom: 110,
+        ),
         sliver: SliverLayoutBuilder(
           builder: (context, constraints) {
             final crossAxisCount = constraints.crossAxisExtent > 600 ? 3 : 2;

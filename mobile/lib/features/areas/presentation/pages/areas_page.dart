@@ -59,6 +59,62 @@ class _AreasScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: AppColors.getSurfaceColor(context),
         surfaceTintColor: Colors.transparent,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _openCreate(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.newAreaButton,
+                          style: AppTypography.labelMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: BlocBuilder<AreasCubit, AreasState>(
         builder: (context, state) {
@@ -155,7 +211,7 @@ class _AreasScreen extends StatelessWidget {
               onRefresh: () => context.read<AreasCubit>().fetchAreas(),
               child: ListView.separated(
                 padding: const EdgeInsets.only(
-                  bottom: 96,
+                  bottom: 150,
                   top: AppSpacing.md,
                   left: AppSpacing.md,
                   right: AppSpacing.md,
@@ -181,28 +237,6 @@ class _AreasScreen extends StatelessWidget {
           }
           return const SizedBox.shrink();
         },
-      ),
-      floatingActionButton: Semantics(
-        label: '${l10n.newAreaButton} button',
-        button: true,
-        child: FloatingActionButton.extended(
-          onPressed: () => _openCreate(context),
-          icon: const Icon(Icons.add_rounded, size: 24),
-          label: Text(
-            l10n.newAreaButton,
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          elevation: 4,
-          extendedPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-        ),
       ),
     );
   }

@@ -58,6 +58,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   meta: ^1.16.0
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +80,7 @@ flutter:
   generate: true
   assets:
     - assets/icons/
+    - .env
   fonts:
     - family: Inter
       fonts:
