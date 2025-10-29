@@ -89,7 +89,7 @@ var _defaultConfig = Config{
 		Path:     ".env",
 	},
 	OAuth: OAuthConfig{
-		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "zoom"},
+		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "zoom", "linear"},
 		Providers: map[string]OAuthProviderConfig{
 			"google": {
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
@@ -133,6 +133,12 @@ var _defaultConfig = Config{
 				ClientIDEnv:     "ZOOM_OAUTH_CLIENT_ID",
 				ClientSecretEnv: "ZOOM_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/zoom/callback",
+			},
+			"linear": {
+				ClientIDEnv:     "LINEAR_OAUTH_CLIENT_ID",
+				ClientSecretEnv: "LINEAR_OAUTH_CLIENT_SECRET",
+				RedirectURI:     "http://localhost:8080/oauth/linear/callback",
+				Scopes:          []string{"read", "write", "issues:read", "issues:create", "offline_access"},
 			},
 		},
 	},
@@ -254,6 +260,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("oauth.providers.zoom.clientSecretEnv", _defaultConfig.OAuth.Providers["zoom"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.zoom.redirectURI", _defaultConfig.OAuth.Providers["zoom"].RedirectURI)
 	v.SetDefault("oauth.providers.zoom.scopes", _defaultConfig.OAuth.Providers["zoom"].Scopes)
+	v.SetDefault("oauth.providers.linear.clientIDEnv", _defaultConfig.OAuth.Providers["linear"].ClientIDEnv)
+	v.SetDefault("oauth.providers.linear.clientSecretEnv", _defaultConfig.OAuth.Providers["linear"].ClientSecretEnv)
+	v.SetDefault("oauth.providers.linear.redirectURI", _defaultConfig.OAuth.Providers["linear"].RedirectURI)
+	v.SetDefault("oauth.providers.linear.scopes", _defaultConfig.OAuth.Providers["linear"].Scopes)
 
 	v.SetDefault("security.jwt.issuer", _defaultConfig.Security.JWT.Issuer)
 	v.SetDefault("security.jwt.accessTokenTTL", _defaultConfig.Security.JWT.AccessTokenTTL.String())
