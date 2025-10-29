@@ -85,7 +85,7 @@ export function ServiceCard({
           '/oauth/callback',
           window.location.origin
         ).toString()
-        const redirectTarget = '/dashboard/profile'
+        const redirectTarget = window.location.pathname + window.location.search
         const { value: clientState } = createClientOAuthState({
           provider,
           flow: 'service',
