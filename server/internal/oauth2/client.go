@@ -3,6 +3,7 @@ package oauth2
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,15 +18,18 @@ import (
 // TokenURL must accept application/x-www-form-urlencoded requests
 // AuthURL is the authorization endpoint used to initiate the code flow
 type Config struct {
-	Name         string
-	ClientID     string
-	ClientSecret string
-	AuthURL      string
-	TokenURL     string
-	UserInfoURL  string
-	Scopes       []string
-	Prompt       string
-	Audience     string
+	Name            string
+	ClientID        string
+	ClientSecret    string
+	AuthURL         string
+	TokenURL        string
+	UserInfoURL     string
+	Scopes          []string
+	Prompt          string
+	Audience        string
+	TokenAuthMethod string
+	TokenFormat     string
+	TokenHeaders    map[string]string
 }
 
 // AuthorizationRequest configures the authorization redirect
@@ -275,9 +279,11 @@ func (c *Client) Exchange(ctx context.Context, req ExchangeRequest) (Token, erro
 	values.Set("grant_type", "authorization_code")
 	values.Set("code", req.Code)
 	values.Set("redirect_uri", redirect)
-	values.Set("client_id", c.cfg.ClientID)
-	if c.cfg.ClientSecret != "" {
-		values.Set("client_secret", c.cfg.ClientSecret)
+	if !strings.EqualFold(c.cfg.TokenAuthMethod, "basic") {
+		values.Set("client_id", c.cfg.ClientID)
+		if c.cfg.ClientSecret != "" {
+			values.Set("client_secret", c.cfg.ClientSecret)
+		}
 	}
 	if req.CodeVerifier != "" {
 		values.Set("code_verifier", req.CodeVerifier)
@@ -304,9 +310,11 @@ func (c *Client) Refresh(ctx context.Context, req RefreshRequest) (Token, error)
 	values := url.Values{}
 	values.Set("grant_type", "refresh_token")
 	values.Set("refresh_token", req.RefreshToken)
-	values.Set("client_id", c.cfg.ClientID)
-	if c.cfg.ClientSecret != "" {
-		values.Set("client_secret", c.cfg.ClientSecret)
+	if !strings.EqualFold(c.cfg.TokenAuthMethod, "basic") {
+		values.Set("client_id", c.cfg.ClientID)
+		if c.cfg.ClientSecret != "" {
+			values.Set("client_secret", c.cfg.ClientSecret)
+		}
 	}
 	if len(req.Scopes) > 0 {
 		values.Set("scope", strings.Join(req.Scopes, " "))
@@ -322,12 +330,28 @@ func (c *Client) Refresh(ctx context.Context, req RefreshRequest) (Token, error)
 }
 
 func (c *Client) doTokenRequest(ctx context.Context, values url.Values) (Token, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.TokenURL, strings.NewReader(values.Encode()))
+	bodyReader, contentType, err := c.buildTokenRequestBody(values)
+	if err != nil {
+		return Token{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.TokenURL, bodyReader)
 	if err != nil {
 		return Token{}, fmt.Errorf("oauth2.Client.doTokenRequest: new request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
+	for key, value := range c.cfg.TokenHeaders {
+		if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+			continue
+		}
+		req.Header.Set(key, value)
+	}
+	if strings.EqualFold(c.cfg.TokenAuthMethod, "basic") {
+		secret := fmt.Sprintf("%s:%s", c.cfg.ClientID, c.cfg.ClientSecret)
+		encoded := base64.StdEncoding.EncodeToString([]byte(secret))
+		req.Header.Set("Authorization", "Basic "+encoded)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -390,6 +414,35 @@ func (c *Client) parseToken(body []byte) (Token, error) {
 	}
 
 	return token, nil
+}
+
+func (c *Client) buildTokenRequestBody(values url.Values) (io.Reader, string, error) {
+	format := strings.ToLower(strings.TrimSpace(c.cfg.TokenFormat))
+	if format == "" || format == "form" {
+		return strings.NewReader(values.Encode()), "application/x-www-form-urlencoded", nil
+	}
+
+	if format != "json" {
+		return nil, "", fmt.Errorf("oauth2.Client.doTokenRequest: unsupported token format %q", c.cfg.TokenFormat)
+	}
+
+	payload := make(map[string]any, len(values))
+	for key, vals := range values {
+		if len(vals) == 0 {
+			continue
+		}
+		if len(vals) == 1 {
+			payload[key] = vals[0]
+			continue
+		}
+		payload[key] = append([]string(nil), vals...)
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, "", fmt.Errorf("oauth2.Client.doTokenRequest: marshal payload: %w", err)
+	}
+	return bytes.NewReader(bodyBytes), "application/json", nil
 }
 
 func (c *Client) parseError(body []byte, status int) error {
