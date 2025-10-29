@@ -25,6 +25,7 @@ import (
 	gitlabexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gitlab"
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
 	httpreaction "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/http"
+	linearexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/linear"
 	slackexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/slack"
 	zoomexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/zoom"
 	areaapp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/app/area"
@@ -303,6 +304,16 @@ func run() error {
 			)
 			if dropboxExecutor != nil {
 				reactionHandlers = append(reactionHandlers, dropboxExecutor)
+			}
+			linearExecutor := linearexecutor.NewIssueExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if linearExecutor != nil {
+				reactionHandlers = append(reactionHandlers, linearExecutor)
 			}
 			slackExecutor := slackexecutor.NewMessageExecutor(
 				repo.Identities(),
