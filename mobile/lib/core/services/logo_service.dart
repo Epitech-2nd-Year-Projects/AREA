@@ -27,6 +27,7 @@ class LogoService {
       'instagram': 'instagram.com',
       'facebook': 'facebook.com',
       'linkedin': 'linkedin.com',
+      'linear': 'linear.app',
       'reddit': 'reddit.com',
       'spotify': 'spotify.com',
       'zoom': 'zoom.com',
