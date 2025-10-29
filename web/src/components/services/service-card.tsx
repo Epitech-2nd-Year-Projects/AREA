@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +20,7 @@ import {
 } from '@/lib/auth/oauth'
 import { DisconnectModal } from './disconnect-modal'
 import { authKeys } from '@/lib/api/openapi/auth'
+import { useLogoQuery } from '@/lib/api/logo'
 
 type ServiceCardProps = {
   service: Service
@@ -54,23 +54,7 @@ export function ServiceCard({
         })
       }
     })
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchLogo = async () => {
-      try {
-        const response = await fetch(`/api/logo?q=${service.name}`);
-        const data = await response.json();
-        if (data && data.length > 0 && data[0].logo_url) {
-          setLogoUrl(data[0].logo_url);
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo', error);
-      }
-    };
-
-    fetchLogo();
-  }, [service.name]);
+  const { data: logoUrl } = useLogoQuery(service.name)
 
   const handleDisconnectConfirm = async () => {
     if (isUnsubscribing) {
