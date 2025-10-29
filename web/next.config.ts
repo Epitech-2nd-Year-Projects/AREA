@@ -8,9 +8,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'img.logo.dev',
-      },
-    ],
+        hostname: 'img.logo.dev'
+      }
+    ]
   },
   turbopack: { root: __dirname },
   async rewrites() {
