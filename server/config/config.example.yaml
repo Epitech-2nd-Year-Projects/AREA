@@ -89,6 +89,7 @@ oauth:
     - zoom
     - linear
     - spotify
+    - notion
   providers:
     google:
       clientIDEnv: GOOGLE_OAUTH_CLIENT_ID
@@ -146,16 +147,25 @@ oauth:
         - read
         - write
         - issues:create
+        - issues:read
+        - offline_access
     spotify:
       clientIDEnv: SPOTIFY_OAUTH_CLIENT_ID
       clientSecretEnv: SPOTIFY_OAUTH_CLIENT_SECRET
-      redirectURI: https://127.0.0.1:3000/oauth/callback
+      redirectURI: http://localhost:3000/oauth/callback
       scopes:
         - user-read-email
         - user-read-private
         - user-library-read
         - playlist-modify-public
         - playlist-modify-private
+    notion:
+      clientIDEnv: NOTION_OAUTH_CLIENT_ID
+      clientSecretEnv: NOTION_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - read
+        - write
 
 security:
   jwt:
