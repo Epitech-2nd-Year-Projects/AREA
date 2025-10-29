@@ -31,3 +31,28 @@ export function useAvailableComponentsQuery(
     ...queryOptions
   })
 }
+
+type ComponentsOptions = {
+  params?: { kind?: 'action' | 'reaction'; provider?: string }
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseQueryOptions<
+    ComponentSummaryDTO[],
+    ApiError,
+    ComponentSummaryDTO[],
+    ReturnType<typeof componentsKeys.list>
+  >,
+  'queryKey' | 'queryFn'
+>
+
+export function useComponentsQuery(options?: ComponentsOptions) {
+  const { clientOptions, meta, ...queryOptions } = options ?? {}
+  return useQuery({
+    ...componentsQueries.list({
+      params: options?.params,
+      clientOptions
+    }),
+    meta: { ...(meta ?? {}) },
+    ...queryOptions
+  })
+}

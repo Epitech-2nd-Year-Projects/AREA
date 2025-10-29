@@ -29,8 +29,6 @@ type ServiceCardProps = {
   linked: boolean
 }
 
-// This is a temporary type to extend the Service type with properties
-// that are expected based on the user's request but may not be in the base type.
 type ExtendedService = Service & {
   category?: string
   needsConnection?: boolean
@@ -124,7 +122,10 @@ export function ServiceCard({
     : () => router.push('/register')
 
   return (
-    <Card className="flex w-full flex-col overflow-hidden">
+    <Card
+      className="flex w-full cursor-pointer flex-col overflow-hidden transition-transform duration-200 ease-in-out hover:scale-105"
+      onClick={() => router.push(`/explore/${service.name}`)}
+    >
       <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
         {logoUrl ? (
           <Image
@@ -135,7 +136,7 @@ export function ServiceCard({
             height={48}
           />
         ) : (
-          <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
+          <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
         )}
         <h3 className="text-base font-semibold">{service.displayName}</h3>
         <div className="flex flex-wrap justify-center gap-2">
@@ -149,7 +150,7 @@ export function ServiceCard({
           )}
         </div>
       </CardContent>
-      <CardFooter className="p-4">
+      <CardFooter className="p-4" onClick={(e) => e.stopPropagation()}>
         {linked ? (
           <DisconnectModal
             serviceName={service.displayName}

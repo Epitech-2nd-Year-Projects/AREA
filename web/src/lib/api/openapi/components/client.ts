@@ -28,3 +28,21 @@ export function listAvailableComponentsClient(
     buildClientOptions(options)
   )
 }
+
+export function listComponentsClient(
+  params?: { kind?: 'action' | 'reaction'; provider?: string },
+  options?: ClientRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    return getAvailableComponentsMock(params)
+  }
+  const search = new URLSearchParams()
+  if (params?.kind) search.set('kind', params.kind)
+  if (params?.provider) search.set('provider', params.provider)
+  const query = search.toString()
+  const path = query ? `/v1/components?${query}` : '/v1/components'
+  return apiFetchClient<ComponentListResponseDTO>(
+    path,
+    buildClientOptions(options)
+  )
+}

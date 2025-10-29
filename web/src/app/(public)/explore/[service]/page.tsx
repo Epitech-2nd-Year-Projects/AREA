@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -32,11 +32,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ComponentSummaryDTO } from '@/lib/api/contracts/openapi/areas'
 import { useComponentsQuery } from '@/lib/api/openapi/components'
 
-export default function ExploreServicePage({
-  params
-}: {
-  params: { service: string }
-}) {
+export default function ExploreServicePage() {
+  const params = useParams<{ service: string }>()
   const t = useTranslations('ExploreServicePage')
   const router = useRouter()
   const queryClient = useQueryClient()
