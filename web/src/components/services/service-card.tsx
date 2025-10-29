@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
@@ -39,6 +40,23 @@ export function ServiceCard({
   const router = useRouter()
   const { mutateAsync: subscribeService, isPending: isSubscribing } =
     useSubscribeServiceMutation()
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch(`/api/logo?q=${service.name}`);
+        const data = await response.json();
+        if (data && data.length > 0 && data[0].logo_url) {
+          setLogoUrl(data[0].logo_url);
+        }
+      } catch (error) {
+        console.error('Failed to fetch logo', error);
+      }
+    };
+
+    fetchLogo();
+  }, [service.name]);
 
   const handleDisconnectConfirm = () => {
     // TODO: Implement service disconnect logic
@@ -99,14 +117,18 @@ export function ServiceCard({
     : () => router.push('/register')
 
   return (
-    <Card className="flex h-full w-full flex-col overflow-hidden">
-      <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-          <span className="text-2xl font-bold">
-            {service.displayName.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <h3 className="text-lg font-semibold">{service.displayName}</h3>
+    <Card className="flex w-full flex-col overflow-hidden">
+      <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={`${service.displayName} logo`}
+            className="h-12 w-12 rounded-full"
+          />
+        ) : (
+          <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
+        )}
+        <h3 className="text-base font-semibold">{service.displayName}</h3>
         <div className="flex flex-wrap justify-center gap-2">
           {extendedService.category && (
             <Badge variant="secondary" className="uppercase">

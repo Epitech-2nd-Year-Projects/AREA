@@ -4,6 +4,14 @@ import createNextIntlPlugin from 'next-intl/plugin'
 import { apiConfig } from './src/env'
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.logo.dev',
+      },
+    ],
+  },
   turbopack: { root: __dirname },
   async rewrites() {
     if (!apiConfig.isRelative || !apiConfig.proxyTarget) return []
