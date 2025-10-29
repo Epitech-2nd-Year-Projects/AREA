@@ -89,7 +89,7 @@ var _defaultConfig = Config{
 		Path:     ".env",
 	},
 	OAuth: OAuthConfig{
-		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "zoom", "linear"},
+		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "spotify", "zoom", "linear"},
 		Providers: map[string]OAuthProviderConfig{
 			"google": {
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
@@ -127,6 +127,18 @@ var _defaultConfig = Config{
 					"mpim:history",
 					"users:read",
 					"offline_access",
+				},
+			},
+			"spotify": {
+				ClientIDEnv:     "SPOTIFY_OAUTH_CLIENT_ID",
+				ClientSecretEnv: "SPOTIFY_OAUTH_CLIENT_SECRET",
+				RedirectURI:     "https://localhost:8080/oauth/spotify/callback",
+				Scopes: []string{
+					"user-read-email",
+					"user-read-private",
+					"user-library-read",
+					"playlist-modify-public",
+					"playlist-modify-private",
 				},
 			},
 			"zoom": {
@@ -256,6 +268,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("oauth.providers.slack.clientSecretEnv", _defaultConfig.OAuth.Providers["slack"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.slack.redirectURI", _defaultConfig.OAuth.Providers["slack"].RedirectURI)
 	v.SetDefault("oauth.providers.slack.scopes", _defaultConfig.OAuth.Providers["slack"].Scopes)
+	v.SetDefault("oauth.providers.spotify.clientIDEnv", _defaultConfig.OAuth.Providers["spotify"].ClientIDEnv)
+	v.SetDefault("oauth.providers.spotify.clientSecretEnv", _defaultConfig.OAuth.Providers["spotify"].ClientSecretEnv)
+	v.SetDefault("oauth.providers.spotify.redirectURI", _defaultConfig.OAuth.Providers["spotify"].RedirectURI)
+	v.SetDefault("oauth.providers.spotify.scopes", _defaultConfig.OAuth.Providers["spotify"].Scopes)
 	v.SetDefault("oauth.providers.zoom.clientIDEnv", _defaultConfig.OAuth.Providers["zoom"].ClientIDEnv)
 	v.SetDefault("oauth.providers.zoom.clientSecretEnv", _defaultConfig.OAuth.Providers["zoom"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.zoom.redirectURI", _defaultConfig.OAuth.Providers["zoom"].RedirectURI)
