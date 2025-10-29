@@ -107,16 +107,27 @@ func NewProvider(name string, descriptor ProviderDescriptor, creds ProviderCrede
 		}
 	}
 
+	tokenHeaders := make(map[string]string, len(descriptor.TokenHeaders))
+	for key, value := range descriptor.TokenHeaders {
+		if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+			continue
+		}
+		tokenHeaders[key] = value
+	}
+
 	oauthCfg := oauth2.Config{
-		Name:         descriptor.DisplayName,
-		ClientID:     creds.ClientID,
-		ClientSecret: creds.ClientSecret,
-		AuthURL:      descriptor.AuthorizationURL,
-		TokenURL:     descriptor.TokenURL,
-		UserInfoURL:  descriptor.UserInfoURL,
-		Scopes:       fallbackScopes(creds.Scopes, descriptor.DefaultScopes),
-		Prompt:       descriptor.DefaultPrompt,
-		Audience:     descriptor.Audience,
+		Name:            descriptor.DisplayName,
+		ClientID:        creds.ClientID,
+		ClientSecret:    creds.ClientSecret,
+		AuthURL:         descriptor.AuthorizationURL,
+		TokenURL:        descriptor.TokenURL,
+		UserInfoURL:     descriptor.UserInfoURL,
+		Scopes:          fallbackScopes(creds.Scopes, descriptor.DefaultScopes),
+		Prompt:          descriptor.DefaultPrompt,
+		Audience:        descriptor.Audience,
+		TokenAuthMethod: descriptor.TokenAuthMethod,
+		TokenFormat:     descriptor.TokenFormat,
+		TokenHeaders:    tokenHeaders,
 	}
 
 	client, err := oauth2.NewClient(oauthCfg, cfg.oauthOptions...)

@@ -28,6 +28,9 @@ type ProviderDescriptor struct {
 	AuthorizationParams map[string]string
 	UserInfoHeaders     map[string]string
 	ProfileExtractor    ProfileExtractor
+	TokenAuthMethod     string
+	TokenFormat         string
+	TokenHeaders        map[string]string
 }
 
 // Registry enumerates the descriptors known to the application
@@ -106,6 +109,32 @@ func BuiltIn() Registry {
 				"User-Agent": "AREA-Server",
 			},
 			ProfileExtractor: spotifyProfileExtractor,
+		},
+		"notion": {
+			DisplayName:      "Notion",
+			AuthorizationURL: "https://api.notion.com/v1/oauth/authorize",
+			TokenURL:         "https://api.notion.com/v1/oauth/token",
+			UserInfoURL:      "https://api.notion.com/v1/users/me",
+			DefaultScopes: []string{
+				"read",
+				"write",
+			},
+			AuthorizationParams: map[string]string{
+				"owner": "user",
+			},
+			UserInfoHeaders: map[string]string{
+				"Accept":          "application/json",
+				"Notion-Version":  "2022-06-28",
+				"User-Agent":      "AREA-Server",
+				"Content-Type":    "application/json",
+				"Accept-Language": "en-US",
+			},
+			TokenAuthMethod: "basic",
+			TokenFormat:     "json",
+			TokenHeaders: map[string]string{
+				"Notion-Version": "2022-06-28",
+			},
+			ProfileExtractor: notionProfileExtractor,
 		},
 		"slack": {
 			DisplayName:      "Slack",
@@ -289,6 +318,36 @@ func spotifyProfileExtractor(raw map[string]any) (identitydomain.Profile, error)
 		Subject:    subject,
 		Email:      email,
 		Name:       displayName,
+		PictureURL: picture,
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func notionProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	if raw == nil {
+		return identitydomain.Profile{}, fmt.Errorf("notion: user info payload missing")
+	}
+
+	subject := strings.TrimSpace(stringFrom(raw["id"]))
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("notion: id missing")
+	}
+
+	name := strings.TrimSpace(stringFrom(raw["name"]))
+
+	email := ""
+	if person, ok := raw["person"].(map[string]any); ok {
+		email = strings.TrimSpace(stringFrom(person["email"]))
+	}
+
+	picture := strings.TrimSpace(stringFrom(raw["avatar_url"]))
+
+	profile := identitydomain.Profile{
+		Provider:   "notion",
+		Subject:    subject,
+		Email:      email,
+		Name:       name,
 		PictureURL: picture,
 		Raw:        raw,
 	}
