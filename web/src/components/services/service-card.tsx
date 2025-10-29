@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -126,10 +127,12 @@ export function ServiceCard({
     <Card className="flex w-full flex-col overflow-hidden">
       <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
         {logoUrl ? (
-          <img
+          <Image
             src={logoUrl}
             alt={`${service.displayName} logo`}
             className="h-12 w-12 rounded-full"
+            width={48}
+            height={48}
           />
         ) : (
           <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
