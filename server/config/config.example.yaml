@@ -86,6 +86,7 @@ oauth:
     - gitlab
     - dropbox
     - slack
+    - microsoft
     - zoom
     - linear
     - spotify
@@ -134,6 +135,18 @@ oauth:
         - im:history
         - mpim:history
         - users:read
+    microsoft:
+      clientIDEnv: MICROSOFT_OAUTH_CLIENT_ID
+      clientSecretEnv: MICROSOFT_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - offline_access
+        - openid
+        - profile
+        - email
+        - Mail.Read
+        - Mail.Send
+        - User.Read
     zoom:
       clientIDEnv: ZOOM_OAUTH_CLIENT_ID
       clientSecretEnv: ZOOM_OAUTH_CLIENT_SECRET
