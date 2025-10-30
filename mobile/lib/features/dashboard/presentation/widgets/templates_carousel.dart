@@ -71,23 +71,23 @@ class _TemplateCard extends StatelessWidget {
     final surfaceVariantColor = AppColors.getSurfaceVariantColor(context);
     final primaryColor = AppColors.primary;
     final Color gradientStart = Color.alphaBlend(
-      primaryColor.withOpacity(isDark ? 0.35 : 0.18),
+      primaryColor.withValues(alpha: isDark ? 0.35 : 0.18),
       surfaceColor,
     );
     final Color gradientEnd = Color.alphaBlend(
-      primaryColor.withOpacity(isDark ? 0.2 : 0.1),
+      primaryColor.withValues(alpha: isDark ? 0.2 : 0.1),
       surfaceVariantColor,
     );
     final Color borderColor = AppColors.getBorderColor(
       context,
-    ).withOpacity(isDark ? 0.45 : 0.35);
+    ).withValues(alpha: isDark ? 0.45 : 0.35);
     final Color labelColor = AppColors.getTextSecondaryColor(
       context,
-    ).withOpacity(0.92);
+    ).withValues(alpha: 0.92);
     final Color titleColor = AppColors.getTextPrimaryColor(context);
     final Color descriptionColor = AppColors.getTextSecondaryColor(
       context,
-    ).withOpacity(0.94);
+    ).withValues(alpha: 0.94);
     final String serviceLabel = template.secondaryService != null
         ? '${template.primaryService} → ${template.secondaryService}'
         : template.primaryService;
@@ -106,7 +106,7 @@ class _TemplateCard extends StatelessWidget {
             ? null
             : [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),

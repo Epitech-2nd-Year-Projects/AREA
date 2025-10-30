@@ -140,6 +140,8 @@ class _QuickActionButton extends StatelessWidget {
             vertical: dense ? AppSpacing.xs : AppSpacing.sm,
             horizontal: AppSpacing.sm,
           ),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
         ),
         icon: Icon(icon, size: 20),
         label: Padding(
