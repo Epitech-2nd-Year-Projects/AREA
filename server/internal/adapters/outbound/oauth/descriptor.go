@@ -161,6 +161,25 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: linearProfileExtractor,
 		},
+		"microsoft": {
+			DisplayName:      "Microsoft",
+			AuthorizationURL: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+			TokenURL:         "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+			UserInfoURL:      "https://graph.microsoft.com/v1.0/me",
+			DefaultScopes: []string{
+				"offline_access",
+				"openid",
+				"profile",
+				"email",
+				"Mail.Read",
+				"Mail.Send",
+			},
+			UserInfoHeaders: map[string]string{
+				"Accept":     "application/json",
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: microsoftProfileExtractor,
+		},
 		"zoom": {
 			DisplayName:      "Zoom",
 			AuthorizationURL: "https://zoom.us/oauth/authorize",
@@ -461,6 +480,28 @@ func linearProfileExtractor(raw map[string]any) (identitydomain.Profile, error) 
 		Email:      stringFrom(viewer["email"]),
 		Name:       stringFrom(viewer["name"]),
 		PictureURL: stringFrom(viewer["avatarUrl"]),
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func microsoftProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	subject := stringFrom(raw["id"])
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("microsoft: id missing")
+	}
+
+	email := strings.TrimSpace(stringFrom(raw["mail"]))
+	if email == "" {
+		email = strings.TrimSpace(stringFrom(raw["userPrincipalName"]))
+	}
+
+	profile := identitydomain.Profile{
+		Provider:   "microsoft",
+		Subject:    subject,
+		Email:      email,
+		Name:       stringFrom(raw["displayName"]),
+		PictureURL: "",
 		Raw:        raw,
 	}
 	return profile, nil
