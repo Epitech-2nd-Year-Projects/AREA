@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"syscall"
 	"testing"
 	"time"
@@ -111,5 +112,80 @@ func TestRunRespectsContextCancellation(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for server shutdown")
+	}
+}
+
+func TestWithMiddlewareRegistersHandlers(t *testing.T) {
+	var invoked bool
+
+	middleware := func(c *gin.Context) {
+		invoked = true
+		c.Next()
+	}
+
+	srv, err := New(httpserver.Config{Mode: httpserver.ModeTest}, WithLogger(zap.NewNop()), WithMiddleware(middleware))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	srv.Engine().GET("/ping", func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	srv.Engine().ServeHTTP(rec, req)
+
+	if !invoked {
+		t.Fatal("expected custom middleware to be invoked")
+	}
+}
+
+func TestWithRequestIDHeader(t *testing.T) {
+	srv, err := New(
+		httpserver.Config{Mode: httpserver.ModeTest},
+		WithLogger(zap.NewNop()),
+		WithRequestIDHeader("  X-Custom-ID  "),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	srv.Engine().GET("/ping", func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	req.Header.Set("X-Custom-ID", "incoming")
+	srv.Engine().ServeHTTP(rec, req)
+
+	if got := rec.Header().Get("X-Custom-ID"); got != "incoming" {
+		t.Fatalf("expected custom request id header propagated, got %q", got)
+	}
+}
+
+func TestWithTrustedProxiesOption(t *testing.T) {
+	opts := options{
+		trustedProxies: []string{"0.0.0.0/0"},
+	}
+
+	WithTrustedProxies()(&opts)
+	if opts.trustedProxies != nil {
+		t.Fatal("expected empty proxies option to reset slice")
+	}
+
+	proxies := []string{"10.0.0.0/8", "127.0.0.1"}
+	WithTrustedProxies(proxies...)(&opts)
+	if !reflect.DeepEqual(opts.trustedProxies, proxies) {
+		t.Fatalf("expected trusted proxies to match, got %v", opts.trustedProxies)
+	}
+
+	if _, err := New(
+		httpserver.Config{Mode: httpserver.ModeTest},
+		WithLogger(zap.NewNop()),
+		WithTrustedProxies(proxies...),
+	); err != nil {
+		t.Fatalf("unexpected error constructing server with trusted proxies: %v", err)
 	}
 }
