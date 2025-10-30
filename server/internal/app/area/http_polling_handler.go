@@ -97,14 +97,20 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		if renderErr != nil {
 			return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render query %q: %w", spec.Name, renderErr)
 		}
-		if strings.TrimSpace(value) == "" && spec.Default != "" {
-			defaultValue, defaultErr := renderTemplate(spec.Default, req)
-			if defaultErr != nil {
-				return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render default for %q: %w", spec.Name, defaultErr)
+		if shouldTreatAsEmpty(value, spec.templateHasPlaceholder, spec.baseTemplate) {
+			if spec.Default != "" {
+				defaultValue, defaultErr := renderTemplate(spec.Default, req)
+				if defaultErr != nil {
+					return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render default for %q: %w", spec.Name, defaultErr)
+				}
+				value = defaultValue
+				if spec.SkipIfEmpty && shouldTreatAsEmpty(value, spec.defaultHasPlaceholder, spec.baseDefault) {
+					continue
+				}
+			} else if spec.SkipIfEmpty {
+				continue
 			}
-			value = defaultValue
-		}
-		if strings.TrimSpace(value) == "" && spec.SkipIfEmpty {
+		} else if spec.SkipIfEmpty && strings.TrimSpace(value) == "" {
 			continue
 		}
 		query.Set(spec.Name, value)
@@ -134,14 +140,20 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		if renderErr != nil {
 			return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render header %q: %w", header.Name, renderErr)
 		}
-		if strings.TrimSpace(value) == "" && header.Default != "" {
-			defaultValue, defaultErr := renderTemplate(header.Default, req)
-			if defaultErr != nil {
-				return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render default header %q: %w", header.Name, defaultErr)
+		if shouldTreatAsEmpty(value, header.templateHasPlaceholder, header.baseTemplate) {
+			if header.Default != "" {
+				defaultValue, defaultErr := renderTemplate(header.Default, req)
+				if defaultErr != nil {
+					return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: render default header %q: %w", header.Name, defaultErr)
+				}
+				value = defaultValue
+				if header.SkipIfEmpty && shouldTreatAsEmpty(value, header.defaultHasPlaceholder, header.baseDefault) {
+					continue
+				}
+			} else if header.SkipIfEmpty {
+				continue
 			}
-			value = defaultValue
-		}
-		if strings.TrimSpace(value) == "" && header.SkipIfEmpty {
+		} else if header.SkipIfEmpty && strings.TrimSpace(value) == "" {
 			continue
 		}
 		request.Header.Set(header.Name, value)
@@ -449,17 +461,25 @@ type httpSkipRule struct {
 }
 
 type httpQuerySpec struct {
-	Name        string
-	Template    string
-	Default     string
-	SkipIfEmpty bool
+	Name                   string
+	Template               string
+	Default                string
+	SkipIfEmpty            bool
+	baseTemplate           string
+	baseDefault            string
+	templateHasPlaceholder bool
+	defaultHasPlaceholder  bool
 }
 
 type httpHeaderSpec struct {
-	Name        string
-	Template    string
-	Default     string
-	SkipIfEmpty bool
+	Name                   string
+	Template               string
+	Default                string
+	SkipIfEmpty            bool
+	baseTemplate           string
+	baseDefault            string
+	templateHasPlaceholder bool
+	defaultHasPlaceholder  bool
 }
 
 func parseHTTPPollingConfig(component *componentdomain.Component) (httpPollingConfig, bool, error) {
@@ -670,6 +690,8 @@ func parseHTTPQuerySpecs(raw any) ([]httpQuerySpec, error) {
 				spec.Template = "{{cursor." + cursorName + "}}"
 			}
 		}
+		spec.baseTemplate, spec.templateHasPlaceholder = computeTemplateInfo(spec.Template)
+		spec.baseDefault, spec.defaultHasPlaceholder = computeTemplateInfo(spec.Default)
 		result = append(result, spec)
 	}
 	return result, nil
@@ -712,6 +734,8 @@ func parseHTTPHeaderSpecs(raw any) ([]httpHeaderSpec, error) {
 				spec.Template = "{{cursor." + cursorName + "}}"
 			}
 		}
+		spec.baseTemplate, spec.templateHasPlaceholder = computeTemplateInfo(spec.Template)
+		spec.baseDefault, spec.defaultHasPlaceholder = computeTemplateInfo(spec.Default)
 		result = append(result, spec)
 	}
 	return result, nil
@@ -798,6 +822,26 @@ func selectTemplate(values map[string]any) string {
 		return value
 	}
 	return ""
+}
+
+func computeTemplateInfo(template string) (string, bool) {
+	if strings.TrimSpace(template) == "" {
+		return "", false
+	}
+	hasPlaceholder := placeholderPattern.MatchString(template)
+	base := strings.TrimSpace(placeholderPattern.ReplaceAllString(template, ""))
+	return base, hasPlaceholder
+}
+
+func shouldTreatAsEmpty(value string, hasPlaceholder bool, base string) bool {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return true
+	}
+	if hasPlaceholder && trimmed == base {
+		return true
+	}
+	return false
 }
 
 func stringOrDefault(values map[string]any, key string, fallback string) string {

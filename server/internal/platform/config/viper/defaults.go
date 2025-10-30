@@ -89,7 +89,7 @@ var _defaultConfig = Config{
 		Path:     ".env",
 	},
 	OAuth: OAuthConfig{
-		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "spotify", "notion", "zoom", "linear"},
+		AllowedProviders: []string{"google", "github", "gitlab", "dropbox", "slack", "spotify", "notion", "zoom", "linear", "microsoft"},
 		Providers: map[string]OAuthProviderConfig{
 			"google": {
 				ClientIDEnv:     "GOOGLE_OAUTH_CLIENT_ID",
@@ -146,6 +146,19 @@ var _defaultConfig = Config{
 				ClientSecretEnv: "NOTION_OAUTH_CLIENT_SECRET",
 				RedirectURI:     "http://localhost:8080/oauth/notion/callback",
 				Scopes:          []string{"read", "write"},
+			},
+			"microsoft": {
+				ClientIDEnv:     "MICROSOFT_OAUTH_CLIENT_ID",
+				ClientSecretEnv: "MICROSOFT_OAUTH_CLIENT_SECRET",
+				RedirectURI:     "http://localhost:8080/oauth/microsoft/callback",
+				Scopes: []string{
+					"offline_access",
+					"openid",
+					"profile",
+					"email",
+					"Mail.Read",
+					"Mail.Send",
+				},
 			},
 			"zoom": {
 				ClientIDEnv:     "ZOOM_OAUTH_CLIENT_ID",
@@ -282,6 +295,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("oauth.providers.notion.clientSecretEnv", _defaultConfig.OAuth.Providers["notion"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.notion.redirectURI", _defaultConfig.OAuth.Providers["notion"].RedirectURI)
 	v.SetDefault("oauth.providers.notion.scopes", _defaultConfig.OAuth.Providers["notion"].Scopes)
+	v.SetDefault("oauth.providers.microsoft.clientIDEnv", _defaultConfig.OAuth.Providers["microsoft"].ClientIDEnv)
+	v.SetDefault("oauth.providers.microsoft.clientSecretEnv", _defaultConfig.OAuth.Providers["microsoft"].ClientSecretEnv)
+	v.SetDefault("oauth.providers.microsoft.redirectURI", _defaultConfig.OAuth.Providers["microsoft"].RedirectURI)
+	v.SetDefault("oauth.providers.microsoft.scopes", _defaultConfig.OAuth.Providers["microsoft"].Scopes)
 	v.SetDefault("oauth.providers.zoom.clientIDEnv", _defaultConfig.OAuth.Providers["zoom"].ClientIDEnv)
 	v.SetDefault("oauth.providers.zoom.clientSecretEnv", _defaultConfig.OAuth.Providers["zoom"].ClientSecretEnv)
 	v.SetDefault("oauth.providers.zoom.redirectURI", _defaultConfig.OAuth.Providers["zoom"].RedirectURI)

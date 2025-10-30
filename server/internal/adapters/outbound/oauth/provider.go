@@ -281,10 +281,16 @@ func (p *provider) Exchange(ctx context.Context, code string, req identityport.E
 		return identityport.TokenExchange{}, fmt.Errorf("oauth.Provider[%s].Exchange: redirect uri missing", p.name)
 	}
 
+	extra := make(map[string]string)
+	if len(p.defaultScopes) > 0 {
+		extra["scope"] = strings.Join(p.defaultScopes, " ")
+	}
+
 	token, err := p.client.Exchange(ctx, oauth2.ExchangeRequest{
 		Code:         code,
 		RedirectURI:  redirect,
 		CodeVerifier: req.CodeVerifier,
+		Extra:        extra,
 	})
 	if err != nil {
 		return identityport.TokenExchange{}, fmt.Errorf("oauth.Provider[%s].Exchange: %w", p.name, err)

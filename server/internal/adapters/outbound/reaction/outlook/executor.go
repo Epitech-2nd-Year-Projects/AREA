@@ -1,9 +1,8 @@
-package gmail
+package outlook
 
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,9 +21,9 @@ import (
 )
 
 const (
-	gmailComponentName = "gmail_send_email"
-	gmailProviderName  = "google"
-	gmailAPIEndpoint   = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+	outlookComponentName    = "outlook_send_email"
+	outlookProviderName     = "microsoft"
+	outlookSendMailEndpoint = "https://graph.microsoft.com/v1.0/me/sendMail"
 )
 
 // ProviderResolver exposes OAuth providers by name
@@ -42,7 +41,7 @@ type Clock interface {
 	Now() time.Time
 }
 
-// Executor delivers Gmail reactions on behalf of the user through OAuth tokens
+// Executor delivers Outlook reactions on behalf of the user through OAuth tokens
 type Executor struct {
 	identities identityport.Repository
 	providers  ProviderResolver
@@ -51,7 +50,7 @@ type Executor struct {
 	logger     *zap.Logger
 }
 
-// NewExecutor constructs a Gmail executor from its dependencies
+// NewExecutor constructs an Outlook executor from its dependencies
 func NewExecutor(identities identityport.Repository, providers ProviderResolver, client HTTPClient, clock Clock, logger *zap.Logger) *Executor {
 	if client == nil {
 		client = http.DefaultClient
@@ -70,32 +69,30 @@ func (e *Executor) Supports(component *componentdomain.Component) bool {
 	if component == nil {
 		return false
 	}
-	if strings.EqualFold(component.Name, gmailComponentName) && strings.EqualFold(component.Provider.Name, gmailProviderName) {
-		return true
-	}
-	return false
+	return strings.EqualFold(component.Name, outlookComponentName) &&
+		strings.EqualFold(component.Provider.Name, outlookProviderName)
 }
 
-// Execute delivers the Gmail reaction payload for the provided area
+// Execute delivers the Outlook reaction payload for the provided area
 func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link areadomain.Link) (outbound.ReactionResult, error) {
 	if !e.Supports(link.Config.Component) {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: unsupported component")
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: unsupported component")
 	}
 	if e.identities == nil || e.providers == nil {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: resolver not configured")
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: resolver not configured")
 	}
 
 	cfg, err := parseMessageConfig(link.Config.Params)
 	if err != nil {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: %w", err)
 	}
 
 	identity, err := e.identities.FindByID(ctx, cfg.identityID)
 	if err != nil {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: identity lookup: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: identity lookup: %w", err)
 	}
 	if identity.UserID != area.UserID {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: identity not owned by user")
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: identity not owned by user")
 	}
 
 	identity, accessToken, err := e.ensureAccessToken(ctx, identity, false)
@@ -103,9 +100,9 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 		return outbound.ReactionResult{}, err
 	}
 
-	payload, err := buildRawMessage(cfg)
+	payload, err := buildSendMailPayload(cfg)
 	if err != nil {
-		return outbound.ReactionResult{}, fmt.Errorf("gmail.Executor: build payload: %w", err)
+		return outbound.ReactionResult{}, fmt.Errorf("outlook.Executor: build payload: %w", err)
 	}
 
 	requestInfo := map[string]any{
@@ -113,29 +110,30 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 		"cc":      append([]string(nil), cfg.cc...),
 		"bcc":     append([]string(nil), cfg.bcc...),
 		"subject": cfg.subject,
-		"payload": string(payload),
+		"body":    cfg.body,
 	}
 
-	result, unauthorized, err := e.sendMessage(ctx, accessToken, payload, requestInfo)
+	result, unauthorized, err := e.sendMail(ctx, accessToken, payload, requestInfo)
 	if err != nil && unauthorized {
 		identity, accessToken, err = e.ensureAccessToken(ctx, identity, true)
 		if err != nil {
 			return outbound.ReactionResult{}, err
 		}
-		result, unauthorized, err = e.sendMessage(ctx, accessToken, payload, requestInfo)
+		result, unauthorized, err = e.sendMail(ctx, accessToken, payload, requestInfo)
 	}
 	if err != nil {
 		return result, err
 	}
 	if unauthorized {
-		return result, fmt.Errorf("gmail.Executor: unauthorized after refresh")
+		return result, fmt.Errorf("outlook.Executor: unauthorized after refresh")
 	}
 
-	e.logger.Info("gmail reaction delivered",
+	e.logger.Info("outlook reaction delivered",
 		zap.String("area_id", area.ID.String()),
 		zap.String("identity_id", identity.ID.String()),
 		zap.Int("recipient_count", len(cfg.to)+len(cfg.cc)+len(cfg.bcc)),
 	)
+
 	return result, nil
 }
 
@@ -145,42 +143,42 @@ func (e *Executor) ensureAccessToken(ctx context.Context, identity identitydomai
 		return identity, identity.AccessToken, nil
 	}
 
-	provider, ok := e.providers.Provider(gmailProviderName)
+	provider, ok := e.providers.Provider(outlookProviderName)
 	if !ok {
-		return identity, "", fmt.Errorf("gmail.Executor: provider %s not configured", gmailProviderName)
+		return identity, "", fmt.Errorf("outlook.Executor: provider %s not configured", outlookProviderName)
 	}
 
 	exchange, err := provider.Refresh(ctx, identity)
 	if err != nil {
-		return identity, "", fmt.Errorf("gmail.Executor: refresh token: %w", err)
+		return identity, "", fmt.Errorf("outlook.Executor: refresh token: %w", err)
 	}
 
-	refToken := exchange.Token.RefreshToken
-	if refToken == "" {
-		refToken = identity.RefreshToken
+	refreshToken := exchange.Token.RefreshToken
+	if refreshToken == "" {
+		refreshToken = identity.RefreshToken
 	}
 	expiresAt := identity.ExpiresAt
 	if !exchange.Token.ExpiresAt.IsZero() {
-		expires := exchange.Token.ExpiresAt.UTC()
-		expiresAt = &expires
+		exp := exchange.Token.ExpiresAt.UTC()
+		expiresAt = &exp
 	}
 	scopes := exchange.Token.Scope
 	if len(scopes) == 0 {
 		scopes = identity.Scopes
 	}
 
-	updated := identity.WithTokens(exchange.Token.AccessToken, refToken, expiresAt, scopes)
+	updated := identity.WithTokens(exchange.Token.AccessToken, refreshToken, expiresAt, scopes)
 	updated.UpdatedAt = now
 	if err := e.identities.Update(ctx, updated); err != nil {
-		return identity, "", fmt.Errorf("gmail.Executor: update identity: %w", err)
+		return identity, "", fmt.Errorf("outlook.Executor: update identity: %w", err)
 	}
 	return updated, updated.AccessToken, nil
 }
 
-func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload []byte, request map[string]any) (outbound.ReactionResult, bool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, gmailAPIEndpoint, bytes.NewReader(payload))
+func (e *Executor) sendMail(ctx context.Context, accessToken string, payload []byte, request map[string]any) (outbound.ReactionResult, bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, outlookSendMailEndpoint, bytes.NewReader(payload))
 	if err != nil {
-		return outbound.ReactionResult{}, false, fmt.Errorf("gmail.Executor: build request: %w", err)
+		return outbound.ReactionResult{}, false, fmt.Errorf("outlook.Executor: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
@@ -188,7 +186,7 @@ func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload 
 	start := time.Now()
 	resp, err := e.http.Do(req)
 	if err != nil {
-		return outbound.ReactionResult{}, false, fmt.Errorf("gmail.Executor: request failed: %w", err)
+		return outbound.ReactionResult{}, false, fmt.Errorf("outlook.Executor: request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -201,7 +199,7 @@ func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload 
 	}
 
 	result := outbound.ReactionResult{
-		Endpoint: gmailAPIEndpoint,
+		Endpoint: outlookSendMailEndpoint,
 		Request:  cloneMap(request),
 		Response: map[string]any{
 			"body":    strings.TrimSpace(string(body)),
@@ -213,9 +211,9 @@ func (e *Executor) sendMessage(ctx context.Context, accessToken string, payload 
 
 	switch {
 	case resp.StatusCode == http.StatusUnauthorized:
-		return result, true, fmt.Errorf("gmail.Executor: unauthorized: %s", strings.TrimSpace(string(body)))
+		return result, true, fmt.Errorf("outlook.Executor: unauthorized: %s", strings.TrimSpace(string(body)))
 	case resp.StatusCode >= 400:
-		return result, false, fmt.Errorf("gmail.Executor: api error %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		return result, false, fmt.Errorf("outlook.Executor: api error %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	default:
 		return result, false, nil
 	}
@@ -226,45 +224,6 @@ func (e *Executor) now() time.Time {
 		return time.Now().UTC()
 	}
 	return e.clock.Now().UTC()
-}
-
-func cloneMap(source map[string]any) map[string]any {
-	if len(source) == 0 {
-		return map[string]any{}
-	}
-	result := make(map[string]any, len(source))
-	for key, value := range source {
-		switch v := value.(type) {
-		case []string:
-			result[key] = append([]string(nil), v...)
-		case map[string]any:
-			result[key] = cloneMap(v)
-		default:
-			result[key] = v
-		}
-	}
-	return result
-}
-
-func buildRawMessage(cfg messageConfig) ([]byte, error) {
-	headers := []string{
-		"To: " + strings.Join(cfg.to, ", "),
-	}
-	if len(cfg.cc) > 0 {
-		headers = append(headers, "Cc: "+strings.Join(cfg.cc, ", "))
-	}
-	if len(cfg.bcc) > 0 {
-		headers = append(headers, "Bcc: "+strings.Join(cfg.bcc, ", "))
-	}
-	headers = append(headers,
-		"Subject: "+sanitizeHeader(cfg.subject),
-		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=\"UTF-8\"",
-	)
-
-	payload := strings.Join(headers, "\r\n") + "\r\n\r\n" + cfg.body
-	encoded := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(payload))
-	return json.Marshal(map[string]string{"raw": encoded})
 }
 
 type messageConfig struct {
@@ -338,9 +297,60 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	return cfg, nil
 }
 
-func sanitizeHeader(value string) string {
-	replacer := strings.NewReplacer("\r", " ", "\n", " ")
-	return strings.TrimSpace(replacer.Replace(value))
+func buildSendMailPayload(cfg messageConfig) ([]byte, error) {
+	message := map[string]any{
+		"subject": cfg.subject,
+		"body": map[string]any{
+			"contentType": "Text",
+			"content":     cfg.body,
+		},
+		"toRecipients": toRecipientObjects(cfg.to),
+	}
+	if len(cfg.cc) > 0 {
+		message["ccRecipients"] = toRecipientObjects(cfg.cc)
+	}
+	if len(cfg.bcc) > 0 {
+		message["bccRecipients"] = toRecipientObjects(cfg.bcc)
+	}
+
+	payload := map[string]any{
+		"message":         message,
+		"saveToSentItems": true,
+	}
+	return json.Marshal(payload)
+}
+
+func toRecipientObjects(addresses []string) []map[string]any {
+	if len(addresses) == 0 {
+		return nil
+	}
+	result := make([]map[string]any, 0, len(addresses))
+	for _, address := range addresses {
+		result = append(result, map[string]any{
+			"emailAddress": map[string]string{
+				"address": address,
+			},
+		})
+	}
+	return result
+}
+
+func cloneMap(source map[string]any) map[string]any {
+	if len(source) == 0 {
+		return map[string]any{}
+	}
+	result := make(map[string]any, len(source))
+	for key, value := range source {
+		switch v := value.(type) {
+		case []string:
+			result[key] = append([]string(nil), v...)
+		case map[string]any:
+			result[key] = cloneMap(v)
+		default:
+			result[key] = v
+		}
+	}
+	return result
 }
 
 type systemClock struct{}
