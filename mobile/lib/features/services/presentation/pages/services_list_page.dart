@@ -215,9 +215,9 @@ class _ServicesListPageContent extends StatelessWidget {
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
                   final service = state.filteredServices[index];
-                  // Cascade animation: base delay + stagger based on index
                   final delay = 150 + (index * 50);
                   return ServiceCard(
+                    key: ValueKey(service.provider.id),
                     service: service,
                     onTap: () {
                       context.push('/services/${service.provider.id}');
