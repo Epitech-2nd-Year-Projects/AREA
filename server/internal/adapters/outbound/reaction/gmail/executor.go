@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	mailutils "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/mail"
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	identitydomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/identity"
@@ -282,7 +283,7 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	if !ok {
 		return cfg, fmt.Errorf("identityId missing")
 	}
-	identityStr, err := toString(identityRaw)
+	identityStr, err := mailutils.ToString(identityRaw)
 	if err != nil {
 		return cfg, fmt.Errorf("identityId invalid")
 	}
@@ -296,19 +297,19 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	if !ok {
 		return cfg, fmt.Errorf("to missing")
 	}
-	cfg.to, err = toEmailList(toRaw, false)
+	cfg.to, err = mailutils.ParseList(toRaw, false)
 	if err != nil {
 		return cfg, fmt.Errorf("to invalid: %w", err)
 	}
 
 	if ccRaw, ok := params["cc"]; ok {
-		cfg.cc, err = toEmailList(ccRaw, true)
+		cfg.cc, err = mailutils.ParseList(ccRaw, true)
 		if err != nil {
 			return cfg, fmt.Errorf("cc invalid: %w", err)
 		}
 	}
 	if bccRaw, ok := params["bcc"]; ok {
-		cfg.bcc, err = toEmailList(bccRaw, true)
+		cfg.bcc, err = mailutils.ParseList(bccRaw, true)
 		if err != nil {
 			return cfg, fmt.Errorf("bcc invalid: %w", err)
 		}
@@ -318,7 +319,7 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	if !ok {
 		return cfg, fmt.Errorf("subject missing")
 	}
-	cfg.subject, err = toString(subjectRaw)
+	cfg.subject, err = mailutils.ToString(subjectRaw)
 	if err != nil {
 		return cfg, fmt.Errorf("subject invalid")
 	}
@@ -327,7 +328,7 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 	if !ok {
 		return cfg, fmt.Errorf("body missing")
 	}
-	cfg.body, err = toString(bodyRaw)
+	cfg.body, err = mailutils.ToString(bodyRaw)
 	if err != nil {
 		return cfg, fmt.Errorf("body invalid")
 	}
@@ -340,95 +341,6 @@ func parseMessageConfig(params map[string]any) (messageConfig, error) {
 func sanitizeHeader(value string) string {
 	replacer := strings.NewReplacer("\r", " ", "\n", " ")
 	return strings.TrimSpace(replacer.Replace(value))
-}
-
-func toEmailList(value any, allowEmpty bool) ([]string, error) {
-	if value == nil {
-		return nil, nil
-	}
-
-	replacer := strings.NewReplacer(";", ",", "\n", ",")
-	emails := make([]string, 0, 4)
-
-	collect := func(raw any) error {
-		if raw == nil {
-			return nil
-		}
-		str, err := toString(raw)
-		if err != nil {
-			if allowEmpty {
-				return nil
-			}
-			return err
-		}
-		str = strings.TrimSpace(str)
-		if str == "" {
-			return nil
-		}
-
-		parts := strings.Split(replacer.Replace(str), ",")
-		for _, part := range parts {
-			address := normalizeEmail(part)
-			if address != "" {
-				emails = append(emails, address)
-			}
-		}
-		return nil
-	}
-
-	switch typed := value.(type) {
-	case []string:
-		for _, item := range typed {
-			if err := collect(item); err != nil {
-				return nil, err
-			}
-		}
-	case []any:
-		for _, item := range typed {
-			if err := collect(item); err != nil {
-				return nil, err
-			}
-		}
-	default:
-		if err := collect(typed); err != nil {
-			return nil, err
-		}
-	}
-
-	emails = filterEmpty(emails)
-	if len(emails) == 0 {
-		if allowEmpty {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("no recipients provided")
-	}
-
-	return emails, nil
-}
-
-func normalizeEmail(raw string) string {
-	return strings.TrimSpace(raw)
-}
-
-func filterEmpty(values []string) []string {
-	result := make([]string, 0, len(values))
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
-}
-
-func toString(value any) (string, error) {
-	switch v := value.(type) {
-	case string:
-		return v, nil
-	case fmt.Stringer:
-		return v.String(), nil
-	default:
-		return "", fmt.Errorf("not a string")
-	}
 }
 
 type systemClock struct{}
