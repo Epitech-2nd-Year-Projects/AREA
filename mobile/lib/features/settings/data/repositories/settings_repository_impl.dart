@@ -25,12 +25,14 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<bool> probeServerAddress(String address) async {
-    final dio = Dio(BaseOptions(
-      baseUrl: address,
-      connectTimeout: const Duration(milliseconds: 1500),
-      receiveTimeout: const Duration(milliseconds: 1500),
-      validateStatus: (code) => true,
-    ));
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: address,
+        connectTimeout: const Duration(milliseconds: 1500),
+        receiveTimeout: const Duration(milliseconds: 1500),
+        validateStatus: (code) => true,
+      ),
+    );
     try {
       await dio.get('/');
       return true;

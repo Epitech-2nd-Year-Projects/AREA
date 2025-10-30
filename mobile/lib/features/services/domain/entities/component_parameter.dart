@@ -23,24 +23,21 @@ class ComponentParameter extends Equatable {
 
   @override
   List<Object?> get props => [
-        key,
-        label,
-        type,
-        required,
-        description,
-        options,
-        extras,
-      ];
+    key,
+    label,
+    type,
+    required,
+    description,
+    options,
+    extras,
+  ];
 }
 
 class ComponentParameterOption extends Equatable {
   final String value;
   final String label;
 
-  const ComponentParameterOption({
-    required this.value,
-    required this.label,
-  });
+  const ComponentParameterOption({required this.value, required this.label});
 
   @override
   List<Object?> get props => [value, label];

@@ -6,8 +6,8 @@ import 'dashboard_state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit(GetDashboardSummary getDashboardSummary)
-      : _getDashboardSummary = getDashboardSummary,
-        super(const DashboardInitial());
+    : _getDashboardSummary = getDashboardSummary,
+      super(const DashboardInitial());
 
   final GetDashboardSummary _getDashboardSummary;
 

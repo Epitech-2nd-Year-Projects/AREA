@@ -24,8 +24,7 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
   @override
   Future<List<AreaModel>> listAreas() async {
     try {
-      final response =
-          await _apiClient.get<Map<String, dynamic>>('/v1/areas');
+      final response = await _apiClient.get<Map<String, dynamic>>('/v1/areas');
       final data = response.data;
       if (data == null || data['areas'] is! List) {
         throw NetworkException('Invalid areas response');
@@ -62,10 +61,7 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
   }
 
   @override
-  Future<AreaModel> updateArea(
-    String areaId,
-    AreaRequestModel request,
-  ) async {
+  Future<AreaModel> updateArea(String areaId, AreaRequestModel request) async {
     try {
       final response = await _apiClient.put<Map<String, dynamic>>(
         '/v1/areas/$areaId',

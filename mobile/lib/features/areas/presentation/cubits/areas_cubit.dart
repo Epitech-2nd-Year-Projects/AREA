@@ -4,11 +4,10 @@ import 'package:area/features/areas/domain/use_cases/delete_area.dart';
 import 'package:area/features/areas/presentation/cubits/areas_state.dart';
 import 'package:area/features/areas/domain/repositories/area_repository.dart';
 
-
 class AreasCubit extends Cubit<AreasState> {
   late final GetAreas _getAreas;
   late final DeleteArea _deleteArea;
-  
+
   AreasCubit(AreaRepository repository) : super(AreasInitial()) {
     _getAreas = GetAreas(repository);
     _deleteArea = DeleteArea(repository);

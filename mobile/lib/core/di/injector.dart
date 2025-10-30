@@ -27,12 +27,14 @@ class Injector {
       await module.register(sl);
     }
   }
+
   @visibleForTesting
   static void setTestModules(List<DIModule> testModules) {
     _modules
       ..clear()
       ..addAll(testModules);
   }
+
   /// Reset dependency injection for testing
   @visibleForTesting
   static Future<void> reset() async {

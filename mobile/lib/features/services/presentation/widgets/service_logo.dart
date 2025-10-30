@@ -107,7 +107,6 @@ class _ServiceLogoState extends State<ServiceLogo> {
   }
 
   Widget _buildFallbackIcon(BuildContext context) {
-
     return Container(
       width: widget.size,
       height: widget.size,

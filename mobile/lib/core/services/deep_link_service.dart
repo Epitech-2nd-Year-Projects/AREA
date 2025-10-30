@@ -12,7 +12,9 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSubscription;
   bool _initialized = false;
 
-  final List<void Function(String provider, String code, String? state, String? returnTo)>
+  final List<
+    void Function(String provider, String code, String? state, String? returnTo)
+  >
   _oauthCallbackListeners = [];
   final List<void Function(String? provider, String error)>
   _oauthErrorListeners = [];
@@ -28,7 +30,7 @@ class DeepLinkService {
 
     try {
       _linkSubscription = _appLinks.uriLinkStream.listen(
-            (Uri uri) {
+        (Uri uri) {
           debugPrint('🔗 Deep link received: $uri');
           _handleDeepLink(uri);
         },
@@ -71,7 +73,9 @@ class DeepLinkService {
       final state = uri.queryParameters['state'];
       final returnTo = uri.queryParameters['returnTo'];
 
-      debugPrint('🔄 Custom scheme callback - Type: $type, Provider: $provider');
+      debugPrint(
+        '🔄 Custom scheme callback - Type: $type, Provider: $provider',
+      );
       debugPrint('   Code: ${code?.substring(0, 10)}...');
       debugPrint('   Error: $error');
 
@@ -106,7 +110,8 @@ class DeepLinkService {
   void _handleHttpCallback(Uri uri) {
     if (uri.path.startsWith('/oauth/') && uri.path.contains('/callback')) {
       _processOAuthCallback(uri, 'oauth');
-    } else if (uri.path.startsWith('/services/') && uri.path.contains('/callback')) {
+    } else if (uri.path.startsWith('/services/') &&
+        uri.path.contains('/callback')) {
       _processServiceCallback(uri, 'services');
     }
   }
@@ -122,7 +127,9 @@ class DeepLinkService {
       final returnTo = uri.queryParameters['returnTo'];
 
       if (code != null && _processedCodes.contains(code)) {
-        debugPrint('⏭️ Ignoring duplicate callback for code: ${code.substring(0, 10)}...');
+        debugPrint(
+          '⏭️ Ignoring duplicate callback for code: ${code.substring(0, 10)}...',
+        );
         return;
       }
 
@@ -194,44 +201,52 @@ class DeepLinkService {
   }
 
   void addOAuthCallbackListener(
-      void Function(String provider, String code, String? state, String? returnTo)
-      listener) {
+    void Function(String provider, String code, String? state, String? returnTo)
+    listener,
+  ) {
     _oauthCallbackListeners.add(listener);
   }
 
   void removeOAuthCallbackListener(
-      void Function(String provider, String code, String? state, String? returnTo)
-      listener) {
+    void Function(String provider, String code, String? state, String? returnTo)
+    listener,
+  ) {
     _oauthCallbackListeners.remove(listener);
   }
 
   void addOAuthErrorListener(
-      void Function(String? provider, String error) listener) {
+    void Function(String? provider, String error) listener,
+  ) {
     _oauthErrorListeners.add(listener);
   }
 
   void removeOAuthErrorListener(
-      void Function(String? provider, String error) listener) {
+    void Function(String? provider, String error) listener,
+  ) {
     _oauthErrorListeners.remove(listener);
   }
 
   void addServiceCallbackListener(
-      void Function(String provider, String code, String? state) listener) {
+    void Function(String provider, String code, String? state) listener,
+  ) {
     _serviceCallbackListeners.add(listener);
   }
 
   void removeServiceCallbackListener(
-      void Function(String provider, String code, String? state) listener) {
+    void Function(String provider, String code, String? state) listener,
+  ) {
     _serviceCallbackListeners.remove(listener);
   }
 
   void addServiceErrorListener(
-      void Function(String? provider, String error) listener) {
+    void Function(String? provider, String error) listener,
+  ) {
     _serviceErrorListeners.add(listener);
   }
 
   void removeServiceErrorListener(
-      void Function(String? provider, String error) listener) {
+    void Function(String? provider, String error) listener,
+  ) {
     _serviceErrorListeners.remove(listener);
   }
 }

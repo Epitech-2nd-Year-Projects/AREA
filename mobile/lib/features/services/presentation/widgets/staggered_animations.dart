@@ -13,8 +13,8 @@ class StaggeredAnimation extends StatefulWidget {
     this.delay = 0,
     Duration? duration,
     Curve? curve,
-  })  : duration = duration ?? AnimationConstants.mediumDuration,
-        curve = curve ?? AnimationConstants.curve;
+  }) : duration = duration ?? AnimationConstants.mediumDuration,
+       curve = curve ?? AnimationConstants.curve;
 
   @override
   State<StaggeredAnimation> createState() => _StaggeredAnimationState();
@@ -30,23 +30,22 @@ class _StaggeredAnimationState extends State<StaggeredAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: widget.curve),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: widget.curve),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
@@ -65,10 +64,7 @@ class _StaggeredAnimationState extends State<StaggeredAnimation>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: widget.child,
-        ),
+        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
       ),
     );
   }
@@ -84,8 +80,8 @@ class FadeInAnimation extends StatefulWidget {
     required this.child,
     Duration? duration,
     Curve? curve,
-  })  : duration = duration ?? AnimationConstants.mediumDuration,
-        curve = curve ?? AnimationConstants.curve;
+  }) : duration = duration ?? AnimationConstants.mediumDuration,
+       curve = curve ?? AnimationConstants.curve;
 
   @override
   State<FadeInAnimation> createState() => _FadeInAnimationState();
@@ -100,9 +96,10 @@ class _FadeInAnimationState extends State<FadeInAnimation>
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this);
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: widget.curve),
-    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     _controller.forward();
   }
 

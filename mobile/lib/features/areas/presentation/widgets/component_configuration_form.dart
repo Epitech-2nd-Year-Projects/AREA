@@ -28,10 +28,12 @@ class ComponentConfigurationForm extends StatefulWidget {
   });
 
   @override
-  State<ComponentConfigurationForm> createState() => _ComponentConfigurationFormState();
+  State<ComponentConfigurationForm> createState() =>
+      _ComponentConfigurationFormState();
 }
 
-class _ComponentConfigurationFormState extends State<ComponentConfigurationForm> {
+class _ComponentConfigurationFormState
+    extends State<ComponentConfigurationForm> {
   final Map<String, TextEditingController> _textControllers = {};
   final Map<String, dynamic> _values = {};
   TextEditingController? _nameController;
@@ -124,8 +126,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         continue;
       }
 
-      final controller =
-          TextEditingController(text: _displayTextForParam(param, value));
+      final controller = TextEditingController(
+        text: _displayTextForParam(param, value),
+      );
       if (!_isDateRelatedParam(param)) {
         controller.addListener(() {
           _values[param.key] = controller.text;
@@ -228,17 +231,23 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                           color: AppColors.getTextTertiaryColor(context),
                         ),
                         filled: true,
-                        fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                        fillColor: AppColors.getSurfaceVariantColor(
+                          context,
+                        ).withValues(alpha: 0.3),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                            color: AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                            color: AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -260,10 +269,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
-                        color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                        color: AppColors.getSurfaceVariantColor(
+                          context,
+                        ).withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
+                          color: AppColors.getBorderColor(
+                            context,
+                          ).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -286,14 +299,16 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                       ),
                     )
                   else
-                    ...component.parameters.asMap().entries.map((entry) => Padding(
-                          padding: EdgeInsets.only(
-                            bottom: entry.key < component.parameters.length - 1
-                                ? AppSpacing.md
-                                : 0,
-                          ),
-                          child: _buildParameterField(entry.value, l10n),
-                        )),
+                    ...component.parameters.asMap().entries.map(
+                      (entry) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: entry.key < component.parameters.length - 1
+                              ? AppSpacing.md
+                              : 0,
+                        ),
+                        child: _buildParameterField(entry.value, l10n),
+                      ),
+                    ),
                 ],
               ),
       ),
@@ -309,7 +324,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.1),
+                color: AppColors.getTextTertiaryColor(
+                  context,
+                ).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -335,7 +352,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         Container(
           padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            color: AppColors.getSurfaceVariantColor(
+              context,
+            ).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
@@ -374,7 +393,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            color: AppColors.getSurfaceVariantColor(
+              context,
+            ).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
@@ -408,7 +429,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                     setState(() {
                       _values[param.key] = value;
                     });
-                    widget.onParametersChanged(Map<String, dynamic>.from(_values));
+                    widget.onParametersChanged(
+                      Map<String, dynamic>.from(_values),
+                    );
                   }
                 : null,
           ),
@@ -424,10 +447,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
           initialValue: param.options.any((o) => o.value == current)
               ? current
               : (param.options.isNotEmpty ? param.options.first.value : null),
-          icon: Icon(
-            Icons.arrow_drop_down_rounded,
-            color: AppColors.primary,
-          ),
+          icon: Icon(Icons.arrow_drop_down_rounded, color: AppColors.primary),
           style: AppTypography.bodyLarge.copyWith(
             color: AppColors.getTextPrimaryColor(context),
           ),
@@ -435,10 +455,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
               .map(
                 (option) => DropdownMenuItem<String>(
                   value: option.value,
-                  child: Text(
-                    option.label,
-                    style: AppTypography.bodyMedium,
-                  ),
+                  child: Text(option.label, style: AppTypography.bodyMedium),
                 ),
               )
               .toList(),
@@ -448,7 +465,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
                   setState(() {
                     _values[param.key] = value;
                   });
-                  widget.onParametersChanged(Map<String, dynamic>.from(_values));
+                  widget.onParametersChanged(
+                    Map<String, dynamic>.from(_values),
+                  );
                 }
               : null,
           validator: (value) {
@@ -468,7 +487,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
               fontSize: 12,
             ),
             filled: true,
-            fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+            fillColor: AppColors.getSurfaceVariantColor(
+              context,
+            ).withValues(alpha: 0.3),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
@@ -483,17 +504,11 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppColors.error,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: AppColors.error, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
@@ -527,8 +542,13 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         controller: controller,
         enabled: widget.enabled,
         style: AppTypography.bodyLarge,
-        keyboardType: const ['number', 'integer', 'float', 'double']
-                .contains(param.type.toLowerCase())
+        keyboardType:
+            const [
+              'number',
+              'integer',
+              'float',
+              'double',
+            ].contains(param.type.toLowerCase())
             ? TextInputType.number
             : TextInputType.text,
         decoration: InputDecoration(
@@ -542,7 +562,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
             fontSize: 12,
           ),
           filled: true,
-          fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+          fillColor: AppColors.getSurfaceVariantColor(
+            context,
+          ).withValues(alpha: 0.3),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
@@ -557,24 +579,15 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: AppColors.primary,
-              width: 2,
-            ),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: AppColors.error,
-              width: 1.5,
-            ),
+            borderSide: BorderSide(color: AppColors.error, width: 1.5),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: AppColors.error,
-              width: 2,
-            ),
+            borderSide: BorderSide(color: AppColors.error, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
@@ -598,7 +611,9 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
   }
 
   bool _isDateRelatedParam(ComponentParameter param) {
-    return _isDateTimeParam(param) || _isDateParam(param) || _isTimeParam(param);
+    return _isDateTimeParam(param) ||
+        _isDateParam(param) ||
+        _isTimeParam(param);
   }
 
   bool _isDateTimeParam(ComponentParameter param) {
@@ -608,12 +623,14 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
     }
     final format = param.extras['format'];
     if (format is String &&
-        (format.toLowerCase() == 'date-time' || format.toLowerCase() == 'datetime')) {
+        (format.toLowerCase() == 'date-time' ||
+            format.toLowerCase() == 'datetime')) {
       return true;
     }
     final kind = param.extras['type'];
     if (kind is String &&
-        (kind.toLowerCase() == 'date-time' || kind.toLowerCase() == 'datetime')) {
+        (kind.toLowerCase() == 'date-time' ||
+            kind.toLowerCase() == 'datetime')) {
       return true;
     }
     return false;
@@ -739,9 +756,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         helperText: _helperText(param),
         hintText: controller.text.isEmpty ? l10n.selectDateTime : null,
         suffixIcon: const Icon(Icons.calendar_month),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (!param.required) return null;
@@ -770,9 +785,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         helperText: _helperText(param),
         hintText: controller.text.isEmpty ? l10n.selectDate : null,
         suffixIcon: const Icon(Icons.event),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (!param.required) return null;
@@ -801,9 +814,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
         helperText: _helperText(param),
         hintText: controller.text.isEmpty ? l10n.selectTime : null,
         suffixIcon: const Icon(Icons.schedule),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (!param.required) return null;
@@ -902,10 +913,7 @@ class _ComponentConfigurationFormState extends State<ComponentConfigurationForm>
       }
     }
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    final time = await showTimePicker(context: context, initialTime: initial);
     if (time == null) return;
 
     final formatted = _formatTimeOfDay(time);

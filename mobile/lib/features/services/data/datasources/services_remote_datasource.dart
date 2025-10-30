@@ -12,9 +12,7 @@ import '../../domain/entities/service_subscription_exchange_result.dart';
 abstract class ServicesRemoteDataSource {
   Future<AboutInfoModel> getAboutInfo();
 
-  Future<List<ServiceComponentModel>> listComponents({
-    bool onlyAvailable,
-  });
+  Future<List<ServiceComponentModel>> listComponents({bool onlyAvailable});
 
   Future<List<IdentitySummaryModel>> listIdentities();
 
@@ -64,10 +62,10 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
     bool onlyAvailable = false,
   }) async {
     try {
-      final endpoint =
-          onlyAvailable ? '/v1/components/available' : '/v1/components';
-      final response =
-          await apiClient.get<Map<String, dynamic>>(endpoint);
+      final endpoint = onlyAvailable
+          ? '/v1/components/available'
+          : '/v1/components';
+      final response = await apiClient.get<Map<String, dynamic>>(endpoint);
       final data = response.data;
       if (data == null || data['components'] is! List) {
         throw const NetworkFailure('Invalid components response');
@@ -86,8 +84,9 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
   @override
   Future<List<IdentitySummaryModel>> listIdentities() async {
     try {
-      final response =
-          await apiClient.get<Map<String, dynamic>>('/v1/identities');
+      final response = await apiClient.get<Map<String, dynamic>>(
+        '/v1/identities',
+      );
       final data = response.data;
       if (data == null || data['identities'] is! List) {
         throw const NetworkFailure('Invalid identities response');
@@ -106,36 +105,36 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
   @override
   Future<List<Map<String, dynamic>>> listServiceProviders() async {
     try {
-      final response =
-          await apiClient.get<Map<String, dynamic>>('/v1/services');
+      final response = await apiClient.get<Map<String, dynamic>>(
+        '/v1/services',
+      );
       final data = response.data;
       if (data == null || data['providers'] is! List) {
         throw const NetworkFailure('Invalid services response');
       }
 
       final providers = data['providers'] as List;
-      return providers
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      return providers.whereType<Map<String, dynamic>>().toList();
     } catch (e) {
-      throw NetworkFailure('Failed to fetch service providers: ${e.toString()}');
+      throw NetworkFailure(
+        'Failed to fetch service providers: ${e.toString()}',
+      );
     }
   }
 
   @override
   Future<List<Map<String, dynamic>>> listServiceSubscriptions() async {
     try {
-      final response =
-          await apiClient.get<Map<String, dynamic>>('/v1/services/subscriptions');
+      final response = await apiClient.get<Map<String, dynamic>>(
+        '/v1/services/subscriptions',
+      );
       final data = response.data;
       if (data == null || data['subscriptions'] is! List) {
         throw const NetworkFailure('Invalid subscriptions response');
       }
 
       final subscriptions = data['subscriptions'] as List;
-      return subscriptions
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      return subscriptions.whereType<Map<String, dynamic>>().toList();
     } catch (e) {
       throw NetworkFailure('Failed to fetch subscriptions: ${e.toString()}');
     }
@@ -167,7 +166,7 @@ class ServicesRemoteDataSourceImpl implements ServicesRemoteDataSource {
         payload['scopes'] = scopes;
       }
       payload['redirectUri'] = redirectUri;
-          if (state != null) {
+      if (state != null) {
         payload['state'] = state;
       }
       payload['usePkce'] = usePkce ?? true;

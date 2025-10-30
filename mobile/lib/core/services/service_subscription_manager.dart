@@ -4,7 +4,7 @@ import '../../features/services/domain/use_cases/complete_service_subscription.d
 
 class ServiceSubscriptionManager {
   static final ServiceSubscriptionManager _instance =
-  ServiceSubscriptionManager._internal();
+      ServiceSubscriptionManager._internal();
 
   factory ServiceSubscriptionManager() => _instance;
   ServiceSubscriptionManager._internal();
@@ -46,7 +46,9 @@ class ServiceSubscriptionManager {
     final subscription = _pendingSubscriptions[serviceId];
 
     if (subscription == null) {
-      debugPrint('⭐ Callback received but subscription not setup yet - storing');
+      debugPrint(
+        '⭐ Callback received but subscription not setup yet - storing',
+      );
       _pendingCallbacks[serviceId] = _PendingCallback(
         code: code,
         state: state,
@@ -90,7 +92,9 @@ class ServiceSubscriptionManager {
 
       debugPrint('🔄 Completing subscription for $serviceId');
       debugPrint('   Code: ${code.substring(0, 10)}...');
-      debugPrint('   Code verifier: ${pending.codeVerifier?.substring(0, 10)}...');
+      debugPrint(
+        '   Code verifier: ${pending.codeVerifier?.substring(0, 10)}...',
+      );
       debugPrint('   Redirect URI: ${pending.redirectUri}');
 
       final completeUseCase = CompleteServiceSubscription(repository);
@@ -103,11 +107,11 @@ class ServiceSubscriptionManager {
       );
 
       result.fold(
-            (failure) {
+        (failure) {
           debugPrint('❌ Subscription failed: ${failure.message}');
           onError?.call(failure.message);
         },
-            (subscriptionResult) {
+        (subscriptionResult) {
           debugPrint('✅ Subscription completed for $serviceId');
           _pendingSubscriptions.remove(serviceId);
           onSuccess?.call(serviceId);
@@ -137,11 +141,11 @@ class ServiceSubscriptionManager {
       );
 
       result.fold(
-            (failure) {
+        (failure) {
           debugPrint('❌ Subscription failed: ${failure.message}');
           onError?.call(failure.message);
         },
-            (subscriptionResult) {
+        (subscriptionResult) {
           debugPrint('✅ Subscription completed for $serviceId');
           _pendingSubscriptions.remove(serviceId);
           onSuccess?.call(serviceId);

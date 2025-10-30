@@ -23,10 +23,8 @@ class _ProfessionalShimmerState extends State<ProfessionalShimmer>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
   }
 
   @override
@@ -38,12 +36,12 @@ class _ProfessionalShimmerState extends State<ProfessionalShimmer>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final position = _controller.value * 2 - 1;
-        
+
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
@@ -51,7 +49,7 @@ class _ProfessionalShimmerState extends State<ProfessionalShimmer>
               end: Alignment(1.0 - position, 0),
               colors: [
                 Colors.transparent,
-                isDark 
+                isDark
                     ? Colors.white.withValues(alpha: 0.08)
                     : Colors.white.withValues(alpha: 0.4),
                 Colors.transparent,
@@ -83,20 +81,20 @@ class SkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            isDark 
+            isDark
                 ? AppColors.slate700.withValues(alpha: 0.6)
                 : AppColors.gray200.withValues(alpha: 0.7),
-            isDark 
+            isDark
                 ? AppColors.slate600.withValues(alpha: 0.4)
                 : AppColors.gray100.withValues(alpha: 0.5),
-            isDark 
+            isDark
                 ? AppColors.slate700.withValues(alpha: 0.6)
                 : AppColors.gray200.withValues(alpha: 0.7),
           ],
@@ -158,17 +156,13 @@ class ServiceCardSkeleton extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              
+
               // Title skeleton
               SkeletonCard(height: 20),
               const SizedBox(height: AppSpacing.sm),
-              
+
               // Category skeleton - smaller width
-              SkeletonCard(
-                width: 100,
-                height: 24,
-                borderRadius: 12,
-              ),
+              SkeletonCard(width: 100, height: 24, borderRadius: 12),
             ],
           ),
         ),
@@ -196,9 +190,7 @@ class ServiceDetailsSkeletonSection extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.getBorderColor(context),
-          ),
+          border: Border.all(color: AppColors.getBorderColor(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

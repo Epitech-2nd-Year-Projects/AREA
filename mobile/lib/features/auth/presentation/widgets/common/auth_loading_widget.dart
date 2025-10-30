@@ -7,11 +7,7 @@ class AuthLoadingWidget extends StatelessWidget {
   final String? message;
   final bool showLogo;
 
-  const AuthLoadingWidget({
-    super.key,
-    this.message,
-    this.showLogo = true,
-  });
+  const AuthLoadingWidget({super.key, this.message, this.showLogo = true});
 
   @override
   Widget build(BuildContext context) {

@@ -12,9 +12,6 @@ void main() async {
   ApiConfig.initialize();
   await Injector.setup();
   runApp(
-    BlocProvider<AuthBloc>(
-      create: (_) => sl<AuthBloc>(),
-      child: const MyApp(),
-    ),
+    BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>(), child: const MyApp()),
   );
 }

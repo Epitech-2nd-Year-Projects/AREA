@@ -9,11 +9,11 @@ class ServicesModule implements DIModule {
   @override
   Future<void> register(GetIt sl) async {
     sl.registerLazySingleton<ServicesRemoteDataSource>(
-          () => ServicesRemoteDataSourceImpl(sl<ApiClient>()),
+      () => ServicesRemoteDataSourceImpl(sl<ApiClient>()),
     );
 
     sl.registerLazySingleton<ServicesRepository>(
-          () => ServicesRepositoryImpl(sl<ServicesRemoteDataSource>()),
+      () => ServicesRepositoryImpl(sl<ServicesRemoteDataSource>()),
     );
   }
 }

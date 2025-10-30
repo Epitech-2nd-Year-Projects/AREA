@@ -14,7 +14,9 @@ class NetworkModule implements DIModule {
     final url = savedBaseUrl ?? ApiConfig.baseUrl;
 
     sl.registerLazySingleton<ApiClient>(
-            () => ApiClient(baseUrl: url ,cookieDirPath: '${supportDir.path}/cookies'));
+      () =>
+          ApiClient(baseUrl: url, cookieDirPath: '${supportDir.path}/cookies'),
+    );
     sl.registerLazySingleton<ApiConfig>(() => ApiConfig());
   }
 }

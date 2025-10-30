@@ -10,10 +10,7 @@ import 'service_logo.dart';
 class ServiceInfoCard extends StatelessWidget {
   final ServiceProvider service;
 
-  const ServiceInfoCard({
-    super.key,
-    required this.service,
-  });
+  const ServiceInfoCard({super.key, required this.service});
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +54,11 @@ class ServiceInfoCard extends StatelessWidget {
                 else
                   _buildNormalHeader(context, constraints.maxWidth, l10n),
                 const SizedBox(height: AppSpacing.xl),
-                _buildAuthenticationSection(context, constraints.maxWidth, l10n),
+                _buildAuthenticationSection(
+                  context,
+                  constraints.maxWidth,
+                  l10n,
+                ),
               ],
             );
           },
@@ -97,12 +98,24 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildNormalHeader(BuildContext context, double width, AppLocalizations l10n) {
+  Widget _buildNormalHeader(
+    BuildContext context,
+    double width,
+    AppLocalizations l10n,
+  ) {
     final isSmall = width < 350;
     final isMedium = width < 450;
 
-    final iconSize = isSmall ? 60.0 : isMedium ? 68.0 : 76.0;
-    final titleFontSize = isSmall ? 20.0 : isMedium ? 22.0 : null;
+    final iconSize = isSmall
+        ? 60.0
+        : isMedium
+        ? 68.0
+        : 76.0;
+    final titleFontSize = isSmall
+        ? 20.0
+        : isMedium
+        ? 22.0
+        : null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,13 +146,14 @@ class ServiceInfoCard extends StatelessWidget {
   }
 
   Widget _buildServiceIcon(BuildContext context, double size) {
-    return ServiceLogo(
-      serviceName: service.displayName,
-      size: size,
-    );
+    return ServiceLogo(serviceName: service.displayName, size: size);
   }
 
-  Widget _buildBadges(BuildContext context, double width, AppLocalizations l10n) {
+  Widget _buildBadges(
+    BuildContext context,
+    double width,
+    AppLocalizations l10n,
+  ) {
     final isSmall = width < 350;
 
     final categoryChip = _buildCategoryChip(context, isSmall);
@@ -193,7 +207,11 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, bool isSmall, AppLocalizations l10n) {
+  Widget _buildStatusBadge(
+    BuildContext context,
+    bool isSmall,
+    AppLocalizations l10n,
+  ) {
     final isActive = service.isEnabled;
     final statusColor = isActive ? AppColors.success : AppColors.error;
     final statusText = isActive ? l10n.active : l10n.inactive;
@@ -256,7 +274,11 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAuthenticationSection(BuildContext context, double width, AppLocalizations l10n) {
+  Widget _buildAuthenticationSection(
+    BuildContext context,
+    double width,
+    AppLocalizations l10n,
+  ) {
     final authInfo = _getAuthInfo(l10n);
     final isSmall = width < 350;
 
@@ -371,35 +393,37 @@ class ServiceInfoCard extends StatelessWidget {
     );
   }
 
-  ({Color color, IconData icon, String text, String badge}) _getAuthInfo(AppLocalizations l10n  ) {
+  ({Color color, IconData icon, String text, String badge}) _getAuthInfo(
+    AppLocalizations l10n,
+  ) {
     switch (service.oauthType.value) {
       case 'oauth2':
         return (
-        color: AppColors.primary,
-        icon: Icons.security_rounded,
-        text: l10n.oauth2Required,
-        badge: l10n.oauthBadge
+          color: AppColors.primary,
+          icon: Icons.security_rounded,
+          text: l10n.oauth2Required,
+          badge: l10n.oauthBadge,
         );
       case 'apikey':
         return (
-        color: AppColors.warning,
-        icon: Icons.key_rounded,
-        text: l10n.apiKeyRequired,
-        badge: l10n.apiKeyBadge
+          color: AppColors.warning,
+          icon: Icons.key_rounded,
+          text: l10n.apiKeyRequired,
+          badge: l10n.apiKeyBadge,
         );
       case 'none':
         return (
-        color: AppColors.success,
-        icon: Icons.public_rounded,
-        text: l10n.noAuthentication,
-        badge: l10n.publicBadge
+          color: AppColors.success,
+          icon: Icons.public_rounded,
+          text: l10n.noAuthentication,
+          badge: l10n.publicBadge,
         );
       default:
         return (
-        color: AppColors.gray500,
-        icon: Icons.help_outline_rounded,
-        text: l10n.unknownAuthentication,
-        badge: l10n.unknownBadge
+          color: AppColors.gray500,
+          icon: Icons.help_outline_rounded,
+          text: l10n.unknownAuthentication,
+          badge: l10n.unknownBadge,
         );
     }
   }

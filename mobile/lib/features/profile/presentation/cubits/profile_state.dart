@@ -21,7 +21,7 @@ class ProfileLoaded extends ProfileState {
   final String displayName;
   final List<ServiceWithStatus> services;
   List<ServiceWithStatus> get subscribedServices =>
-    services.where((s) => s.isSubscribed).toList();
+      services.where((s) => s.isSubscribed).toList();
 
   const ProfileLoaded({
     required this.user,
@@ -32,7 +32,11 @@ class ProfileLoaded extends ProfileState {
   @override
   List<Object?> get props => [user, displayName, services];
 
-  ProfileLoaded copyWith({User? user, String? displayName, List<ServiceWithStatus>? services}) {
+  ProfileLoaded copyWith({
+    User? user,
+    String? displayName,
+    List<ServiceWithStatus>? services,
+  }) {
     return ProfileLoaded(
       user: user ?? this.user,
       displayName: displayName ?? this.displayName,

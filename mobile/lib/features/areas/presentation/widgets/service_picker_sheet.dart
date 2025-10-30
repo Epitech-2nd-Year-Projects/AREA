@@ -41,8 +41,9 @@ class _ServicePickerSheet extends StatefulWidget {
 }
 
 class _ServicePickerSheetState extends State<_ServicePickerSheet> {
-  late final GetServicesWithStatus _getServices =
-      GetServicesWithStatus(sl<ServicesRepository>());
+  late final GetServicesWithStatus _getServices = GetServicesWithStatus(
+    sl<ServicesRepository>(),
+  );
 
   List<ServiceWithStatus> _items = [];
   bool _loading = true;
@@ -110,7 +111,9 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.getTextTertiaryColor(context).withValues(alpha: 0.3),
+                color: AppColors.getTextTertiaryColor(
+                  context,
+                ).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -142,7 +145,9 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                           color: AppColors.primary,
                         ),
                         filled: true,
-                        fillColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
+                        fillColor: AppColors.getSurfaceVariantColor(
+                          context,
+                        ).withValues(alpha: 0.5),
                         isDense: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -151,7 +156,9 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(
-                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                            color: AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -187,9 +194,13 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                     side: BorderSide(
                       color: _onlySubscribed
                           ? AppColors.primary.withValues(alpha: 0.5)
-                          : AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                          : AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                     ),
-                    backgroundColor: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                    backgroundColor: AppColors.getSurfaceVariantColor(
+                      context,
+                    ).withValues(alpha: 0.3),
                     onSelected: (v) => setState(() => _onlySubscribed = v),
                   ),
                 ),
@@ -199,10 +210,14 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                color: AppColors.getSurfaceVariantColor(
+                  context,
+                ).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
+                  color: AppColors.getBorderColor(
+                    context,
+                  ).withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -221,11 +236,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Icon(
-                    Icons.cancel_outlined,
-                    color: AppColors.error,
-                    size: 16,
-                  ),
+                  Icon(Icons.cancel_outlined, color: AppColors.error, size: 16),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     l10n.notSubscribedStatus,
@@ -293,7 +304,8 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                     bottom: AppSpacing.xl * 2.4,
                   ),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (_, i) {
                     final s = filtered[i];
                     final name = ((s.provider.displayName.isNotEmpty) == true)
@@ -302,27 +314,36 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                     final icon = s.isSubscribed
                         ? Icons.check_circle_rounded
                         : Icons.cancel_outlined;
-                    final color = s.isSubscribed ? AppColors.success : AppColors.error;
+                    final color = s.isSubscribed
+                        ? AppColors.success
+                        : AppColors.error;
 
                     return Semantics(
-                      label: '$name service, ${s.isSubscribed ? "subscribed" : "not subscribed"}',
+                      label:
+                          '$name service, ${s.isSubscribed ? "subscribed" : "not subscribed"}',
                       button: true,
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () => Navigator.of(context).pop(ServicePickResult(
-                            providerId: s.provider.id,
-                            providerName: name,
-                            isSubscribed: s.isSubscribed,
-                          )),
+                          onTap: () => Navigator.of(context).pop(
+                            ServicePickResult(
+                              providerId: s.provider.id,
+                              providerName: name,
+                              isSubscribed: s.isSubscribed,
+                            ),
+                          ),
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.3),
+                              color: AppColors.getSurfaceVariantColor(
+                                context,
+                              ).withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                                color: AppColors.getBorderColor(
+                                  context,
+                                ).withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -331,28 +352,34 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
                                     child: Text(
                                       name.characters.first.toUpperCase(),
-                                      style: AppTypography.headlineMedium.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: AppTypography.headlineMedium
+                                          .copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         name,
                                         style: AppTypography.bodyLarge.copyWith(
-                                          color: AppColors.getTextPrimaryColor(context),
+                                          color: AppColors.getTextPrimaryColor(
+                                            context,
+                                          ),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -365,11 +392,12 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                                             s.isSubscribed
                                                 ? l10n.subscribed
                                                 : l10n.notSubscribedStatus,
-                                            style: AppTypography.labelMedium.copyWith(
-                                              color: color,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 12,
-                                            ),
+                                            style: AppTypography.labelMedium
+                                                .copyWith(
+                                                  color: color,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -379,7 +407,9 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
                                 Icon(
                                   Icons.arrow_forward_ios_rounded,
                                   size: 16,
-                                  color: AppColors.getTextTertiaryColor(context),
+                                  color: AppColors.getTextTertiaryColor(
+                                    context,
+                                  ),
                                 ),
                               ],
                             ),

@@ -11,7 +11,7 @@ enum ServiceCategory {
 
   static ServiceCategory fromString(String value) {
     return ServiceCategory.values.firstWhere(
-          (category) => category.value == value,
+      (category) => category.value == value,
       orElse: () => ServiceCategory.other,
     );
   }

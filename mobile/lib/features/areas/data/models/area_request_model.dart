@@ -27,7 +27,8 @@ class AreaRequestModel {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      if (description != null && description!.isNotEmpty) 'description': description,
+      if (description != null && description!.isNotEmpty)
+        'description': description,
       'action': action.toJson(),
       'reactions': reactions.map((r) => r.toJson()).toList(),
     };
@@ -38,22 +39,17 @@ class AreaComponentRequestModel {
   final String componentId;
   final Map<String, dynamic> params;
 
-  AreaComponentRequestModel({
-    required this.componentId,
-    required this.params,
-  });
+  AreaComponentRequestModel({required this.componentId, required this.params});
 
   factory AreaComponentRequestModel.fromDraft(AreaComponentDraft draft) {
     return AreaComponentRequestModel(
       componentId: draft.componentId,
-      params: draft.params
+      params: draft.params,
     );
   }
 
   Map<String, dynamic> toJson() {
-    final payload = <String, dynamic>{
-      'componentId': componentId,
-    };
+    final payload = <String, dynamic>{'componentId': componentId};
 
     if (params.isNotEmpty) {
       final cleanedParams = <String, dynamic>{};

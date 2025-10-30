@@ -14,10 +14,5 @@ class ComponentExample extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-    id,
-    componentId,
-    exampleInput,
-    exampleOutput,
-  ];
+  List<Object?> get props => [id, componentId, exampleInput, exampleOutput];
 }

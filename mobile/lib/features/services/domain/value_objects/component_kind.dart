@@ -7,7 +7,7 @@ enum ComponentKind {
 
   static ComponentKind fromString(String value) {
     return ComponentKind.values.firstWhere(
-          (kind) => kind.value == value,
+      (kind) => kind.value == value,
       orElse: () => ComponentKind.action,
     );
   }

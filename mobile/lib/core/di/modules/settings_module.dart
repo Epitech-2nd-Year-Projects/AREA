@@ -9,7 +9,7 @@ class SettingsModule implements DIModule {
   @override
   Future<void> register(GetIt sl) async {
     sl.registerLazySingleton<SettingsRepository>(
-          () => SettingsRepositoryImpl(sl<LocalPrefsManager>(), sl<ApiClient>()),
+      () => SettingsRepositoryImpl(sl<LocalPrefsManager>(), sl<ApiClient>()),
     );
   }
 }

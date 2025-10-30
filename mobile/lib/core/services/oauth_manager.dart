@@ -22,9 +22,9 @@ class OAuthManager {
   Function(String error)? onError;
 
   void initialize(
-      AuthRepository repository,
-      OAuthRemoteDataSource oauthDataSource,
-      ) {
+    AuthRepository repository,
+    OAuthRemoteDataSource oauthDataSource,
+  ) {
     _completeOAuthLogin = CompleteOAuthLogin(repository);
     _oauthDataSource = oauthDataSource;
     _deepLinkService = DeepLinkService();
@@ -64,30 +64,30 @@ class OAuthManager {
       if (returnTo != null) {
         final authUri = Uri.parse(response.authorizationUrl);
         final modifiedUri = authUri.replace(
-          queryParameters: {
-            ...authUri.queryParameters,
-            'returnTo': returnTo,
-          },
+          queryParameters: {...authUri.queryParameters, 'returnTo': returnTo},
         );
         finalUrl = modifiedUri.toString();
       }
 
-      _localServer.waitForCallback().then((callbackData) {
-        debugPrint('📥 Received callback from local server');
-        if (callbackData.hasError) {
-          _handleOAuthError(callbackData.provider, callbackData.error!);
-        } else if (callbackData.hasCode) {
-          _handleOAuthCallback(
-            callbackData.provider,
-            callbackData.code!,
-            callbackData.state,
-            callbackData.returnTo,
-          );
-        }
-      }).catchError((e) {
-        debugPrint('❌ Error waiting for callback: $e');
-        _handleOAuthError(provider.slug, e.toString());
-      });
+      _localServer
+          .waitForCallback()
+          .then((callbackData) {
+            debugPrint('📥 Received callback from local server');
+            if (callbackData.hasError) {
+              _handleOAuthError(callbackData.provider, callbackData.error!);
+            } else if (callbackData.hasCode) {
+              _handleOAuthCallback(
+                callbackData.provider,
+                callbackData.code!,
+                callbackData.state,
+                callbackData.returnTo,
+              );
+            }
+          })
+          .catchError((e) {
+            debugPrint('❌ Error waiting for callback: $e');
+            _handleOAuthError(provider.slug, e.toString());
+          });
 
       return finalUrl;
     } catch (e) {
@@ -97,18 +97,17 @@ class OAuthManager {
   }
 
   void _handleOAuthCallback(
-      String providerStr,
-      String code,
-      String? state,
-      String? returnTo,
-      ) async {
+    String providerStr,
+    String code,
+    String? state,
+    String? returnTo,
+  ) async {
     try {
       debugPrint('🔄 Processing OAuth callback: $providerStr');
 
       final provider = _parseProvider(providerStr);
       if (provider == null) {
-        _handleOAuthError(
-            providerStr, 'Unsupported provider: $providerStr');
+        _handleOAuthError(providerStr, 'Unsupported provider: $providerStr');
         return;
       }
 

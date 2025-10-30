@@ -11,7 +11,7 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
   late final GetServicesWithStatus _getServicesWithStatus;
 
   ServicesListBloc(ServicesRepository repository)
-      : super(ServicesListInitial()) {
+    : super(ServicesListInitial()) {
     _getServicesWithStatus = GetServicesWithStatus(repository);
 
     on<LoadServices>(_onLoadServices);
@@ -22,24 +22,24 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
   }
 
   Future<void> _onLoadServices(
-      LoadServices event,
-      Emitter<ServicesListState> emit,
-      ) async {
+    LoadServices event,
+    Emitter<ServicesListState> emit,
+  ) async {
     emit(ServicesListLoading());
     await _loadServices(emit, event.category);
   }
 
   Future<void> _onRefreshServices(
-      RefreshServices event,
-      Emitter<ServicesListState> emit,
-      ) async {
+    RefreshServices event,
+    Emitter<ServicesListState> emit,
+  ) async {
     await _loadServices(emit, null);
   }
 
   Future<void> _onFilterByCategory(
-      FilterByCategory event,
-      Emitter<ServicesListState> emit,
-      ) async {
+    FilterByCategory event,
+    Emitter<ServicesListState> emit,
+  ) async {
     if (state is ServicesListLoaded) {
       final currentState = state as ServicesListLoaded;
 
@@ -49,17 +49,19 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
         event.category,
       );
 
-      emit(currentState.copyWith(
-        selectedCategory: event.category,
-        filteredServices: filteredServices,
-      ));
+      emit(
+        currentState.copyWith(
+          selectedCategory: event.category,
+          filteredServices: filteredServices,
+        ),
+      );
     }
   }
 
   Future<void> _onSearchServices(
-      SearchServices event,
-      Emitter<ServicesListState> emit,
-      ) async {
+    SearchServices event,
+    Emitter<ServicesListState> emit,
+  ) async {
     if (state is ServicesListLoaded) {
       final currentState = state as ServicesListLoaded;
 
@@ -69,52 +71,58 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
         currentState.selectedCategory,
       );
 
-      emit(currentState.copyWith(
-        searchQuery: event.query,
-        filteredServices: filteredServices,
-      ));
+      emit(
+        currentState.copyWith(
+          searchQuery: event.query,
+          filteredServices: filteredServices,
+        ),
+      );
     }
   }
 
   Future<void> _onClearFilters(
-      ClearFilters event,
-      Emitter<ServicesListState> emit,
-      ) async {
+    ClearFilters event,
+    Emitter<ServicesListState> emit,
+  ) async {
     if (state is ServicesListLoaded) {
       final currentState = state as ServicesListLoaded;
 
-      emit(currentState.copyWith(
-        clearCategory: true, // Utilise le nouveau paramètre
-        searchQuery: '',
-        filteredServices: currentState.services,
-      ));
+      emit(
+        currentState.copyWith(
+          clearCategory: true, // Utilise le nouveau paramètre
+          searchQuery: '',
+          filteredServices: currentState.services,
+        ),
+      );
     }
   }
 
   Future<void> _loadServices(
-      Emitter<ServicesListState> emit,
-      ServiceCategory? category,
-      ) async {
+    Emitter<ServicesListState> emit,
+    ServiceCategory? category,
+  ) async {
     final result = await _getServicesWithStatus(category);
 
     result.fold(
-          (failure) => emit(ServicesListError(_mapFailureToMessage(failure))),
-          (services) {
-        emit(ServicesListLoaded(
-          services: services,
-          filteredServices: services,
-          selectedCategory: category,
-          searchQuery: '',
-        ));
+      (failure) => emit(ServicesListError(_mapFailureToMessage(failure))),
+      (services) {
+        emit(
+          ServicesListLoaded(
+            services: services,
+            filteredServices: services,
+            selectedCategory: category,
+            searchQuery: '',
+          ),
+        );
       },
     );
   }
 
   List<ServiceWithStatus> _applyFilters(
-      List<ServiceWithStatus> services,
-      String searchQuery,
-      ServiceCategory? category,
-      ) {
+    List<ServiceWithStatus> services,
+    String searchQuery,
+    ServiceCategory? category,
+  ) {
     var filtered = services;
 
     if (category != null) {
@@ -126,9 +134,11 @@ class ServicesListBloc extends Bloc<ServicesListEvent, ServicesListState> {
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase().trim();
       filtered = filtered
-          .where((service) =>
-      service.provider.displayName.toLowerCase().startsWith(query) ||
-          service.provider.name.toLowerCase().startsWith(query))
+          .where(
+            (service) =>
+                service.provider.displayName.toLowerCase().startsWith(query) ||
+                service.provider.name.toLowerCase().startsWith(query),
+          )
           .toList();
     }
 

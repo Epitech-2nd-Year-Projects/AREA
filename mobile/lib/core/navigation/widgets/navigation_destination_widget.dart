@@ -22,6 +22,7 @@ class NavigationDestinationWidget extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             isSelected ? item.selectedIcon : item.icon,
@@ -31,13 +32,17 @@ class NavigationDestinationWidget extends StatelessWidget {
                 : AppColors.getTextSecondaryColor(context),
           ),
           const SizedBox(height: 4),
-          Text(
-            item.label,
-            style: AppTypography.labelMedium.copyWith(
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.getTextSecondaryColor(context),
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          Flexible(
+            child: Text(
+              item.label,
+              style: AppTypography.labelMedium.copyWith(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.getTextSecondaryColor(context),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

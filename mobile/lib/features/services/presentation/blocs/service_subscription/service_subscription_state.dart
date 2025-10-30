@@ -13,7 +13,8 @@ class ServiceSubscriptionInitial extends ServiceSubscriptionState {}
 
 class ServiceSubscriptionLoading extends ServiceSubscriptionState {}
 
-class ServiceSubscriptionAwaitingAuthorization extends ServiceSubscriptionState {
+class ServiceSubscriptionAwaitingAuthorization
+    extends ServiceSubscriptionState {
   final ServiceAuthorizationData authorization;
 
   const ServiceSubscriptionAwaitingAuthorization(this.authorization);

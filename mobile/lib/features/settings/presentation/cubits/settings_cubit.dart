@@ -15,30 +15,34 @@ class SettingsCubit extends Cubit<SettingsState> {
     required GetServerAddress getServerAddress,
     required SetServerAddress setServerAddress,
     required ProbeServerAddress probeServerAddress,
-  })  : _getServerAddress = getServerAddress,
-        _setServerAddress = setServerAddress,
-        _probeServerAddress = probeServerAddress,
-        super(const SettingsLoading());
+  }) : _getServerAddress = getServerAddress,
+       _setServerAddress = setServerAddress,
+       _probeServerAddress = probeServerAddress,
+       super(const SettingsLoading());
 
   void load() {
     final addr = _getServerAddress();
     _initialAddress = addr;
-    emit(SettingsReady(
-      currentAddress: addr,
-      isDirty: false,
-      isValid: _isValidUrl(addr),
-    ));
+    emit(
+      SettingsReady(
+        currentAddress: addr,
+        isDirty: false,
+        isValid: _isValidUrl(addr),
+      ),
+    );
   }
 
   void onAddressChanged(String value) {
     final st = state;
     if (st is! SettingsReady) return;
-    emit(st.copyWith(
-      currentAddress: value,
-      isDirty: value.trim() != _initialAddress.trim(),
-      isValid: _isValidUrl(value),
-      message: null,
-    ));
+    emit(
+      st.copyWith(
+        currentAddress: value,
+        isDirty: value.trim() != _initialAddress.trim(),
+        isValid: _isValidUrl(value),
+        message: null,
+      ),
+    );
   }
 
   Future<void> save() async {
@@ -48,7 +52,9 @@ class SettingsCubit extends Cubit<SettingsState> {
     final trimmed = st.currentAddress.trim();
 
     if (!_isValidUrl(trimmed)) {
-      emit(st.copyWith(message: 'invalid URL. Exemple: https://api.example.com'));
+      emit(
+        st.copyWith(message: 'invalid URL. Exemple: https://api.example.com'),
+      );
       return;
     }
 
@@ -61,11 +67,13 @@ class SettingsCubit extends Cubit<SettingsState> {
     await _setServerAddress(trimmed);
     _initialAddress = trimmed;
 
-    emit(st.copyWith(
-      isDirty: false,
-      isValid: true,
-      message: 'Server adress updated',
-    ));
+    emit(
+      st.copyWith(
+        isDirty: false,
+        isValid: true,
+        message: 'Server adress updated',
+      ),
+    );
   }
 
   static bool _isValidUrl(String input) {

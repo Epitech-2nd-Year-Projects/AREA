@@ -56,7 +56,7 @@ class SystemStatusCard extends StatelessWidget {
                       isReachable
                           ? l10n.dashboardSystemStatusOnlineMessage
                           : (status.message ??
-                              l10n.dashboardSystemStatusOfflineMessage),
+                                l10n.dashboardSystemStatusOfflineMessage),
                       style: AppTypography.bodyMedium.copyWith(
                         color: secondaryColor,
                       ),
@@ -64,10 +64,7 @@ class SystemStatusCard extends StatelessWidget {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: onRetry,
-                child: Text(l10n.retry),
-              ),
+              TextButton(onPressed: onRetry, child: Text(l10n.retry)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

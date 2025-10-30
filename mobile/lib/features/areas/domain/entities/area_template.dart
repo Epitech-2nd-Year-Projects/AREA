@@ -17,12 +17,12 @@ class AreaTemplateStep extends Equatable {
 
   @override
   List<Object?> get props => [
-        providerId,
-        providerDisplayName,
-        componentName,
-        componentDisplayName,
-        defaultParams,
-      ];
+    providerId,
+    providerDisplayName,
+    componentName,
+    componentDisplayName,
+    defaultParams,
+  ];
 }
 
 class AreaTemplate extends Equatable {
@@ -40,9 +40,9 @@ class AreaTemplate extends Equatable {
 
   @override
   List<Object?> get props => [
-        suggestedName,
-        suggestedDescription,
-        action,
-        reaction,
-      ];
+    suggestedName,
+    suggestedDescription,
+    action,
+    reaction,
+  ];
 }

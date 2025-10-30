@@ -8,7 +8,7 @@ enum AuthKind {
 
   static AuthKind fromString(String value) {
     return AuthKind.values.firstWhere(
-          (kind) => kind.value == value,
+      (kind) => kind.value == value,
       orElse: () => AuthKind.none,
     );
   }

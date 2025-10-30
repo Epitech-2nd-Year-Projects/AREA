@@ -30,7 +30,8 @@ class ServicesFilterChips extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final category = categories[index];
-          final isSelected = (category == null && selectedCategory == null) ||
+          final isSelected =
+              (category == null && selectedCategory == null) ||
               (category != null && selectedCategory == category);
 
           return FilterChip(

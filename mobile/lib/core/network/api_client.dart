@@ -12,7 +12,8 @@ class ApiClient {
   late final PersistCookieJar cookieJar;
   final String? _cookieDirPath;
 
-  ApiClient({String? baseUrl, String? cookieDirPath}) : _cookieDirPath = cookieDirPath {
+  ApiClient({String? baseUrl, String? cookieDirPath})
+    : _cookieDirPath = cookieDirPath {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl ?? ApiConfig.baseUrl,
@@ -22,7 +23,8 @@ class ApiClient {
       ),
     );
 
-    final cookiesPath = _cookieDirPath ?? "${Directory.systemTemp.path}/cookies";
+    final cookiesPath =
+        _cookieDirPath ?? "${Directory.systemTemp.path}/cookies";
     Directory(cookiesPath).createSync(recursive: true);
 
     cookieJar = PersistCookieJar(
@@ -52,19 +54,46 @@ class ApiClient {
     }
   }
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters}) async {
+  Future<Response<T>> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     return await _dio.get<T>(path, queryParameters: queryParameters);
   }
 
-  Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
-    return await _dio.post<T>(path, data: data, queryParameters: queryParameters);
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+    );
   }
 
-  Future<Response<T>> put<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
-    return await _dio.put<T>(path, data: data, queryParameters: queryParameters);
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.put<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+    );
   }
 
-  Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
-    return await _dio.delete<T>(path, data: data, queryParameters: queryParameters);
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.delete<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+    );
   }
 }

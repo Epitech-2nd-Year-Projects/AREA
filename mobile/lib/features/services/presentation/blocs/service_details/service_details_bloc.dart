@@ -12,12 +12,14 @@ import '../../../domain/value_objects/component_kind.dart';
 import 'service_details_event.dart';
 import 'service_details_state.dart';
 
-class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> {
+class ServiceDetailsBloc
+    extends Bloc<ServiceDetailsEvent, ServiceDetailsState> {
   late final GetServiceDetails _getServiceDetails;
   late final GetServiceComponents _getServiceComponents;
   late final GetSubscriptionForService _getSubscriptionForService;
 
-  ServiceDetailsBloc(ServicesRepository repository) : super(ServiceDetailsInitial()) {
+  ServiceDetailsBloc(ServicesRepository repository)
+    : super(ServiceDetailsInitial()) {
     _getServiceDetails = GetServiceDetails(repository);
     _getServiceComponents = GetServiceComponents(repository);
     _getSubscriptionForService = GetSubscriptionForService(repository);
@@ -29,9 +31,9 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
   }
 
   Future<void> _onLoadServiceDetails(
-      LoadServiceDetails event,
-      Emitter<ServiceDetailsState> emit,
-      ) async {
+    LoadServiceDetails event,
+    Emitter<ServiceDetailsState> emit,
+  ) async {
     emit(ServiceDetailsLoading());
 
     final results = await Future.wait([
@@ -40,25 +42,25 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
     ]);
 
     final serviceResult = results[0] as Either<Failure, ServiceProvider>;
-    final subscriptionResult = results[1] as Either<Failure, UserServiceSubscription?>;
+    final subscriptionResult =
+        results[1] as Either<Failure, UserServiceSubscription?>;
 
     serviceResult.fold(
-          (failure) => emit(ServiceDetailsError(_mapFailureToMessage(failure))),
-          (service) {
+      (failure) => emit(ServiceDetailsError(_mapFailureToMessage(failure))),
+      (service) {
         UserServiceSubscription? subscription;
-        subscriptionResult.fold(
-              (failure) => {},
-              (sub) => subscription = sub,
-        );
+        subscriptionResult.fold((failure) => {}, (sub) => subscription = sub);
 
-        emit(ServiceDetailsLoaded(
-          service: service,
-          subscription: subscription,
-          components: [],
-          filteredComponents: [],
-          selectedComponentKind: null,
-          searchQuery: '',
-        ));
+        emit(
+          ServiceDetailsLoaded(
+            service: service,
+            subscription: subscription,
+            components: [],
+            filteredComponents: [],
+            selectedComponentKind: null,
+            searchQuery: '',
+          ),
+        );
 
         add(LoadServiceComponents(event.serviceId));
       },
@@ -66,28 +68,30 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
   }
 
   Future<void> _onLoadServiceComponents(
-      LoadServiceComponents event,
-      Emitter<ServiceDetailsState> emit,
-      ) async {
+    LoadServiceComponents event,
+    Emitter<ServiceDetailsState> emit,
+  ) async {
     if (state is ServiceDetailsLoaded) {
       final currentState = state as ServiceDetailsLoaded;
 
       final result = await _getServiceComponents(event.serviceId);
 
       result.fold(
-            (failure) => {},
-            (components) => emit(currentState.copyWith(
-          components: components,
-          filteredComponents: components,
-        )),
+        (failure) => {},
+        (components) => emit(
+          currentState.copyWith(
+            components: components,
+            filteredComponents: components,
+          ),
+        ),
       );
     }
   }
 
   Future<void> _onFilterComponents(
-      FilterComponents event,
-      Emitter<ServiceDetailsState> emit,
-      ) async {
+    FilterComponents event,
+    Emitter<ServiceDetailsState> emit,
+  ) async {
     if (state is ServiceDetailsLoaded) {
       final currentState = state as ServiceDetailsLoaded;
 
@@ -97,17 +101,19 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
         event.kind,
       );
 
-      emit(currentState.copyWith(
-        selectedComponentKind: event.kind,
-        filteredComponents: filteredComponents,
-      ));
+      emit(
+        currentState.copyWith(
+          selectedComponentKind: event.kind,
+          filteredComponents: filteredComponents,
+        ),
+      );
     }
   }
 
   Future<void> _onSearchComponents(
-      SearchComponents event,
-      Emitter<ServiceDetailsState> emit,
-      ) async {
+    SearchComponents event,
+    Emitter<ServiceDetailsState> emit,
+  ) async {
     if (state is ServiceDetailsLoaded) {
       final currentState = state as ServiceDetailsLoaded;
 
@@ -117,18 +123,20 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
         currentState.selectedComponentKind,
       );
 
-      emit(currentState.copyWith(
-        searchQuery: event.query,
-        filteredComponents: filteredComponents,
-      ));
+      emit(
+        currentState.copyWith(
+          searchQuery: event.query,
+          filteredComponents: filteredComponents,
+        ),
+      );
     }
   }
 
   List<ServiceComponent> _applyFilters(
-      List<ServiceComponent> components,
-      String searchQuery,
-      ComponentKind? kind,
-      ) {
+    List<ServiceComponent> components,
+    String searchQuery,
+    ComponentKind? kind,
+  ) {
     var filtered = components;
 
     if (kind != null) {
@@ -138,10 +146,12 @@ class ServiceDetailsBloc extends Bloc<ServiceDetailsEvent, ServiceDetailsState> 
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
       filtered = filtered
-          .where((component) =>
-      component.name.toLowerCase().contains(query) ||
-          component.displayName.toLowerCase().contains(query) ||
-          (component.description?.toLowerCase().contains(query) ?? false))
+          .where(
+            (component) =>
+                component.name.toLowerCase().contains(query) ||
+                component.displayName.toLowerCase().contains(query) ||
+                (component.description?.toLowerCase().contains(query) ?? false),
+          )
           .toList();
     }
 

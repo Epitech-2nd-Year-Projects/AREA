@@ -17,9 +17,9 @@ class AuthSessionModel {
   });
 
   factory AuthSessionModel.fromOAuthJson(
-      Map<String, dynamic> json,
-      UserModel user,
-      ) {
+    Map<String, dynamic> json,
+    UserModel user,
+  ) {
     DateTime expiresAt;
 
     if (json.containsKey('expiresAt') && json['expiresAt'] != null) {

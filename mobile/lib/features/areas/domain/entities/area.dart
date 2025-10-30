@@ -49,13 +49,13 @@ class Area extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        description,
-        status,
-        createdAt,
-        updatedAt,
-        action,
-        reactions,
-      ];
+    id,
+    name,
+    description,
+    status,
+    createdAt,
+    updatedAt,
+    action,
+    reactions,
+  ];
 }

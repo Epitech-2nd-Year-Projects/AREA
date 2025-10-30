@@ -11,10 +11,7 @@ import 'login_page.dart';
 class AuthWrapperPage extends StatefulWidget {
   final Widget authenticatedChild;
 
-  const AuthWrapperPage({
-    super.key,
-    required this.authenticatedChild,
-  });
+  const AuthWrapperPage({super.key, required this.authenticatedChild});
 
   @override
   State<AuthWrapperPage> createState() => _AuthWrapperPageState();
@@ -95,7 +92,11 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
     return const LoginPage();
   }
 
-  Widget _buildErrorScreen(ThemeData theme, AppLocalizations l10n, String message) {
+  Widget _buildErrorScreen(
+    ThemeData theme,
+    AppLocalizations l10n,
+    String message,
+  ) {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
@@ -104,11 +105,7 @@ class _AuthWrapperPageState extends State<AuthWrapperPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 64,
-              ),
+              const Icon(Icons.error_outline, color: AppColors.error, size: 64),
               const SizedBox(height: 16),
               Text(
                 l10n.authenticationError,

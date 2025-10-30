@@ -1,9 +1,7 @@
 class RegisterResponseModel {
   final DateTime expiresAt;
 
-  const RegisterResponseModel({
-    required this.expiresAt,
-  });
+  const RegisterResponseModel({required this.expiresAt});
 
   factory RegisterResponseModel.fromJson(Map<String, dynamic> json) {
     return RegisterResponseModel(
@@ -12,8 +10,6 @@ class RegisterResponseModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'expiresAt': expiresAt.toIso8601String(),
-    };
+    return {'expiresAt': expiresAt.toIso8601String()};
   }
 }

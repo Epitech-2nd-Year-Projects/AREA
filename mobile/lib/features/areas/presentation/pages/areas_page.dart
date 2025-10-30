@@ -172,13 +172,17 @@ class _AreasScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(AppSpacing.xl),
                                 decoration: BoxDecoration(
-                                  color: AppColors.getSurfaceVariantColor(context),
+                                  color: AppColors.getSurfaceVariantColor(
+                                    context,
+                                  ),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.auto_awesome_outlined,
                                   size: 64,
-                                  color: AppColors.getTextTertiaryColor(context),
+                                  color: AppColors.getTextTertiaryColor(
+                                    context,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.xl),
@@ -193,7 +197,9 @@ class _AreasScreen extends StatelessWidget {
                               Text(
                                 'Create your first automation to get started',
                                 style: AppTypography.bodyLarge.copyWith(
-                                  color: AppColors.getTextSecondaryColor(context),
+                                  color: AppColors.getTextSecondaryColor(
+                                    context,
+                                  ),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -217,7 +223,8 @@ class _AreasScreen extends StatelessWidget {
                   right: AppSpacing.md,
                 ),
                 itemCount: areas.length,
-                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final area = areas[index];
                   return Semantics(

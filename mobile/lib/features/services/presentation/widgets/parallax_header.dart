@@ -52,11 +52,7 @@ class ParallaxSliverAppBar extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        titlePadding: const EdgeInsets.only(
-          left: 56,
-          bottom: 16,
-          right: 16,
-        ),
+        titlePadding: const EdgeInsets.only(left: 56, bottom: 16, right: 16),
         centerTitle: false,
         collapseMode: CollapseMode.parallax,
         background: Container(
@@ -88,7 +84,8 @@ class ParallaxSliverAppBar extends StatelessWidget {
           ),
         ),
       ),
-      actions: actions ??
+      actions:
+          actions ??
           (actionWidget != null
               ? [
                   Padding(

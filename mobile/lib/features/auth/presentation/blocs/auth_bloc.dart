@@ -21,23 +21,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatus>(_onCheckAuthStatus);
   }
 
-   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-     emit(AuthLoading());
-     try {
-       final user = await _getCurrentUser();
-       emit(Authenticated(user));
-     } on AuthException {
-       emit(Unauthenticated());
-     } catch (_) {
-       emit(Unauthenticated());
-     }
+  Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    try {
+      final user = await _getCurrentUser();
+      emit(Authenticated(user));
+    } on AuthException {
+      emit(Unauthenticated());
+    } catch (_) {
+      emit(Unauthenticated());
+    }
   }
 
-  Future<void> _onUserLoggedIn(UserLoggedIn event, Emitter<AuthState> emit) async {
+  Future<void> _onUserLoggedIn(
+    UserLoggedIn event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(Authenticated(event.user));
   }
 
-  Future<void> _onUserLoggedOut(UserLoggedOut event, Emitter<AuthState> emit) async {
+  Future<void> _onUserLoggedOut(
+    UserLoggedOut event,
+    Emitter<AuthState> emit,
+  ) async {
     try {
       emit(AuthLoading());
       await _logoutUser();
@@ -47,11 +53,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onSessionExpired(SessionExpired event, Emitter<AuthState> emit) async {
+  Future<void> _onSessionExpired(
+    SessionExpired event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(Unauthenticated());
   }
 
-  Future<void> _onCheckAuthStatus(CheckAuthStatus event, Emitter<AuthState> emit) async {
+  Future<void> _onCheckAuthStatus(
+    CheckAuthStatus event,
+    Emitter<AuthState> emit,
+  ) async {
     try {
       final user = await _getCurrentUser();
       emit(Authenticated(user));

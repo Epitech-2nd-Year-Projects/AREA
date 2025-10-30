@@ -8,22 +8,21 @@ class AuthException implements Exception {
 
 class InvalidEmailException extends AuthException {
   InvalidEmailException(String email)
-      : super("Invalid email format provided: $email");
+    : super("Invalid email format provided: $email");
 }
 
 class WeakPasswordException extends AuthException {
   WeakPasswordException(String password)
-      : super("Password is too weak. Minimum 6 characters required.");
+    : super("Password is too weak. Minimum 6 characters required.");
 }
 
 class InvalidCredentialsException extends AuthException {
-  InvalidCredentialsException()
-      : super("Invalid email or password.");
+  InvalidCredentialsException() : super("Invalid email or password.");
 }
 
 class UserAlreadyExistsException extends AuthException {
   UserAlreadyExistsException()
-      : super("A user with this email already exists.");
+    : super("A user with this email already exists.");
 }
 
 class LogoutFailedException extends AuthException {
@@ -32,15 +31,15 @@ class LogoutFailedException extends AuthException {
 
 class UserNotAuthenticatedException extends AuthException {
   UserNotAuthenticatedException()
-      : super("No user is currently authenticated.");
+    : super("No user is currently authenticated.");
 }
 
 class AccountNotVerifiedException extends AuthException {
   AccountNotVerifiedException()
-      : super("Account not verified. Please check your email.");
+    : super("Account not verified. Please check your email.");
 }
 
 class TokenExpiredException extends AuthException {
   TokenExpiredException()
-      : super("Verification token has expired. Please request a new one.");
+    : super("Verification token has expired. Please request a new one.");
 }

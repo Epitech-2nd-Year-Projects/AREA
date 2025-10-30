@@ -8,7 +8,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   late final VerifyEmail _verifyEmail;
 
   EmailVerificationCubit(AuthRepository repository)
-      : super(EmailVerificationInitial()) {
+    : super(EmailVerificationInitial()) {
     _verifyEmail = VerifyEmail(repository);
   }
 
@@ -18,9 +18,11 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       final user = await _verifyEmail(token);
       emit(EmailVerificationSuccess(user));
     } on TokenExpiredException {
-      emit(EmailVerificationError(
-        'Verification link has expired. Please request a new one.',
-      ));
+      emit(
+        EmailVerificationError(
+          'Verification link has expired. Please request a new one.',
+        ),
+      );
     } on AuthException catch (e) {
       emit(EmailVerificationError(e.message));
     } catch (e) {

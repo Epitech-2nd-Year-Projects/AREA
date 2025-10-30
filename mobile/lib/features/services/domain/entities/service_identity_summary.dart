@@ -19,11 +19,11 @@ class ServiceIdentitySummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        provider,
-        subject,
-        scopes,
-        connectedAt,
-        expiresAt,
-      ];
+    id,
+    provider,
+    subject,
+    scopes,
+    connectedAt,
+    expiresAt,
+  ];
 }

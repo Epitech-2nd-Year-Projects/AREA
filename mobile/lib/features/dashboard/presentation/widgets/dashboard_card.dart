@@ -29,10 +29,7 @@ class DashboardCard extends StatelessWidget {
           width: 0.6,
         ),
       ),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
+      child: Padding(padding: padding, child: child),
     );
 
     if (onTap == null) {
