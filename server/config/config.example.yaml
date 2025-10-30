@@ -87,6 +87,7 @@ oauth:
     - dropbox
     - slack
     - microsoft
+    - reddit
     - zoom
     - linear
     - spotify
@@ -179,6 +180,14 @@ oauth:
       scopes:
         - read
         - write
+    reddit:
+      clientIDEnv: REDDIT_OAUTH_CLIENT_ID
+      clientSecretEnv: REDDIT_OAUTH_CLIENT_SECRET
+      redirectURI: http://localhost:3000/oauth/callback
+      scopes:
+        - identity
+        - read
+        - submit
 
 security:
   jwt:

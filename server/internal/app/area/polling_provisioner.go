@@ -7,6 +7,7 @@ import (
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
+	"go.uber.org/zap"
 )
 
 const (
@@ -56,9 +57,24 @@ func (p *PollingProvisioner) Provision(ctx context.Context, area areadomain.Area
 		"last_run":         now.Format(time.RFC3339Nano),
 		"next_run":         now.Add(interval).Format(time.RFC3339Nano),
 	}
+	state := map[string]any{}
 	if len(cfg.initialCursor) > 0 {
-		cursor["state"] = cloneMapAny(cfg.initialCursor)
+		state = cloneMapAny(cfg.initialCursor)
 	}
+	if area.CreatedAt.IsZero() {
+		state["last_seen_ts"] = now.Format(time.RFC3339Nano)
+	} else {
+		state["last_seen_ts"] = area.CreatedAt.UTC().Format(time.RFC3339Nano)
+	}
+	if _, exists := state["last_seen_name"]; !exists {
+		state["last_seen_name"] = ""
+	}
+	cursor["state"] = state
+
+	zap.L().Debug("provisioned polling cursor",
+		zap.String("area_id", area.ID.String()),
+		zap.String("component_config_id", area.Action.Config.ID.String()),
+		zap.Any("cursor", cursor))
 
 	if _, err := p.sources.UpsertPollingSource(ctx, area.Action.Config.ID, cursor); err != nil {
 		return fmt.Errorf("area.PollingProvisioner.Provision: upsert polling source: %w", err)

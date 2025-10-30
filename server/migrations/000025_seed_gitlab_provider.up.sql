@@ -1,5 +1,3 @@
--- Seed GitLab service provider mirroring GitHub integrations
-
 INSERT INTO "service_providers" (
     "id",
     "name",

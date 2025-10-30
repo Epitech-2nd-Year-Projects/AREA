@@ -191,6 +191,8 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		return PollingResult{}, fmt.Errorf("area.HTTPPollingHandler.Poll: items not an array")
 	}
 
+	cursorView := flattenCursorState(req.Cursor)
+
 	result := PollingResult{
 		Cursor: cloneMapAny(req.Cursor),
 		Events: make([]PollingEvent, 0, len(items)),
@@ -198,10 +200,14 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 	if result.Cursor == nil {
 		result.Cursor = map[string]any{}
 	}
+	cursorState := ensureCursorState(result.Cursor)
 
-	prevCutoffRaw := strings.TrimSpace(stringify(req.Cursor["last_seen_ts"]))
+	prevCutoffRaw := strings.TrimSpace(stringify(cursorView["last_seen_ts"]))
 	if prevCutoffRaw == "" {
-		prevCutoffRaw = strings.TrimSpace(stringify(req.Cursor[config.CursorKey]))
+		prevCutoffRaw = strings.TrimSpace(stringify(cursorView[config.CursorKey]))
+	}
+	if prevCutoffRaw == "" {
+		prevCutoffRaw = strings.TrimSpace(stringify(cursorView["last_seen_name"]))
 	}
 	var prevCutoffValue float64
 	hasPrevCutoff := false
@@ -219,7 +225,7 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 	}
 	prevFingerprint := ""
 	if config.CursorSource == httpPollingCursorSourceFingerprint {
-		prevFingerprint = strings.TrimSpace(stringify(req.Cursor[config.CursorKey]))
+		prevFingerprint = strings.TrimSpace(stringify(cursorView[config.CursorKey]))
 	}
 
 	var latestCursorValue string
@@ -244,6 +250,10 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		}
 
 		if shouldSkipItem(itemMap, config.SkipRules) {
+			h.logger.Debug("polling item skipped via rule",
+				zap.String("component", req.Component.Name),
+				zap.String("provider", req.Component.Provider.Name),
+				zap.Any("skip_rules", config.SkipRules))
 			continue
 		}
 
@@ -328,11 +338,25 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 			seenFingerprints[fingerprint] = struct{}{}
 		}
 
+		if hasPrevCutoffTime && !occurredAt.IsZero() && !occurredAt.After(prevCutoffTime) {
+			continue
+		}
+
 		if config.CursorSource == httpPollingCursorSourceItem {
 			if hasPrevCutoff && hasCursorCandidateFloat && cursorCandidateFloat <= prevCutoffValue {
+				h.logger.Debug("polling item skipped via numeric cursor cutoff",
+					zap.String("component", req.Component.Name),
+					zap.String("provider", req.Component.Provider.Name),
+					zap.Float64("candidate", cursorCandidateFloat),
+					zap.Float64("previous", prevCutoffValue))
 				continue
 			}
 			if hasPrevCutoffTime && hasCursorCandidateTime && !cursorCandidateTime.After(prevCutoffTime) {
+				h.logger.Debug("polling item skipped via time cursor cutoff",
+					zap.String("component", req.Component.Name),
+					zap.String("provider", req.Component.Provider.Name),
+					zap.Time("candidate", cursorCandidateTime),
+					zap.Time("previous", prevCutoffTime))
 				continue
 			}
 		}
@@ -412,19 +436,26 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		}
 	}
 
-	if hasLatestCursor && latestCursorValue != "" {
-		result.Cursor[config.CursorKey] = latestCursorValue
+	if hasLatestCursor && strings.TrimSpace(latestCursorValue) != "" {
+		assignCursorValue(result.Cursor, cursorState, config.CursorKey, latestCursorValue)
+		assignCursorValue(result.Cursor, cursorState, "last_seen_name", latestCursorValue)
+		h.logger.Debug("polling cursor updated",
+			zap.String("component", req.Component.Name),
+			zap.String("provider", req.Component.Provider.Name),
+			zap.String("cursor_key", config.CursorKey),
+			zap.String("cursor_value", latestCursorValue))
 	}
+
 	if hasLatestOccurredAt {
-		result.Cursor["last_seen_ts"] = latestOccurredAt.UTC().Format(time.RFC3339Nano)
+		assignCursorValue(result.Cursor, cursorState, "last_seen_ts", latestOccurredAt.UTC().Format(time.RFC3339Nano))
 	} else if strings.EqualFold(req.Component.Provider.Name, "slack") && hasLatestCursor && latestCursorValue != "" {
 		slackNow := formatSlackTimestamp(req.Now)
-		result.Cursor[config.CursorKey] = slackNow
-		result.Cursor["last_seen_ts"] = slackNow
-	} else if _, exists := result.Cursor[config.CursorKey]; !exists && config.CursorInitial != "" {
-		result.Cursor[config.CursorKey] = config.CursorInitial
+		assignCursorValue(result.Cursor, cursorState, config.CursorKey, slackNow)
+		assignCursorValue(result.Cursor, cursorState, "last_seen_ts", slackNow)
+	} else if strings.TrimSpace(stringify(cursorView[config.CursorKey])) == "" && config.CursorInitial != "" {
+		assignCursorValue(result.Cursor, cursorState, config.CursorKey, config.CursorInitial)
 	}
-	result.Cursor["last_polled_at"] = req.Now.UTC().Format(time.RFC3339Nano)
+	assignCursorValue(result.Cursor, cursorState, "last_polled_at", req.Now.UTC().Format(time.RFC3339Nano))
 
 	return result, nil
 }
@@ -1103,6 +1134,73 @@ func stringify(value any) string {
 			return ""
 		}
 		return string(bytes)
+	}
+}
+
+func flattenCursorState(cursor map[string]any) map[string]any {
+	if len(cursor) == 0 {
+		return nil
+	}
+	flattened := make(map[string]any, len(cursor))
+	if rawState, ok := cursor["state"]; ok {
+		switch state := rawState.(type) {
+		case map[string]any:
+			for key, value := range state {
+				flattened[key] = value
+			}
+		case map[any]any:
+			for key, value := range state {
+				if keyStr, ok := key.(string); ok {
+					flattened[keyStr] = value
+				}
+			}
+		}
+	}
+	for key, value := range cursor {
+		if key == "state" {
+			continue
+		}
+		flattened[key] = value
+	}
+	if len(flattened) == 0 {
+		return nil
+	}
+	return flattened
+}
+
+func ensureCursorState(cursor map[string]any) map[string]any {
+	if cursor == nil {
+		return nil
+	}
+	if rawState, ok := cursor["state"]; ok {
+		switch state := rawState.(type) {
+		case map[string]any:
+			return state
+		case map[any]any:
+			converted := make(map[string]any, len(state))
+			for key, value := range state {
+				if keyStr, ok := key.(string); ok {
+					converted[keyStr] = value
+				}
+			}
+			cursor["state"] = converted
+			return converted
+		}
+	}
+	state := map[string]any{}
+	cursor["state"] = state
+	return state
+}
+
+func assignCursorValue(cursor map[string]any, state map[string]any, key string, value any) {
+	if strings.TrimSpace(key) == "" {
+		return
+	}
+	if cursor != nil {
+		cursor[key] = value
+	}
+	if state != nil {
+		state[key] = value
 	}
 }
 

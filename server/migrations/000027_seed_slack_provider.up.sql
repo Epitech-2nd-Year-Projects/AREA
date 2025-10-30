@@ -1,5 +1,3 @@
--- Seed Slack service provider with channel message action and send message reaction
-
 INSERT INTO "service_providers" (
     "id",
     "name",

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -129,6 +130,178 @@ func TestHTTPPollingHandlerSupports(t *testing.T) {
 
 	if handler.Supports(&unsupported) {
 		t.Fatalf("expected handler to ignore webhook component")
+	}
+}
+
+func TestHTTPPollingHandlerUsesNestedStateCutoff(t *testing.T) {
+	createdAt := time.Unix(1_700_000_000, 0).UTC()
+	payload := map[string]any{
+		"data": map[string]any{
+			"children": []any{
+				map[string]any{
+					"data": map[string]any{
+						"id":          "old",
+						"name":        "t3_old",
+						"created_utc": json.Number(strconv.FormatInt(createdAt.Unix(), 10)),
+					},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	transport := &recordingTransport{body: body}
+	handler := NewHTTPPollingHandler(&http.Client{Transport: transport}, zap.NewNop(), nil, nil)
+
+	cursorStateTS := createdAt.Add(time.Minute).UTC().Format(time.RFC3339Nano)
+	component := componentdomain.Component{
+		Name: "reddit_new_post",
+		Provider: componentdomain.Provider{
+			Name: "reddit",
+		},
+		Metadata: map[string]any{
+			"ingestion": map[string]any{
+				"mode":             "polling",
+				"handler":          "http",
+				"endpoint":         "https://example.com",
+				"itemsPath":        "data.children",
+				"fingerprintField": "data.id",
+				"occurredAtField":  "data.created_utc",
+				"cursor": map[string]any{
+					"key":      "reddit_cursor",
+					"source":   "item",
+					"itemPath": "data.name",
+				},
+			},
+		},
+	}
+
+	req := PollingRequest{
+		Component: component,
+		Cursor: map[string]any{
+			"state": map[string]any{
+				"last_seen_ts": cursorStateTS,
+			},
+		},
+		Now: createdAt.Add(2 * time.Minute),
+	}
+
+	result, err := handler.Poll(context.Background(), req)
+	if err != nil {
+		t.Fatalf("poll failed: %v", err)
+	}
+	if len(result.Events) != 0 {
+		t.Fatalf("expected no events, got %d", len(result.Events))
+	}
+
+	state, ok := result.Cursor["state"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected state map in cursor, got %T", result.Cursor["state"])
+	}
+	if stringify(state["last_seen_ts"]) != cursorStateTS {
+		t.Fatalf("expected last_seen_ts to remain %s, got %s", cursorStateTS, stringify(state["last_seen_ts"]))
+	}
+	if stringify(state["last_polled_at"]) == "" {
+		t.Fatalf("expected last_polled_at to be recorded")
+	}
+}
+
+func TestHTTPPollingHandlerUpdatesStateForNewEvents(t *testing.T) {
+	oldCreated := time.Unix(1_700_000_000, 0).UTC()
+	newCreated := oldCreated.Add(2 * time.Minute)
+	payload := map[string]any{
+		"data": map[string]any{
+			"children": []any{
+				map[string]any{
+					"data": map[string]any{
+						"id":          "new",
+						"name":        "t3_new",
+						"created_utc": json.Number(strconv.FormatInt(newCreated.Unix(), 10)),
+					},
+				},
+				map[string]any{
+					"data": map[string]any{
+						"id":          "old",
+						"name":        "t3_old",
+						"created_utc": json.Number(strconv.FormatInt(oldCreated.Unix(), 10)),
+					},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	transport := &recordingTransport{body: body}
+	handler := NewHTTPPollingHandler(&http.Client{Transport: transport}, zap.NewNop(), nil, nil)
+
+	component := componentdomain.Component{
+		Name: "reddit_new_post",
+		Provider: componentdomain.Provider{
+			Name: "reddit",
+		},
+		Metadata: map[string]any{
+			"ingestion": map[string]any{
+				"mode":             "polling",
+				"handler":          "http",
+				"endpoint":         "https://example.com",
+				"itemsPath":        "data.children",
+				"fingerprintField": "data.id",
+				"occurredAtField":  "data.created_utc",
+				"cursor": map[string]any{
+					"key":      "reddit_cursor",
+					"source":   "item",
+					"itemPath": "data.name",
+				},
+			},
+		},
+	}
+
+	req := PollingRequest{
+		Component: component,
+		Cursor: map[string]any{
+			"state": map[string]any{
+				"last_seen_ts":   oldCreated.UTC().Format(time.RFC3339Nano),
+				"last_seen_name": "t3_old",
+			},
+		},
+		Now: newCreated.Add(time.Minute),
+	}
+
+	result, err := handler.Poll(context.Background(), req)
+	if err != nil {
+		t.Fatalf("poll failed: %v", err)
+	}
+	if len(result.Events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(result.Events))
+	}
+	if result.Events[0].Fingerprint != "new" {
+		t.Fatalf("expected fingerprint to be new, got %s", result.Events[0].Fingerprint)
+	}
+
+	state, ok := result.Cursor["state"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected state map in cursor, got %T", result.Cursor["state"])
+	}
+
+	cursorKey := stringify(result.Cursor["reddit_cursor"])
+	if cursorKey != "t3_new" {
+		t.Fatalf("expected reddit_cursor to be t3_new, got %s", cursorKey)
+	}
+	if stringify(state["last_seen_name"]) != "t3_new" {
+		t.Fatalf("expected last_seen_name to be updated, got %s", stringify(state["last_seen_name"]))
+	}
+	expectedTS := newCreated.UTC().Format(time.RFC3339Nano)
+	if stringify(state["last_seen_ts"]) != expectedTS {
+		t.Fatalf("expected last_seen_ts to be %s, got %s", expectedTS, stringify(state["last_seen_ts"]))
+	}
+	if stringify(state["last_polled_at"]) == "" {
+		t.Fatalf("expected last_polled_at to be recorded")
 	}
 }
 

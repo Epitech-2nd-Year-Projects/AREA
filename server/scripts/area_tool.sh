@@ -723,6 +723,60 @@ execute_area() {
     fi
 }
 
+delete_area() {
+    api_request GET "/v1/areas"
+    if [[ "$API_STATUS" != "200" ]]; then
+        echo "$API_BODY" | jq '.' 2>/dev/null || echo "$API_BODY"
+        echo "Unable to list areas (HTTP $API_STATUS)" >&2
+        return
+    fi
+
+    local areas count
+    areas=$(echo "$API_BODY" | jq -c '.areas')
+    count=$(echo "$areas" | jq 'length')
+    if (( count == 0 )); then
+        echo "No areas available." >&2
+        return
+    fi
+
+    for ((i=0; i<count; i++)); do
+        local item id name status
+        item=$(echo "$areas" | jq -c ".[$i]")
+        id=$(echo "$item" | jq -r '.id')
+        name=$(echo "$item" | jq -r '.name')
+        status=$(echo "$item" | jq -r '.status')
+        printf "  [%d] %s – %s (%s)\n" $((i+1)) "$name" "$id" "$status"
+    done
+
+    local choice
+    choice=$(prompt "Select area to delete [1-$count]: ")
+    if [[ -z "$choice" ]]; then
+        echo "Selection required." >&2
+        return
+    fi
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > count )); then
+        echo "Invalid selection." >&2
+        return
+    fi
+
+    local area_json area_id confirm
+    area_json=$(echo "$areas" | jq -c ".[$((choice-1))]")
+    area_id=$(echo "$area_json" | jq -r '.id')
+    confirm=$(prompt "Delete area $(echo "$area_json" | jq -r '.name')? [y/N]: ")
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        notify "Deletion cancelled."
+        return
+    fi
+
+    api_request DELETE "/v1/areas/$area_id"
+    if [[ "$API_STATUS" == "200" || "$API_STATUS" == "204" ]]; then
+        notify "Area deleted."
+    else
+        echo "$API_BODY" | jq '.' 2>/dev/null || echo "$API_BODY"
+        echo "Failed to delete area (HTTP $API_STATUS)" >&2
+    fi
+}
+
 show_menu() {
     cat <<EOF
 
@@ -738,6 +792,7 @@ AREA helper – API_BASE=$API_BASE
 8) Create area
 9) List areas
 10) Execute area
+11) Delete area
 0) Exit
 EOF
 }
@@ -758,6 +813,7 @@ main_loop() {
         8) create_area ;;
         9) list_areas ;;
         10) execute_area ;;
+        11) delete_area ;;
         0|"") break ;;
         *) echo "Unknown option." ;;
         esac

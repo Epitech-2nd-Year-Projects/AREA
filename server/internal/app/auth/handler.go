@@ -350,13 +350,10 @@ func (h *Handler) ExchangeOAuth(c *gin.Context, provider string) {
 		return
 	}
 
-	code := strings.TrimSpace(payload.Code)
+	code := normalizeOAuthCode(payload.Code)
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "code is required"})
 		return
-	}
-	if decoded, err := url.QueryUnescape(code); err == nil && decoded != "" {
-		code = decoded
 	}
 
 	req := identityport.ExchangeRequest{
@@ -471,13 +468,10 @@ func (h *Handler) SubscribeServiceExchange(c *gin.Context, provider string) {
 		return
 	}
 
-	code := strings.TrimSpace(payload.Code)
+	code := normalizeOAuthCode(payload.Code)
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "code is required"})
 		return
-	}
-	if decoded, err := url.QueryUnescape(code); err == nil && decoded != "" {
-		code = decoded
 	}
 
 	req := identityport.ExchangeRequest{
@@ -623,6 +617,20 @@ func mapProviderDetails(items []servicedomain.Provider) []openapi.ServiceProvide
 		result = append(result, toOpenAPIProviderDetail(item))
 	}
 	return result
+}
+
+func normalizeOAuthCode(raw string) string {
+	code := strings.TrimSpace(raw)
+	if code == "" {
+		return ""
+	}
+	if idx := strings.Index(code, "#"); idx >= 0 {
+		code = code[:idx]
+	}
+	if decoded, err := url.QueryUnescape(code); err == nil && decoded != "" {
+		code = decoded
+	}
+	return strings.TrimSpace(code)
 }
 
 func mapUserSubscriptions(items []SubscriptionOverview) []openapi.UserSubscription {

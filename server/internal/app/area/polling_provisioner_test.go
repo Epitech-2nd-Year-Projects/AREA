@@ -109,6 +109,16 @@ func TestPollingProvisioner_UpsertsPollingSource(t *testing.T) {
 	if _, ok := repo.pollingInput.Cursor["last_run"]; !ok {
 		t.Fatalf("expected last_run to be set")
 	}
+	stateMap, ok := repo.pollingInput.Cursor["state"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected state map")
+	}
+	if _, ok := stateMap["last_seen_ts"]; !ok {
+		t.Fatalf("expected last_seen_ts to be initialized")
+	}
+	if _, ok := stateMap["last_seen_name"]; !ok {
+		t.Fatalf("expected last_seen_name to be initialized")
+	}
 	if repo.webhookCalled {
 		t.Fatalf("webhook provisioner should not be invoked in polling flow")
 	}
