@@ -18,6 +18,19 @@ type Repository struct {
 	db *gorm.DB
 }
 
+type jobModel struct {
+	ID uuid.UUID `gorm:"column:id;primaryKey"`
+}
+
+func (jobModel) TableName() string { return "jobs" }
+
+type actionSourceModel struct {
+	ID                uuid.UUID `gorm:"column:id;primaryKey"`
+	ComponentConfigID uuid.UUID `gorm:"column:component_config_id"`
+}
+
+func (actionSourceModel) TableName() string { return "action_sources" }
+
 // NewRepository constructs a Repository backed by the provided gorm handle
 func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
@@ -239,10 +252,50 @@ func (r Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	if r.db == nil {
 		return fmt.Errorf("postgres.area.Repository.Delete: nil db handle")
 	}
-	if err := r.db.WithContext(ctx).Delete(&areaModel{}, "id = ?", id).Error; err != nil {
-		return fmt.Errorf("postgres.area.Repository.Delete: %w", err)
-	}
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var links []areaLinkModel
+		if err := tx.Where("area_id = ?", id).Find(&links).Error; err != nil {
+			return fmt.Errorf("postgres.area.Repository.Delete: load links: %w", err)
+		}
+
+		linkIDs := make([]uuid.UUID, 0, len(links))
+		configSet := make(map[uuid.UUID]struct{})
+		for _, link := range links {
+			linkIDs = append(linkIDs, link.ID)
+			if link.ComponentConfigID != uuid.Nil {
+				configSet[link.ComponentConfigID] = struct{}{}
+			}
+		}
+
+		if len(linkIDs) > 0 {
+			if err := tx.Where("area_link_id IN ?", linkIDs).Delete(&jobModel{}).Error; err != nil {
+				return fmt.Errorf("postgres.area.Repository.Delete: delete jobs: %w", err)
+			}
+		}
+
+		configIDs := make([]uuid.UUID, 0, len(configSet))
+		for id := range configSet {
+			configIDs = append(configIDs, id)
+		}
+
+		if len(configIDs) > 0 {
+			if err := tx.Where("component_config_id IN ?", configIDs).Delete(&actionSourceModel{}).Error; err != nil {
+				return fmt.Errorf("postgres.area.Repository.Delete: delete action sources: %w", err)
+			}
+		}
+
+		if err := tx.Delete(&areaModel{}, "id = ?", id).Error; err != nil {
+			return fmt.Errorf("postgres.area.Repository.Delete: delete area: %w", err)
+		}
+
+		if len(configIDs) > 0 {
+			if err := tx.Where("id IN ?", configIDs).Delete(&componentConfigModel{}).Error; err != nil {
+				return fmt.Errorf("postgres.area.Repository.Delete: delete component configs: %w", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 func isUniqueViolation(err error) bool {
