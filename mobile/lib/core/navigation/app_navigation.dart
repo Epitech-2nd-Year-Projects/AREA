@@ -21,10 +21,7 @@ class AppNavigation {
 class NavigationShell extends StatelessWidget {
   final Widget child;
 
-  const NavigationShell({
-    super.key,
-    required this.child,
-  });
+  const NavigationShell({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

@@ -9,8 +9,8 @@ class GetComponentExamples {
   GetComponentExamples(this.repository);
 
   Future<Either<Failure, List<ComponentExample>>> call(
-      String componentId,
-      ) async {
+    String componentId,
+  ) async {
     return await repository.getComponentExamples(componentId);
   }
 }

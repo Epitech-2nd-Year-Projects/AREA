@@ -45,7 +45,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(cancelled, isTrue);
 
-    // Open again to test confirm path
     await tester.tap(find.text('Open dialog'));
     await tester.pumpAndSettle();
 

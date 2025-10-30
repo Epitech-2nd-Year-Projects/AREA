@@ -28,11 +28,7 @@ class ServicesSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.apps,
-                color: AppColors.primary,
-                size: 28,
-              ),
+              Icon(Icons.apps, color: AppColors.primary, size: 28),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(

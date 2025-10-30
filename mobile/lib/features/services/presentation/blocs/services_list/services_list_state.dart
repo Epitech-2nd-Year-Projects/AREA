@@ -36,7 +36,9 @@ class ServicesListLoaded extends ServicesListState {
     return ServicesListLoaded(
       services: services ?? this.services,
       filteredServices: filteredServices ?? this.filteredServices,
-      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
+      selectedCategory: clearCategory
+          ? null
+          : (selectedCategory ?? this.selectedCategory),
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }

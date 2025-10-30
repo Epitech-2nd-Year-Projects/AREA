@@ -25,20 +25,29 @@ class ServiceProviderModel {
     required this.updatedAt,
   });
 
-  // Create from JSON response from /v1/services endpoint
   factory ServiceProviderModel.fromJson(Map<String, dynamic> json) {
     return ServiceProviderModel(
       id: json['id'] as String? ?? json['slug'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      displayName: json['displayName'] as String? ?? json['display_name'] as String? ?? '',
+      displayName:
+          json['displayName'] as String? ??
+          json['display_name'] as String? ??
+          '',
       category: ServiceCategory.fromString(
         json['category'] as String? ?? 'other',
       ),
       oauthType: AuthKind.fromString(
-        json['authType'] as String? ?? json['auth_type'] as String? ?? 'oauth2',
+        json['oauthType'] as String? ??
+            json['authType'] as String? ??
+            json['auth_type'] as String? ??
+            'oauth2',
       ),
-      authConfig: json['authConfig'] as Map<String, dynamic>? ?? json['auth_config'] as Map<String, dynamic>? ?? {},
-      isEnabled: json['isEnabled'] as bool? ?? json['is_enabled'] as bool? ?? true,
+      authConfig:
+          json['authConfig'] as Map<String, dynamic>? ??
+          json['auth_config'] as Map<String, dynamic>? ??
+          {},
+      isEnabled:
+          json['isEnabled'] as bool? ?? json['is_enabled'] as bool? ?? true,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String).toUtc()
           : DateTime.now(),
@@ -48,25 +57,26 @@ class ServiceProviderModel {
     );
   }
 
-  // Create from about.json service name
   factory ServiceProviderModel.fromServiceName(String serviceName) {
     final now = DateTime.now();
 
-    // Map service names to categories (temporary mapping)
     ServiceCategory category = ServiceCategory.other;
-    if (serviceName.toLowerCase().contains('facebook') ||
-        serviceName.toLowerCase().contains('twitter') ||
-        serviceName.toLowerCase().contains('instagram')) {
+    final lowerName = serviceName.toLowerCase();
+
+    if (lowerName.contains('facebook') ||
+        lowerName.contains('twitter') ||
+        lowerName.contains('instagram')) {
       category = ServiceCategory.social;
-    } else if (serviceName.toLowerCase().contains('drive') ||
-        serviceName.toLowerCase().contains('dropbox')) {
+    } else if (lowerName.contains('drive') || lowerName.contains('dropbox')) {
       category = ServiceCategory.storage;
-    } else if (serviceName.toLowerCase().contains('gmail') ||
-        serviceName.toLowerCase().contains('outlook')) {
+    } else if (lowerName.contains('gmail') || lowerName.contains('outlook')) {
       category = ServiceCategory.communication;
-    } else if (serviceName.toLowerCase().contains('calendar') ||
-        serviceName.toLowerCase().contains('notion')) {
+    } else if (lowerName.contains('calendar') || lowerName.contains('notion')) {
       category = ServiceCategory.productivity;
+    } else if (lowerName.contains('github') ||
+        lowerName.contains('gitlab') ||
+        lowerName.contains('bitbucket')) {
+      category = ServiceCategory.development;
     }
 
     return ServiceProviderModel(

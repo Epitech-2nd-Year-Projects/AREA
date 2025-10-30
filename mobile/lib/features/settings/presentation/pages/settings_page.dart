@@ -52,10 +52,12 @@ class _SettingsScreenState extends State<_SettingsScreen> {
 
     return BlocConsumer<SettingsCubit, SettingsState>(
       listener: (context, state) {
-        if (state is SettingsReady && state.message != null && state.message!.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message!)),
-          );
+        if (state is SettingsReady &&
+            state.message != null &&
+            state.message!.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message!)));
         }
       },
       builder: (context, state) {
@@ -161,7 +163,7 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => context.pop(),
                 ),
-              )
+              ),
             ],
           ),
           body: LayoutBuilder(
@@ -177,14 +179,17 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     children: [
                       Card(
                         elevation: 2,
-                        shadowColor: Theme.of(context).brightness == Brightness.dark
+                        shadowColor:
+                            Theme.of(context).brightness == Brightness.dark
                             ? Colors.black.withValues(alpha: 0.3)
                             : AppColors.gray300.withValues(alpha: 0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                           side: BorderSide(
-                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                            color: AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Padding(
@@ -195,9 +200,13 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(AppSpacing.sm),
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.sm,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -212,10 +221,14 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                       header: true,
                                       child: Text(
                                         l10n.serverAddress,
-                                        style: AppTypography.headlineMedium.copyWith(
-                                          color: AppColors.getTextPrimaryColor(context),
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: AppTypography.headlineMedium
+                                            .copyWith(
+                                              color:
+                                                  AppColors.getTextPrimaryColor(
+                                                    context,
+                                                  ),
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -227,31 +240,43 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                 child: TextFormField(
                                   controller: _controller,
                                   keyboardType: TextInputType.url,
-                                  onChanged: context.read<SettingsCubit>().onAddressChanged,
+                                  onChanged: context
+                                      .read<SettingsCubit>()
+                                      .onAddressChanged,
                                   style: AppTypography.bodyLarge,
                                   decoration: InputDecoration(
                                     hintText: l10n.serverAddressHint,
-                                    hintStyle: AppTypography.bodyMedium.copyWith(
-                                      color: AppColors.getTextTertiaryColor(context),
-                                    ),
+                                    hintStyle: AppTypography.bodyMedium
+                                        .copyWith(
+                                          color: AppColors.getTextTertiaryColor(
+                                            context,
+                                          ),
+                                        ),
                                     prefixIcon: Icon(
                                       Icons.link_rounded,
                                       color: AppColors.primary,
                                     ),
-                                    errorText: s.isValid ? null : l10n.invalidUrl,
+                                    errorText: s.isValid
+                                        ? null
+                                        : l10n.invalidUrl,
                                     filled: true,
-                                    fillColor: AppColors.getSurfaceVariantColor(context)
-                                        .withValues(alpha: 0.3),
+                                    fillColor: AppColors.getSurfaceVariantColor(
+                                      context,
+                                    ).withValues(alpha: 0.3),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                                        color: AppColors.getBorderColor(
+                                          context,
+                                        ).withValues(alpha: 0.4),
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(context).withValues(alpha: 0.4),
+                                        color: AppColors.getBorderColor(
+                                          context,
+                                        ).withValues(alpha: 0.4),
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
@@ -294,24 +319,31 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                       onPressed: s.isValid && s.isDirty
                                           ? context.read<SettingsCubit>().save
                                           : null,
-                                      icon: const Icon(Icons.save_rounded, size: 20),
+                                      icon: const Icon(
+                                        Icons.save_rounded,
+                                        size: 20,
+                                      ),
                                       label: Text(
                                         l10n.saveServerAddress,
-                                        style: AppTypography.labelLarge.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: AppTypography.labelLarge
+                                            .copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         foregroundColor: AppColors.white,
-                                        disabledBackgroundColor:
-                                            AppColors.primary.withValues(alpha: 0.5),
+                                        disabledBackgroundColor: AppColors
+                                            .primary
+                                            .withValues(alpha: 0.5),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: AppSpacing.lg,
                                           vertical: AppSpacing.md,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -320,13 +352,18 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                     label: '${l10n.reloadServer} button',
                                     button: true,
                                     child: OutlinedButton.icon(
-                                      onPressed: () => context.read<SettingsCubit>().save,
-                                      icon: const Icon(Icons.refresh_rounded, size: 20),
+                                      onPressed: () =>
+                                          context.read<SettingsCubit>().save,
+                                      icon: const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 20,
+                                      ),
                                       label: Text(
                                         l10n.reloadServer,
-                                        style: AppTypography.labelLarge.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: AppTypography.labelLarge
+                                            .copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.primary,
@@ -339,7 +376,9 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                           vertical: AppSpacing.md,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -353,14 +392,17 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                       const SizedBox(height: AppSpacing.lg),
                       Card(
                         elevation: 2,
-                        shadowColor: Theme.of(context).brightness == Brightness.dark
+                        shadowColor:
+                            Theme.of(context).brightness == Brightness.dark
                             ? Colors.black.withValues(alpha: 0.3)
                             : AppColors.gray300.withValues(alpha: 0.2),
                         color: AppColors.getSurfaceColor(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                           side: BorderSide(
-                            color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                            color: AppColors.getBorderColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Padding(
@@ -370,7 +412,9 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                               Container(
                                 padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -387,7 +431,9 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                     Text(
                                       l10n.aboutSection,
                                       style: AppTypography.labelLarge.copyWith(
-                                        color: AppColors.getTextPrimaryColor(context),
+                                        color: AppColors.getTextPrimaryColor(
+                                          context,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -395,7 +441,9 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                                     Text(
                                       l10n.clientVersionInfo,
                                       style: AppTypography.bodyMedium.copyWith(
-                                        color: AppColors.getTextSecondaryColor(context),
+                                        color: AppColors.getTextSecondaryColor(
+                                          context,
+                                        ),
                                       ),
                                     ),
                                   ],

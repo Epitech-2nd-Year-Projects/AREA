@@ -9,11 +9,11 @@ class AreasModule implements DIModule {
   @override
   Future<void> register(GetIt sl) async {
     sl.registerLazySingleton<AreaRemoteDataSource>(
-          () => AreaRemoteDataSourceImpl(sl<ApiClient>()),
+      () => AreaRemoteDataSourceImpl(sl<ApiClient>()),
     );
 
     sl.registerLazySingleton<AreaRepository>(
-          () => AreaRepositoryImpl(sl<AreaRemoteDataSource>()),
+      () => AreaRepositoryImpl(sl<AreaRemoteDataSource>()),
     );
   }
 }

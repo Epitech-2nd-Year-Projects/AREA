@@ -80,11 +80,11 @@ class _AuthTextFieldState extends State<AuthTextField> {
               ),
               prefixIcon: widget.prefixIcon != null
                   ? IconTheme(
-                data: IconThemeData(
-                  color: AppColors.getTextSecondaryColor(context),
-                ),
-                child: widget.prefixIcon!,
-              )
+                      data: IconThemeData(
+                        color: AppColors.getTextSecondaryColor(context),
+                      ),
+                      child: widget.prefixIcon!,
+                    )
                   : null,
               suffixIcon: _buildSuffixIcon(context),
               filled: true,
@@ -94,11 +94,17 @@ class _AuthTextFieldState extends State<AuthTextField> {
                 vertical: AppSpacing.md,
               ),
               border: _buildBorder(context, AppColors.getBorderColor(context)),
-              enabledBorder: _buildBorder(context, AppColors.getBorderColor(context)),
+              enabledBorder: _buildBorder(
+                context,
+                AppColors.getBorderColor(context),
+              ),
               focusedBorder: _buildBorder(context, theme.colorScheme.primary),
               errorBorder: _buildBorder(context, AppColors.error),
               focusedErrorBorder: _buildBorder(context, AppColors.error),
-              disabledBorder: _buildBorder(context, AppColors.getBorderColor(context).withValues(alpha: 0.5)),
+              disabledBorder: _buildBorder(
+                context,
+                AppColors.getBorderColor(context).withValues(alpha: 0.5),
+              ),
             ),
           ),
         ),
@@ -123,21 +129,18 @@ class _AuthTextFieldState extends State<AuthTextField> {
     }
     return widget.suffixIcon != null
         ? IconTheme(
-      data: IconThemeData(
-        color: AppColors.getTextSecondaryColor(context),
-      ),
-      child: widget.suffixIcon!,
-    )
+            data: IconThemeData(
+              color: AppColors.getTextSecondaryColor(context),
+            ),
+            child: widget.suffixIcon!,
+          )
         : null;
   }
 
   OutlineInputBorder _buildBorder(BuildContext context, Color color) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(
-        color: color,
-        width: _isFocused ? 2 : 1,
-      ),
+      borderSide: BorderSide(color: color, width: _isFocused ? 2 : 1),
     );
   }
 }

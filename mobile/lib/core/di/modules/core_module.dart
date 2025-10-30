@@ -7,9 +7,8 @@ import '../di_modules.dart';
 class CoreModule implements DIModule {
   @override
   Future<void> register(GetIt sl) async {
-
     sl.registerLazySingleton<SecureStorageManager>(
-          () => SecureStorageManager(null),
+      () => SecureStorageManager(null),
     );
 
     final prefs = LocalPrefsManager();

@@ -9,8 +9,8 @@ class GetSubscriptionForService {
   GetSubscriptionForService(this.repository);
 
   Future<Either<Failure, UserServiceSubscription?>> call(
-      String serviceId,
-      ) async {
+    String serviceId,
+  ) async {
     return await repository.getSubscriptionForService(serviceId);
   }
 }

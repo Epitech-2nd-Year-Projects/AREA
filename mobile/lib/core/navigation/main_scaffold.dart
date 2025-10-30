@@ -6,10 +6,7 @@ import 'widgets/app_bottom_navigation_bar.dart';
 class MainScaffold extends StatelessWidget {
   final Widget child;
 
-  const MainScaffold({
-    super.key,
-    required this.child,
-  });
+  const MainScaffold({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

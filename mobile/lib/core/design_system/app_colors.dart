@@ -57,7 +57,6 @@ class AppColors {
   static const Color otherDark = AppColors.white;
   static const Color otherWhite = AppColors.gray600;
 
-
   // Theme-aware color getters
   static Color getBackgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark

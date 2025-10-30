@@ -22,22 +22,17 @@ import '../widgets/staggered_animations.dart';
 class ServiceDetailsPage extends StatelessWidget {
   final String serviceId;
 
-  const ServiceDetailsPage({
-    super.key,
-    required this.serviceId,
-  });
+  const ServiceDetailsPage({super.key, required this.serviceId});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => ServiceDetailsBloc(sl())
-            ..add(LoadServiceDetails(serviceId)),
+          create: (context) =>
+              ServiceDetailsBloc(sl())..add(LoadServiceDetails(serviceId)),
         ),
-        BlocProvider(
-          create: (context) => ServiceSubscriptionCubit(sl()),
-        ),
+        BlocProvider(create: (context) => ServiceSubscriptionCubit(sl())),
       ],
       child: _ServiceDetailsPageContent(serviceId: serviceId),
     );
@@ -47,16 +42,15 @@ class ServiceDetailsPage extends StatelessWidget {
 class _ServiceDetailsPageContent extends StatefulWidget {
   final String serviceId;
 
-  const _ServiceDetailsPageContent({
-    required this.serviceId,
-  });
+  const _ServiceDetailsPageContent({required this.serviceId});
 
   @override
   State<_ServiceDetailsPageContent> createState() =>
       _ServiceDetailsPageContentState();
 }
 
-class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> {
+class _ServiceDetailsPageContentState
+    extends State<_ServiceDetailsPageContent> {
   bool _isLaunchingUrl = false;
 
   @override
@@ -66,25 +60,21 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
     return BlocConsumer<ServiceSubscriptionCubit, ServiceSubscriptionState>(
       listener: (context, subscriptionState) async {
         if (subscriptionState is ServiceSubscriptionSuccess) {
-          _showSuccessSnackBar(
-            l10n.successfullySubscribedToService,
-          );
+          _showSuccessSnackBar(l10n.successfullySubscribedToService);
           if (mounted) {
-            context
-                .read<ServiceDetailsBloc>()
-                .add(LoadServiceDetails(widget.serviceId));
+            context.read<ServiceDetailsBloc>().add(
+              LoadServiceDetails(widget.serviceId),
+            );
           }
-        } else if (
-        subscriptionState is ServiceSubscriptionAwaitingAuthorization) {
+        } else if (subscriptionState
+            is ServiceSubscriptionAwaitingAuthorization) {
           await _handleAuthorizationFlow(context, subscriptionState, l10n);
         } else if (subscriptionState is ServiceUnsubscribed) {
-          _showSuccessSnackBar(
-            l10n.successfullyUnsubscribedFromService,
-          );
+          _showSuccessSnackBar(l10n.successfullyUnsubscribedFromService);
           if (mounted) {
-            context
-                .read<ServiceDetailsBloc>()
-                .add(LoadServiceDetails(widget.serviceId));
+            context.read<ServiceDetailsBloc>().add(
+              LoadServiceDetails(widget.serviceId),
+            );
           }
         } else if (subscriptionState is ServiceSubscriptionError) {
           _showErrorSnackBar(subscriptionState.message);
@@ -104,10 +94,10 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
   }
 
   Future<void> _handleAuthorizationFlow(
-      BuildContext context,
-      ServiceSubscriptionAwaitingAuthorization subscriptionState,
-      AppLocalizations l10n,
-      ) async {
+    BuildContext context,
+    ServiceSubscriptionAwaitingAuthorization subscriptionState,
+    AppLocalizations l10n,
+  ) async {
     if (_isLaunchingUrl) {
       debugPrint('⏳ URL launch already in progress, ignoring...');
       return;
@@ -123,10 +113,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
 
       final uri = Uri.parse(authUrl);
       final modifiedUri = uri.replace(
-        queryParameters: {
-          ...uri.queryParameters,
-          'returnTo': currentPath,
-        },
+        queryParameters: {...uri.queryParameters, 'returnTo': currentPath},
       );
 
       debugPrint('🚀 Launching authorization URL...');
@@ -143,9 +130,9 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
           _showErrorSnackBar(l10n.couldNotLaunchAuthorizationUrl);
           if (mounted) {
             // ignore: use_build_context_synchronously
-            context
-                .read<ServiceSubscriptionCubit>()
-                .emit(ServiceSubscriptionInitial());
+            context.read<ServiceSubscriptionCubit>().emit(
+              ServiceSubscriptionInitial(),
+            );
           }
         }
       } else {
@@ -156,21 +143,19 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       if (mounted) {
         _showErrorSnackBar('Error launching authorization: $e');
         if (mounted) {
-          // ignore: use_build_context_synchronously
-          context
-              .read<ServiceSubscriptionCubit>()
-              .emit(ServiceSubscriptionInitial());
+          context.read<ServiceSubscriptionCubit>().emit(
+            ServiceSubscriptionInitial(),
+          );
         }
       }
     } finally {
       _isLaunchingUrl = false;
     }
   }
+
   List<String> _getRequestedScopes(String serviceId) {
     if (serviceId.toLowerCase().contains('google')) {
-      return [
-        'https://www.googleapis.com/auth/gmail.send',
-      ];
+      return ['https://www.googleapis.com/auth/gmail.send'];
     }
     return [];
   }
@@ -202,11 +187,11 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
   }
 
   Widget _buildBody(
-      BuildContext context,
-      ServiceDetailsState state,
-      ServiceSubscriptionState subscriptionState,
-      AppLocalizations l10n,
-      ) {
+    BuildContext context,
+    ServiceDetailsState state,
+    ServiceSubscriptionState subscriptionState,
+    AppLocalizations l10n,
+  ) {
     if (state is ServiceDetailsLoading) {
       return const ServiceDetailsLoadingView();
     }
@@ -216,9 +201,9 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
         title: l10n.failedToLoadService,
         message: state.message,
         onRetry: () {
-          context
-              .read<ServiceDetailsBloc>()
-              .add(LoadServiceDetails(widget.serviceId));
+          context.read<ServiceDetailsBloc>().add(
+            LoadServiceDetails(widget.serviceId),
+          );
         },
       );
     }
@@ -243,14 +228,14 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
                     selectedKind: state.selectedComponentKind,
                     searchQuery: state.searchQuery,
                     onFilterChanged: (kind) {
-                      context
-                          .read<ServiceDetailsBloc>()
-                          .add(FilterComponents(kind));
+                      context.read<ServiceDetailsBloc>().add(
+                        FilterComponents(kind),
+                      );
                     },
                     onSearchChanged: (query) {
-                      context
-                          .read<ServiceDetailsBloc>()
-                          .add(SearchComponents(query));
+                      context.read<ServiceDetailsBloc>().add(
+                        SearchComponents(query),
+                      );
                     },
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -266,10 +251,10 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
   }
 
   Widget _buildAppBar(
-      BuildContext context,
-      ServiceDetailsLoaded state,
-      ServiceSubscriptionState subscriptionState,
-      ) {
+    BuildContext context,
+    ServiceDetailsLoaded state,
+    ServiceSubscriptionState subscriptionState,
+  ) {
     return SliverAppBar(
       expandedHeight: 140,
       pinned: true,
@@ -301,11 +286,7 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        titlePadding: const EdgeInsets.only(
-          left: 56,
-          bottom: 16,
-          right: 16,
-        ),
+        titlePadding: const EdgeInsets.only(left: 56, bottom: 16, right: 16),
         centerTitle: false,
         collapseMode: CollapseMode.parallax,
         background: Container(
@@ -351,12 +332,17 @@ class _ServiceDetailsPageContentState extends State<_ServiceDetailsPageContent> 
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.md, top: AppSpacing.sm, bottom: AppSpacing.sm),
+          padding: const EdgeInsets.only(
+            right: AppSpacing.md,
+            top: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+          ),
           child: FadeInAnimation(
             child: ServiceSubscriptionButton(
               service: state.service,
               subscription: state.subscription,
-              isLoading: subscriptionState is ServiceSubscriptionLoading ||
+              isLoading:
+                  subscriptionState is ServiceSubscriptionLoading ||
                   subscriptionState is ServiceSubscriptionAwaitingAuthorization,
               onSubscribe: () {
                 context.read<ServiceSubscriptionCubit>().subscribe(

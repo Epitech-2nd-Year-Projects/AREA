@@ -9,7 +9,7 @@ enum SubscriptionStatus {
 
   static SubscriptionStatus fromString(String value) {
     return SubscriptionStatus.values.firstWhere(
-          (status) => status.value == value,
+      (status) => status.value == value,
       orElse: () => SubscriptionStatus.needsConsent,
     );
   }

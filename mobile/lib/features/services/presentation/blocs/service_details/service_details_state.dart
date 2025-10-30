@@ -53,7 +53,8 @@ class ServiceDetailsLoaded extends ServiceDetailsState {
       subscription: subscription ?? this.subscription,
       components: components ?? this.components,
       filteredComponents: filteredComponents ?? this.filteredComponents,
-      selectedComponentKind: selectedComponentKind ?? this.selectedComponentKind,
+      selectedComponentKind:
+          selectedComponentKind ?? this.selectedComponentKind,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }

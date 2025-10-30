@@ -34,10 +34,7 @@ class AboutAction extends Equatable {
   final String name;
   final String description;
 
-  const AboutAction({
-    required this.name,
-    required this.description,
-  });
+  const AboutAction({required this.name, required this.description});
 
   @override
   List<Object?> get props => [name, description];
@@ -47,10 +44,7 @@ class AboutReaction extends Equatable {
   final String name;
   final String description;
 
-  const AboutReaction({
-    required this.name,
-    required this.description,
-  });
+  const AboutReaction({required this.name, required this.description});
 
   @override
   List<Object?> get props => [name, description];

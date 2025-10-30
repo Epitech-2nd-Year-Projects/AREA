@@ -11,10 +11,7 @@ import '../../../services/presentation/widgets/staggered_animations.dart';
 class SubscribedServicesList extends StatelessWidget {
   final List<ServiceWithStatus> subscribedServices;
 
-  const SubscribedServicesList({
-    super.key,
-    required this.subscribedServices,
-  });
+  const SubscribedServicesList({super.key, required this.subscribedServices});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +37,9 @@ class SubscribedServicesList extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
                 side: BorderSide(
-                  color: AppColors.getBorderColor(context).withValues(alpha: 0.3),
+                  color: AppColors.getBorderColor(
+                    context,
+                  ).withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -106,8 +105,9 @@ class SubscribedServicesList extends StatelessWidget {
                   ),
                   Divider(
                     height: 1,
-                    color: AppColors.getDividerColor(context)
-                        .withValues(alpha: 0.3),
+                    color: AppColors.getDividerColor(
+                      context,
+                    ).withValues(alpha: 0.3),
                   ),
                   SizedBox(
                     height: 310,
@@ -117,8 +117,9 @@ class SubscribedServicesList extends StatelessWidget {
                       itemCount: subscribedServices.length,
                       separatorBuilder: (_, __) => Divider(
                         height: 1,
-                        color: AppColors.getDividerColor(context)
-                            .withValues(alpha: 0.2),
+                        color: AppColors.getDividerColor(
+                          context,
+                        ).withValues(alpha: 0.2),
                       ),
                       itemBuilder: (context, index) {
                         final service = subscribedServices[index];
@@ -146,10 +147,7 @@ class _ServiceListItem extends StatelessWidget {
   final ServiceWithStatus service;
   final int delay;
 
-  const _ServiceListItem({
-    required this.service,
-    this.delay = 0,
-  });
+  const _ServiceListItem({required this.service, this.delay = 0});
 
   Color _getCategoryColor(ServiceCategory category) {
     switch (category) {
@@ -221,11 +219,7 @@ class _ServiceListItem extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    categoryIcon,
-                    size: 24,
-                    color: categoryColor,
-                  ),
+                  child: Icon(categoryIcon, size: 24, color: categoryColor),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -320,9 +314,7 @@ class _ServiceListItem extends StatelessWidget {
 class _EmptySubscriptions extends StatelessWidget {
   final AppLocalizations l10n;
 
-  const _EmptySubscriptions({
-    required this.l10n,
-  });
+  const _EmptySubscriptions({required this.l10n});
 
   @override
   Widget build(BuildContext context) {

@@ -23,13 +23,13 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
   late final UnsubscribeFromService _unsubscribeFromService;
 
   ServiceSubscriptionCubit(
-      ServicesRepository repository, {
-        DeepLinkService? deepLinkService,
-        Random? random,
-      })  : _deepLinkService = deepLinkService ?? DeepLinkService(),
-        _manager = ServiceSubscriptionManager(),
-        _random = _createRandom(random),
-        super(ServiceSubscriptionInitial()) {
+    ServicesRepository repository, {
+    DeepLinkService? deepLinkService,
+    Random? random,
+  }) : _deepLinkService = deepLinkService ?? DeepLinkService(),
+       _manager = ServiceSubscriptionManager(),
+       _random = _createRandom(random),
+       super(ServiceSubscriptionInitial()) {
     unawaited(_deepLinkService.initialize());
     _subscribeToService = SubscribeToService(repository);
     _unsubscribeFromService = UnsubscribeFromService(repository);
@@ -73,14 +73,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     );
 
     await result.fold(
-          (failure) async {
+      (failure) async {
         emit(ServiceSubscriptionError(_mapFailureToMessage(failure)));
       },
-          (subscriptionResult) async {
-        await _handleSubscriptionResult(
-          normalizedProvider,
-          subscriptionResult,
-        );
+      (subscriptionResult) async {
+        await _handleSubscriptionResult(normalizedProvider, subscriptionResult);
       },
     );
   }
@@ -92,21 +89,24 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     final result = await _unsubscribeFromService(normalizedProvider);
 
     result.fold(
-          (failure) => emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
-          (_) => emit(ServiceUnsubscribed()),
+      (failure) =>
+          emit(ServiceSubscriptionError(_mapFailureToMessage(failure))),
+      (_) => emit(ServiceUnsubscribed()),
     );
   }
 
   Future<void> _handleSubscriptionResult(
-      String provider,
-      ServiceSubscriptionResult result,
-      ) async {
+    String provider,
+    ServiceSubscriptionResult result,
+  ) async {
     if (result.requiresAuthorization) {
       final authorization = result.authorization;
       if (authorization == null) {
-        emit(const ServiceSubscriptionError(
-          'Subscription requires authorization but no details were provided.',
-        ));
+        emit(
+          const ServiceSubscriptionError(
+            'Subscription requires authorization but no details were provided.',
+          ),
+        );
         return;
       }
 
@@ -121,17 +121,24 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
         debugPrint('⚠️ Could not start local server: $e');
       });
 
-      _localServer.waitForCallback().then((callbackData) {
-        debugPrint('📥 Received service callback from local server');
-        if (callbackData.hasError) {
-          _handleServiceError(callbackData.provider, callbackData.error!);
-        } else if (callbackData.hasCode && callbackData.isService) {
-          _handleServiceCallback(callbackData.provider, callbackData.code!, callbackData.state);
-        }
-      }).catchError((e) {
-        debugPrint('❌ Error waiting for service callback: $e');
-        _handleServiceError(provider, e.toString());
-      });
+      _localServer
+          .waitForCallback()
+          .then((callbackData) {
+            debugPrint('📥 Received service callback from local server');
+            if (callbackData.hasError) {
+              _handleServiceError(callbackData.provider, callbackData.error!);
+            } else if (callbackData.hasCode && callbackData.isService) {
+              _handleServiceCallback(
+                callbackData.provider,
+                callbackData.code!,
+                callbackData.state,
+              );
+            }
+          })
+          .catchError((e) {
+            debugPrint('❌ Error waiting for service callback: $e');
+            _handleServiceError(provider, e.toString());
+          });
 
       emit(ServiceSubscriptionAwaitingAuthorization(authorization));
       return;
@@ -143,15 +150,18 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
       return;
     }
 
-    emit(const ServiceSubscriptionError(
-        'Subscription flow did not return a result.'));
+    emit(
+      const ServiceSubscriptionError(
+        'Subscription flow did not return a result.',
+      ),
+    );
   }
 
   void _handleServiceCallback(
-      String provider,
-      String code,
-      String? state,
-      ) async {
+    String provider,
+    String code,
+    String? state,
+  ) async {
     debugPrint('🔄 Service callback received for $provider');
 
     final normalizedProvider = _normalizeProvider(provider);
@@ -168,8 +178,11 @@ class ServiceSubscriptionCubit extends Cubit<ServiceSubscriptionState> {
     final pending = _manager.getPendingSubscription(normalizedProvider);
     if (pending == null) {
       debugPrint('❌ No pending subscription found for $normalizedProvider');
-      emit(const ServiceSubscriptionError(
-          'Subscription session expired or not initialized'));
+      emit(
+        const ServiceSubscriptionError(
+          'Subscription session expired or not initialized',
+        ),
+      );
       return;
     }
 

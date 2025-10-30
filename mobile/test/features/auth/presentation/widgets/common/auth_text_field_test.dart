@@ -26,7 +26,6 @@ void main() {
     expect(controller.text, 'secret123');
     expect(values, contains('secret123'));
 
-    // Toggle visibility
     await tester.tap(find.byIcon(Icons.visibility));
     await tester.pump();
 

@@ -115,11 +115,7 @@ class ServiceProviderSummaryModel {
   }
 
   ServiceProviderSummary toEntity() {
-    return ServiceProviderSummary(
-      id: id,
-      name: name,
-      displayName: displayName,
-    );
+    return ServiceProviderSummary(id: id, name: name, displayName: displayName);
   }
 }
 
@@ -154,17 +150,21 @@ class ComponentParameterModel {
     }
 
     final extras = Map<String, dynamic>.from(json)
-      ..removeWhere((key, _) =>
-          key == 'key' ||
-          key == 'label' ||
-          key == 'type' ||
-          key == 'required' ||
-          key == 'description' ||
-          key == 'options');
+      ..removeWhere(
+        (key, _) =>
+            key == 'key' ||
+            key == 'label' ||
+            key == 'type' ||
+            key == 'required' ||
+            key == 'description' ||
+            key == 'options',
+      );
 
     return ComponentParameterModel(
       key: json['key'] as String,
-      label: (json['label'] as String?) ?? _formatDisplayName(json['key'] as String),
+      label:
+          (json['label'] as String?) ??
+          _formatDisplayName(json['key'] as String),
       type: (json['type'] as String?) ?? 'string',
       required: json['required'] == true,
       description: json['description'] as String?,
@@ -206,15 +206,14 @@ class ComponentParameterOptionModel {
 
   factory ComponentParameterOptionModel.fromJson(Map<String, dynamic> json) {
     return ComponentParameterOptionModel(
-      value: json['value'] is String ? json['value'] as String : '${json['value']}',
+      value: json['value'] is String
+          ? json['value'] as String
+          : '${json['value']}',
       label: json['label'] as String? ?? '${json['value']}',
     );
   }
 
   ComponentParameterOption toEntity() {
-    return ComponentParameterOption(
-      value: value,
-      label: label,
-    );
+    return ComponentParameterOption(value: value, label: label);
   }
 }

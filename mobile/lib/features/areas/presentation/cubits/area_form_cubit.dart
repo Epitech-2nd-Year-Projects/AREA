@@ -59,27 +59,25 @@ class AreaFormCubit extends Cubit<AreaFormState> {
   Area? get lastSavedArea =>
       state is AreaFormSuccess ? (state as AreaFormSuccess).area : null;
 
-  bool? isServiceSubscribedSync(String providerId) => _subscriptionCache[providerId];
+  bool? isServiceSubscribedSync(String providerId) =>
+      _subscriptionCache[providerId];
 
-  Map<String, bool> get subscriptionCache => Map.unmodifiable(_subscriptionCache);
+  Map<String, bool> get subscriptionCache =>
+      Map.unmodifiable(_subscriptionCache);
 
   Future<void> primeSubscriptionCache() async {
-    await Future.wait([
-      _primeSubscriptions(),
-      _loadConnectedIdentities(),
-    ]);
+    await Future.wait([_primeSubscriptions(), _loadConnectedIdentities()]);
   }
 
   Future<void> _primeSubscriptions() async {
     final either = await _getServicesWithStatus.call(null);
-    either.fold(
-      (_) => _subscriptionCache.clear(),
-      (List<ServiceWithStatus> list) {
-        _subscriptionCache
-          ..clear()
-          ..addEntries(list.map((s) => MapEntry(s.provider.id, s.isSubscribed)));
-      },
-    );
+    either.fold((_) => _subscriptionCache.clear(), (
+      List<ServiceWithStatus> list,
+    ) {
+      _subscriptionCache
+        ..clear()
+        ..addEntries(list.map((s) => MapEntry(s.provider.id, s.isSubscribed)));
+    });
   }
 
   Future<UserServiceSubscription?> getSubscription(String providerId) async {
@@ -268,8 +266,9 @@ class AreaFormCubit extends Cubit<AreaFormState> {
       return _connectedIdentitiesCache!;
     }
 
-    _connectedIdentitiesFuture ??=
-        _getConnectedIdentities.call().then((either) {
+    _connectedIdentitiesFuture ??= _getConnectedIdentities.call().then((
+      either,
+    ) {
       final identities = either.fold(
         (_) => <ServiceIdentitySummary>[],
         (list) => list,
@@ -297,7 +296,10 @@ class AreaFormCubit extends Cubit<AreaFormState> {
     }
 
     final keys = <String>{normalized, normalized.replaceAll('_', '')};
-    final segments = normalized.split('_').where((segment) => segment.isNotEmpty).toList();
+    final segments = normalized
+        .split('_')
+        .where((segment) => segment.isNotEmpty)
+        .toList();
     if (segments.length > 1) {
       for (var i = 1; i <= segments.length; i++) {
         keys.add(segments.take(i).join('_'));

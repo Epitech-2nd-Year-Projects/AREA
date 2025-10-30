@@ -11,17 +11,17 @@ import '../models/user_model.dart';
 
 abstract class OAuthRemoteDataSource {
   Future<OAuthAuthorizationResponseModel> startOAuthFlow(
-      OAuthProvider provider,
-      String? redirectUri,
-      );
+    OAuthProvider provider,
+    String? redirectUri,
+  );
 
   Future<AuthSessionModel> exchangeCode(
-      OAuthProvider provider,
-      String code,
-      String? codeVerifier,
-      String? redirectUri,
-      String? state,
-      );
+    OAuthProvider provider,
+    String code,
+    String? codeVerifier,
+    String? redirectUri,
+    String? state,
+  );
 }
 
 class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
@@ -31,9 +31,9 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
 
   @override
   Future<OAuthAuthorizationResponseModel> startOAuthFlow(
-      OAuthProvider provider,
-      String? redirectUri,
-      ) async {
+    OAuthProvider provider,
+    String? redirectUri,
+  ) async {
     try {
       redirectUri = ApiConfig.getOAuthCallbackUrl(provider.slug);
       final providerSlug = provider.slug;
@@ -58,12 +58,12 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
 
   @override
   Future<AuthSessionModel> exchangeCode(
-      OAuthProvider provider,
-      String code,
-      String? codeVerifier,
-      String? redirectUri,
-      String? state,
-      ) async {
+    OAuthProvider provider,
+    String code,
+    String? codeVerifier,
+    String? redirectUri,
+    String? state,
+  ) async {
     try {
       final providerSlug = _getProviderSlug(provider);
 
@@ -88,8 +88,7 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
         data: requestData,
       );
 
-      if (exchangeResponse.statusCode != 200 ||
-          exchangeResponse.data == null) {
+      if (exchangeResponse.statusCode != 200 || exchangeResponse.data == null) {
         throw NetworkException('Failed to exchange OAuth code');
       }
 
@@ -104,10 +103,7 @@ class OAuthRemoteDataSourceImpl implements OAuthRemoteDataSource {
       final userData = userResponse.data!['user'] as Map<String, dynamic>;
       final user = UserModel.fromJson(userData);
 
-      return AuthSessionModel.fromOAuthJson(
-        exchangeResponse.data!,
-        user,
-      );
+      return AuthSessionModel.fromOAuthJson(exchangeResponse.data!, user);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

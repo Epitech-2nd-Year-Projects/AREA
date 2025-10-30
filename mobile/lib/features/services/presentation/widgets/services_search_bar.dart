@@ -58,9 +58,7 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
           decoration: BoxDecoration(
             color: AppColors.getSurfaceColor(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.getBorderColor(context),
-            ),
+            border: Border.all(color: AppColors.getBorderColor(context)),
             boxShadow: [
               BoxShadow(
                 color: AppColors.gray200.withValues(alpha: 0.1),
@@ -92,22 +90,24 @@ class _ServicesSearchBarState extends State<ServicesSearchBar> {
                     ),
                     suffixIcon: _controller.text.isNotEmpty
                         ? IconButton(
-                      onPressed: () {
-                        _controller.clear();
-                        widget.onSearch('');
-                        setState(() {});
-                      },
-                      icon: Icon(
-                        Icons.clear,
-                        color: AppColors.getTextSecondaryColor(context),
-                        size: 20,
-                      ),
-                    )
+                            onPressed: () {
+                              _controller.clear();
+                              widget.onSearch('');
+                              setState(() {});
+                            },
+                            icon: Icon(
+                              Icons.clear,
+                              color: AppColors.getTextSecondaryColor(context),
+                              size: 20,
+                            ),
+                          )
                         : null,
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
-                      vertical: constraints.maxWidth > 350 ? AppSpacing.md : AppSpacing.sm,
+                      vertical: constraints.maxWidth > 350
+                          ? AppSpacing.md
+                          : AppSpacing.sm,
                     ),
                   ),
                   onChanged: (value) {

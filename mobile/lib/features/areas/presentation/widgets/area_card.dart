@@ -85,7 +85,8 @@ class AreaCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (area.description != null && area.description!.isNotEmpty)
+                    if (area.description != null &&
+                        area.description!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: AppSpacing.sm),
                         child: Text(
@@ -109,7 +110,9 @@ class AreaCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.5),
+              color: AppColors.getSurfaceVariantColor(
+                context,
+              ).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: AppColors.getBorderColor(context).withValues(alpha: 0.2),
@@ -118,12 +121,21 @@ class AreaCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSummaryRow(context, l10n.action, actionSummary, Icons.flash_on),
+                _buildSummaryRow(
+                  context,
+                  l10n.action,
+                  actionSummary,
+                  Icons.flash_on,
+                ),
                 if (reactionRowWidgets.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
                     child: Divider(
-                      color: AppColors.getDividerColor(context).withValues(alpha: 0.5),
+                      color: AppColors.getDividerColor(
+                        context,
+                      ).withValues(alpha: 0.5),
                       height: 1,
                     ),
                   ),
@@ -139,15 +151,21 @@ class AreaCard extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               physics: const ClampingScrollPhysics(),
                               shrinkWrap: true,
-                              itemBuilder: (context, index) => reactionRowWidgets[index],
-                              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                              itemBuilder: (context, index) =>
+                                  reactionRowWidgets[index],
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.sm),
                               itemCount: reactionRowWidgets.length,
                             ),
                           ),
                         )
                       : Column(
                           children: [
-                            for (var i = 0; i < reactionRowWidgets.length; i++) ...[
+                            for (
+                              var i = 0;
+                              i < reactionRowWidgets.length;
+                              i++
+                            ) ...[
                               if (i != 0) const SizedBox(height: AppSpacing.sm),
                               reactionRowWidgets[i],
                             ],
@@ -253,7 +271,11 @@ class AreaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, AreaStatus status, AppLocalizations l10n) {
+  Widget _buildStatusBadge(
+    BuildContext context,
+    AreaStatus status,
+    AppLocalizations l10n,
+  ) {
     final color = switch (status) {
       AreaStatus.enabled => AppColors.success,
       AreaStatus.disabled => AppColors.gray600,
@@ -291,11 +313,7 @@ class AreaCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 16,
-            ),
+            Icon(icon, color: Colors.white, size: 16),
             const SizedBox(width: AppSpacing.xs),
             Text(
               label,
@@ -312,7 +330,12 @@ class AreaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(BuildContext context, String label, String description, IconData icon) {
+  Widget _buildSummaryRow(
+    BuildContext context,
+    String label,
+    String description,
+    IconData icon,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -322,11 +345,7 @@ class AreaCard extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: AppColors.primary,
-          ),
+          child: Icon(icon, size: 16, color: AppColors.primary),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(

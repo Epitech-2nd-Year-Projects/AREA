@@ -33,7 +33,6 @@ void main() {
     });
 
     testWidgets('goBack should navigate back safely', (tester) async {
-      // ⚙️ ici, on crée une sous-route imbriquée pour avoir un vrai "pop"
       final router = GoRouter(
         navigatorKey: AppNavigation.navigatorKey,
         initialLocation: '/parent/child',
@@ -56,7 +55,6 @@ void main() {
 
       expect(find.text('ChildScreen'), findsOneWidget);
 
-      // Revenir en arrière (retour au parent)
       AppNavigation.goBack();
       await tester.pumpAndSettle();
 

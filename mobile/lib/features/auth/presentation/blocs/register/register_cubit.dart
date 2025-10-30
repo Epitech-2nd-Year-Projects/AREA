@@ -13,7 +13,11 @@ class RegisterCubit extends Cubit<RegisterState> {
     _registerUser = RegisterUser(repository);
   }
 
-  Future<void> register(String emailStr, String passwordStr, String confirm) async {
+  Future<void> register(
+    String emailStr,
+    String passwordStr,
+    String confirm,
+  ) async {
     if (passwordStr != confirm) {
       emit(RegisterError('Passwords do not match'));
       return;

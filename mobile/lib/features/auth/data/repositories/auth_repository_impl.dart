@@ -18,22 +18,16 @@ class AuthRepositoryImpl implements AuthRepository {
   final OAuthRemoteDataSource _oauthDataSource;
 
   AuthRepositoryImpl(
-      this._remoteDataSource,
-      this._localDataSource,
-      this._oauthDataSource,
-      );
+    this._remoteDataSource,
+    this._localDataSource,
+    this._oauthDataSource,
+  );
 
   @override
   Future<User> register(Email email, Password password) async {
     try {
-      final _ = await _remoteDataSource.register(
-        email.value,
-        password.value,
-      );
-      return User(
-        id: 'pending-verification',
-        email: email.value,
-      );
+      final _ = await _remoteDataSource.register(email.value, password.value);
+      return User(id: 'pending-verification', email: email.value);
     } on UserAlreadyExistsException {
       rethrow;
     } catch (e) {
@@ -109,7 +103,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<OAuthRedirectUrl> startOAuthLogin(OAuthProvider provider, String? redirectUri) async {
+  Future<OAuthRedirectUrl> startOAuthLogin(
+    OAuthProvider provider,
+    String? redirectUri,
+  ) async {
     try {
       final response = await _oauthDataSource.startOAuthFlow(provider, null);
       return OAuthRedirectUrl(response.authorizationUrl);
@@ -122,12 +119,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthSession> completeOAuthLogin(
-      OAuthProvider provider,
-      String callbackCode,
-      String? codeVerifier,
-      String? redirectUri,
-      String? state,
-      ) async {
+    OAuthProvider provider,
+    String callbackCode,
+    String? codeVerifier,
+    String? redirectUri,
+    String? state,
+  ) async {
     try {
       final sessionModel = await _oauthDataSource.exchangeCode(
         provider,

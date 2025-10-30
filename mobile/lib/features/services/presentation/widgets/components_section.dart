@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -169,8 +170,12 @@ class _ComponentsSectionState extends State<ComponentsSection>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.4),
-                AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.2),
+                AppColors.getSurfaceVariantColor(
+                  context,
+                ).withValues(alpha: 0.4),
+                AppColors.getSurfaceVariantColor(
+                  context,
+                ).withValues(alpha: 0.2),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -205,17 +210,17 @@ class _ComponentsSectionState extends State<ComponentsSection>
               ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                onPressed: () {
-                  _searchController.clear();
-                  widget.onSearchChanged('');
-                },
-                icon: Icon(
-                  Icons.clear_rounded,
-                  color: AppColors.getTextSecondaryColor(context),
-                  size: 20,
-                ),
-                tooltip: 'Clear search',
-              )
+                      onPressed: () {
+                        _searchController.clear();
+                        widget.onSearchChanged('');
+                      },
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: AppColors.getTextSecondaryColor(context),
+                        size: 20,
+                      ),
+                      tooltip: 'Clear search',
+                    )
                   : null,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -230,7 +235,12 @@ class _ComponentsSectionState extends State<ComponentsSection>
     );
   }
 
-  Widget _buildTabs(BuildContext context, int actionsCount, int reactionsCount, AppLocalizations l10n) {
+  Widget _buildTabs(
+    BuildContext context,
+    int actionsCount,
+    int reactionsCount,
+    AppLocalizations l10n,
+  ) {
     return Container(
       margin: const EdgeInsets.all(AppSpacing.xl),
       height: 48,
@@ -264,10 +274,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
             controller: _tabController,
             indicator: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primaryLight,
-                ],
+                colors: [AppColors.primary, AppColors.primaryLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -306,11 +313,11 @@ class _ComponentsSectionState extends State<ComponentsSection>
   }
 
   Widget _buildTabContent(
-      BuildContext context,
-      List<ServiceComponent> actions,
-      List<ServiceComponent> reactions,
-      AppLocalizations l10n
-      ) {
+    BuildContext context,
+    List<ServiceComponent> actions,
+    List<ServiceComponent> reactions,
+    AppLocalizations l10n,
+  ) {
     return TabBarView(
       controller: _tabController,
       children: [
@@ -321,7 +328,10 @@ class _ComponentsSectionState extends State<ComponentsSection>
     );
   }
 
-  Widget _buildComponentsList(List<ServiceComponent> components, AppLocalizations l10n) {
+  Widget _buildComponentsList(
+    List<ServiceComponent> components,
+    AppLocalizations l10n,
+  ) {
     if (components.isEmpty) {
       return Center(
         child: Column(
@@ -370,7 +380,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
         AppSpacing.xl,
         AppSpacing.md,
         AppSpacing.xl,
-        AppSpacing.xl,
+        AppSpacing.xl * 3,
       ),
       itemCount: components.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
@@ -385,21 +395,32 @@ class _ComponentsSectionState extends State<ComponentsSection>
     );
   }
 
-  Widget _buildComponentItem(ServiceComponent component, AppLocalizations l10n) {
-    final componentColor = component.isAction ? AppColors.primary : AppColors.success;
-    
+  Widget _buildComponentItem(
+    ServiceComponent component,
+    AppLocalizations l10n,
+  ) {
+    final componentColor = component.isAction
+        ? AppColors.primary
+        : AppColors.success;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          context.pushNamed('area-new', extra: component);
+        },
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.4),
-                AppColors.getSurfaceVariantColor(context).withValues(alpha: 0.2),
+                AppColors.getSurfaceVariantColor(
+                  context,
+                ).withValues(alpha: 0.4),
+                AppColors.getSurfaceVariantColor(
+                  context,
+                ).withValues(alpha: 0.2),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -452,7 +473,9 @@ class _ComponentsSectionState extends State<ComponentsSection>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      component.isAction ? Icons.play_arrow_rounded : Icons.bolt_rounded,
+                      component.isAction
+                          ? Icons.play_arrow_rounded
+                          : Icons.bolt_rounded,
                       color: componentColor,
                       size: 18,
                     ),

@@ -77,8 +77,9 @@ class ServiceAuthorizationDataModel {
       codeVerifier: (json['codeVerifier'] ?? json['code_verifier']) as String?,
       codeChallenge:
           (json['codeChallenge'] ?? json['code_challenge']) as String?,
-      codeChallengeMethod: (json['codeChallengeMethod'] ??
-          json['code_challenge_method']) as String?,
+      codeChallengeMethod:
+          (json['codeChallengeMethod'] ?? json['code_challenge_method'])
+              as String?,
     );
   }
 

@@ -74,10 +74,10 @@ class LocalOAuthServer {
   }
 
   Response _handleCallback(
-      Request request,
-      String provider, {
-        required bool isService,
-      }) {
+    Request request,
+    String provider, {
+    required bool isService,
+  }) {
     final params = request.url.queryParameters;
     final code = params['code'];
     final error = params['error'];
@@ -119,21 +119,18 @@ class LocalOAuthServer {
 
     return Response.ok(
       _buildSuccessHtml(customSchemeUrl),
-      headers: {
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache',
-      },
+      headers: {'Content-Type': 'text/html', 'Cache-Control': 'no-cache'},
     );
   }
 
   String _buildCustomSchemeUrl(
-      String type,
-      String provider,
-      String? code,
-      String? error,
-      String? state,
-      String? returnTo,
-      ) {
+    String type,
+    String provider,
+    String? code,
+    String? error,
+    String? state,
+    String? returnTo,
+  ) {
     final params = <String, String>{};
     if (code != null) params['code'] = code;
     if (error != null) params['error'] = error;

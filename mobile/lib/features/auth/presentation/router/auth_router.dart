@@ -7,6 +7,7 @@ import '../../../areas/presentation/pages/areas_page.dart';
 import '../../../areas/presentation/pages/area_form_page.dart';
 import '../../../areas/domain/entities/area.dart';
 import '../../../areas/domain/entities/area_template.dart';
+import '../../../services/domain/entities/service_component.dart';
 import '../../../services/presentation/pages/service_details_page.dart';
 import '../../../services/presentation/pages/services_list_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
@@ -57,8 +58,13 @@ class AuthRouter {
               name: 'area-new',
               path: 'new',
               builder: (_, state) {
-                final template = state.extra as AreaTemplate?;
-                return AreaFormPage(template: template);
+                final extra = state.extra;
+                if (extra is AreaTemplate) {
+                  return AreaFormPage(template: extra);
+                } else if (extra is ServiceComponent) {
+                  return AreaFormPage(initialComponent: extra);
+                }
+                return const AreaFormPage();
               },
             ),
             GoRoute(

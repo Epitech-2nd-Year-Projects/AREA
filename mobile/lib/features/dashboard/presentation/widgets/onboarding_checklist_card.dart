@@ -10,10 +10,7 @@ import 'dashboard_card.dart';
 class OnboardingChecklistCard extends StatelessWidget {
   final DashboardOnboardingChecklist checklist;
 
-  const OnboardingChecklistCard({
-    super.key,
-    required this.checklist,
-  });
+  const OnboardingChecklistCard({super.key, required this.checklist});
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +33,7 @@ class OnboardingChecklistCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.dashboardChecklistSubtitle,
-            style: AppTypography.bodyMedium.copyWith(
-              color: secondaryColor,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: secondaryColor),
           ),
           const SizedBox(height: AppSpacing.lg),
           Column(
@@ -57,10 +52,7 @@ class OnboardingChecklistCard extends StatelessWidget {
     );
   }
 
-  String _titleForStep(
-    AppLocalizations l10n,
-    DashboardChecklistStep step,
-  ) {
+  String _titleForStep(AppLocalizations l10n, DashboardChecklistStep step) {
     switch (step.id) {
       case 'connect-service':
         return l10n.dashboardChecklistStepConnectService;
@@ -97,7 +89,9 @@ class _ChecklistRow extends StatelessWidget {
     final backgroundColor = isCompleted
         ? AppColors.primary.withValues(alpha: 0.12)
         : AppColors.getDividerColor(context).withValues(alpha: 0.4);
-    final iconColor = isCompleted ? AppColors.primary : AppColors.getTextSecondaryColor(context);
+    final iconColor = isCompleted
+        ? AppColors.primary
+        : AppColors.getTextSecondaryColor(context);
     final textColor = AppColors.getTextPrimaryColor(context);
 
     return Padding(

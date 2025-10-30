@@ -42,20 +42,24 @@ class ServiceSubscriptionButton extends StatelessWidget {
             ],
           ),
           child: ElevatedButton.icon(
-            onPressed: isLoading ? null : (isSubscribed ? onUnsubscribe : onSubscribe),
+            onPressed: isLoading
+                ? null
+                : (isSubscribed ? onUnsubscribe : onSubscribe),
             icon: isLoading
                 ? SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
                 : Icon(
-              isSubscribed ? Icons.remove_circle_rounded : Icons.add_circle_rounded,
-              size: constraints.maxWidth < 120 ? 14 : 16,
-            ),
+                    isSubscribed
+                        ? Icons.remove_circle_rounded
+                        : Icons.add_circle_rounded,
+                    size: constraints.maxWidth < 120 ? 14 : 16,
+                  ),
             label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
@@ -67,7 +71,9 @@ class ServiceSubscriptionButton extends StatelessWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isSubscribed ? AppColors.error : AppColors.primary,
+              backgroundColor: isSubscribed
+                  ? AppColors.error
+                  : AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shadowColor: Colors.transparent,
@@ -75,7 +81,9 @@ class ServiceSubscriptionButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: EdgeInsets.symmetric(
-                horizontal: constraints.maxWidth < 120 ? AppSpacing.sm : AppSpacing.md,
+                horizontal: constraints.maxWidth < 120
+                    ? AppSpacing.sm
+                    : AppSpacing.md,
                 vertical: AppSpacing.sm,
               ),
               minimumSize: const Size(0, 36),

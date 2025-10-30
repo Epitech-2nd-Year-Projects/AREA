@@ -21,14 +21,14 @@ abstract class ServicesRepository {
   Future<Either<Failure, ServiceProvider>> getServiceDetails(String serviceId);
 
   Future<Either<Failure, List<ServiceComponent>>> getServiceComponents(
-      String serviceId, {
-        ComponentKind? kind,
-        bool onlySubscribed = false,
-      });
+    String serviceId, {
+    ComponentKind? kind,
+    bool onlySubscribed = false,
+  });
 
   Future<Either<Failure, List<ComponentExample>>> getComponentExamples(
-      String componentId,
-      );
+    String componentId,
+  );
 
   Future<Either<Failure, AboutInfo>> getAboutInfo();
 
@@ -43,7 +43,7 @@ abstract class ServicesRepository {
   });
 
   Future<Either<Failure, ServiceSubscriptionExchangeResult>>
-      completeServiceSubscription({
+  completeServiceSubscription({
     required String serviceId,
     required String code,
     String? codeVerifier,
@@ -53,12 +53,13 @@ abstract class ServicesRepository {
   Future<Either<Failure, bool>> unsubscribeFromService(String subscriptionId);
 
   Future<Either<Failure, UserServiceSubscription?>> getSubscriptionForService(
-      String serviceId,
-      );
+    String serviceId,
+  );
 
   Future<Either<Failure, List<ServiceWithStatus>>> getServicesWithStatus({
     ServiceCategory? category,
   });
 
-  Future<Either<Failure, List<ServiceIdentitySummary>>> getConnectedIdentities();
+  Future<Either<Failure, List<ServiceIdentitySummary>>>
+  getConnectedIdentities();
 }

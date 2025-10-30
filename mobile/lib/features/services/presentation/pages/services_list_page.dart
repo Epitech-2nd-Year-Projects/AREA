@@ -123,7 +123,11 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchAndFilters(BuildContext context, ServicesListState state, AppLocalizations l10n) {
+  Widget _buildSearchAndFilters(
+    BuildContext context,
+    ServicesListState state,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -135,24 +139,34 @@ class _ServicesListPageContent extends StatelessWidget {
               onSearch: (query) {
                 context.read<ServicesListBloc>().add(SearchServices(query));
               },
-              initialValue: state is ServicesListLoaded ? state.searchQuery : '',
+              initialValue: state is ServicesListLoaded
+                  ? state.searchQuery
+                  : '',
               onClear: () {
                 context.read<ServicesListBloc>().add(ClearFilters());
               },
-              hasActiveFilters: state is ServicesListLoaded &&
-                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+              hasActiveFilters:
+                  state is ServicesListLoaded &&
+                  (state.selectedCategory != null ||
+                      state.searchQuery.isNotEmpty),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           StaggeredAnimation(
             delay: 100,
             child: ServicesFilterChips(
-              selectedCategory: state is ServicesListLoaded ? state.selectedCategory : null,
+              selectedCategory: state is ServicesListLoaded
+                  ? state.selectedCategory
+                  : null,
               onCategorySelected: (category) {
-                context.read<ServicesListBloc>().add(FilterByCategory(category));
+                context.read<ServicesListBloc>().add(
+                  FilterByCategory(category),
+                );
               },
-              hasActiveFilters: state is ServicesListLoaded &&
-                  (state.selectedCategory != null || state.searchQuery.isNotEmpty),
+              hasActiveFilters:
+                  state is ServicesListLoaded &&
+                  (state.selectedCategory != null ||
+                      state.searchQuery.isNotEmpty),
               onClearFilters: () {
                 context.read<ServicesListBloc>().add(ClearFilters());
               },
@@ -163,11 +177,13 @@ class _ServicesListPageContent extends StatelessWidget {
     );
   }
 
-  Widget _buildServicesList(BuildContext context, ServicesListState state, AppLocalizations l10n) {
+  Widget _buildServicesList(
+    BuildContext context,
+    ServicesListState state,
+    AppLocalizations l10n,
+  ) {
     if (state is ServicesListLoading) {
-      return const SliverToBoxAdapter(
-        child: ServicesLoadingShimmer(),
-      );
+      return const SliverToBoxAdapter(child: ServicesLoadingShimmer());
     }
 
     if (state is ServicesListError) {
@@ -186,7 +202,8 @@ class _ServicesListPageContent extends StatelessWidget {
       if (state.filteredServices.isEmpty) {
         return SliverToBoxAdapter(
           child: EmptyServicesState(
-            hasFilters: state.selectedCategory != null || state.searchQuery.isNotEmpty,
+            hasFilters:
+                state.selectedCategory != null || state.searchQuery.isNotEmpty,
             onClearFilters: () {
               context.read<ServicesListBloc>().add(ClearFilters());
             },
@@ -212,21 +229,18 @@ class _ServicesListPageContent extends StatelessWidget {
                 crossAxisSpacing: AppSpacing.md,
                 mainAxisSpacing: AppSpacing.md,
               ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final service = state.filteredServices[index];
-                  // Cascade animation: base delay + stagger based on index
-                  final delay = 150 + (index * 50);
-                  return ServiceCard(
-                    service: service,
-                    onTap: () {
-                      context.push('/services/${service.provider.id}');
-                    },
-                    delay: delay,
-                  );
-                },
-                childCount: state.filteredServices.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final service = state.filteredServices[index];
+                final delay = 150 + (index * 50);
+                return ServiceCard(
+                  key: ValueKey(service.provider.id),
+                  service: service,
+                  onTap: () {
+                    context.push('/services/${service.provider.id}');
+                  },
+                  delay: delay,
+                );
+              }, childCount: state.filteredServices.length),
             );
           },
         ),

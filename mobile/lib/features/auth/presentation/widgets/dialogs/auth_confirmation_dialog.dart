@@ -27,9 +27,7 @@ class AuthConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
       backgroundColor: AppColors.getSurfaceColor(context),
       child: Padding(
@@ -85,13 +83,13 @@ class AuthConfirmationDialog extends StatelessWidget {
   }
 
   static Future<bool?> show(
-      BuildContext context, {
-        required String title,
-        required String message,
-        required String confirmText,
-        String cancelText = 'Cancel',
-        bool isDestructive = false,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmText,
+    String cancelText = 'Cancel',
+    bool isDestructive = false,
+  }) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AuthConfirmationDialog(

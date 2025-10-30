@@ -14,19 +14,19 @@ class AuthModule implements DIModule {
   @override
   Future<void> register(GetIt sl) async {
     sl.registerLazySingleton<AuthRemoteDataSource>(
-          () => AuthRemoteDataSourceImpl(sl<ApiClient>()),
+      () => AuthRemoteDataSourceImpl(sl<ApiClient>()),
     );
 
     sl.registerLazySingleton<AuthLocalDataSource>(
-          () => AuthLocalDataSourceImpl(sl<LocalPrefsManager>()),
+      () => AuthLocalDataSourceImpl(sl<LocalPrefsManager>()),
     );
 
     sl.registerLazySingleton<OAuthRemoteDataSource>(
-          () => OAuthRemoteDataSourceImpl(sl<ApiClient>()),
+      () => OAuthRemoteDataSourceImpl(sl<ApiClient>()),
     );
 
     sl.registerLazySingleton<AuthRepository>(
-          () => AuthRepositoryImpl(
+      () => AuthRepositoryImpl(
         sl<AuthRemoteDataSource>(),
         sl<AuthLocalDataSource>(),
         sl<OAuthRemoteDataSource>(),

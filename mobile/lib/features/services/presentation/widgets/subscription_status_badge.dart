@@ -72,18 +72,12 @@ class SubscriptionStatusBadge extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              backgroundColor,
-              backgroundColor.withValues(alpha: 0.7),
-            ],
+            colors: [backgroundColor, backgroundColor.withValues(alpha: 0.7)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.15),
@@ -102,10 +96,7 @@ class SubscriptionStatusBadge extends StatelessWidget {
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.5),
-                    blurRadius: 4,
-                  ),
+                  BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4),
                 ],
               ),
             ),
@@ -132,27 +123,27 @@ class SubscriptionStatusBadge extends StatelessWidget {
     switch (status) {
       case SubscriptionStatus.active:
         return (
-        AppColors.success,
-        AppColors.success.withValues(alpha: 0.1),
-        'Active'
+          AppColors.success,
+          AppColors.success.withValues(alpha: 0.1),
+          'Active',
         );
       case SubscriptionStatus.expired:
         return (
-        AppColors.warning,
-        AppColors.warning.withValues(alpha: 0.1),
-        'Expired'
+          AppColors.warning,
+          AppColors.warning.withValues(alpha: 0.1),
+          'Expired',
         );
       case SubscriptionStatus.revoked:
         return (
-        AppColors.error,
-        AppColors.error.withValues(alpha: 0.1),
-        'Revoked'
+          AppColors.error,
+          AppColors.error.withValues(alpha: 0.1),
+          'Revoked',
         );
       case SubscriptionStatus.needsConsent:
         return (
-        AppColors.warning,
-        AppColors.warning.withValues(alpha: 0.1),
-        'Action Required'
+          AppColors.warning,
+          AppColors.warning.withValues(alpha: 0.1),
+          'Action Required',
         );
     }
   }

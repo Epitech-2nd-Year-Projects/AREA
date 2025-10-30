@@ -39,15 +39,11 @@ class UserModel extends User {
       if (status != null) 'status': status,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
-      if (lastLoginAt != null)
-        'lastLoginAt': lastLoginAt!.toIso8601String(),
+      if (lastLoginAt != null) 'lastLoginAt': lastLoginAt!.toIso8601String(),
     };
   }
 
   User toDomain() {
-    return User(
-      id: id,
-      email: email,
-    );
+    return User(id: id, email: email);
   }
 }

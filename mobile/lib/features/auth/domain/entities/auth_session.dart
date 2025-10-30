@@ -28,15 +28,14 @@ class AuthSession extends Equatable {
     required this.user,
     required this.expiresAt,
     this.tokenType = 'session',
-  })  : accessToken = null,
-        refreshToken = null;
+  }) : accessToken = null,
+       refreshToken = null;
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 
   bool get hasAccessToken => accessToken != null && accessToken!.isNotEmpty;
 
-  bool get hasRefreshToken =>
-      refreshToken != null && refreshToken!.isNotEmpty;
+  bool get hasRefreshToken => refreshToken != null && refreshToken!.isNotEmpty;
 
   @override
   List<Object?> get props => [

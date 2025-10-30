@@ -8,20 +8,20 @@ class OAuthException implements Exception {
 
 class UnsupportedProviderException extends OAuthException {
   UnsupportedProviderException(String provider)
-      : super("OAuth provider not supported: $provider");
+    : super("OAuth provider not supported: $provider");
 }
 
 class InvalidRedirectUrlException extends OAuthException {
   InvalidRedirectUrlException(String url)
-      : super("Invalid OAuth redirect URL: $url");
+    : super("Invalid OAuth redirect URL: $url");
 }
 
 class OAuthFlowFailedException extends OAuthException {
   OAuthFlowFailedException([String reason = "Unknown"])
-      : super("OAuth login flow failed: $reason");
+    : super("OAuth login flow failed: $reason");
 }
 
 class CallbackErrorException extends OAuthException {
   CallbackErrorException([String reason = "Unknown"])
-      : super("OAuth callback error: $reason");
+    : super("OAuth callback error: $reason");
 }

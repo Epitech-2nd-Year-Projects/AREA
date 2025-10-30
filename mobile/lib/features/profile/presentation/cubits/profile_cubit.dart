@@ -14,9 +14,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit({
     required AuthRepository authRepository,
     required ServicesRepository servicesRepository,
-  })  : _getCurrentUser = GetCurrentUser(authRepository),
-        _getServicesWithStatus = GetServicesWithStatus(servicesRepository),
-        super(const ProfileInitial());
+  }) : _getCurrentUser = GetCurrentUser(authRepository),
+       _getServicesWithStatus = GetServicesWithStatus(servicesRepository),
+       super(const ProfileInitial());
 
   Future<void> loadProfile() async {
     emit(const ProfileLoading());
@@ -34,10 +34,22 @@ class ProfileCubit extends Cubit<ProfileState> {
     final servicesEither = await _getServicesWithStatus(null);
     servicesEither.fold(
       (failure) {
-        emit(ProfileLoaded(user: user, displayName: displayName, services: List.empty()));
+        emit(
+          ProfileLoaded(
+            user: user,
+            displayName: displayName,
+            services: List.empty(),
+          ),
+        );
       },
       (serviceList) {
-        emit(ProfileLoaded(user: user, displayName: displayName, services: List.from(serviceList)));
+        emit(
+          ProfileLoaded(
+            user: user,
+            displayName: displayName,
+            services: List.from(serviceList),
+          ),
+        );
       },
     );
   }
@@ -48,11 +60,20 @@ class ProfileCubit extends Cubit<ProfileState> {
     return current.services.where((s) => s.isSubscribed).toList();
   }
 
-  Future<bool> updateProfile({required String newName, required String newEmail}) async {
+  Future<bool> updateProfile({
+    required String newName,
+    required String newEmail,
+  }) async {
     if (state is! ProfileLoaded) return false;
     final current = state as ProfileLoaded;
     final updatedUser = User(id: current.user.id, email: newEmail);
-    emit(ProfileLoaded(user: updatedUser, displayName: newName, services: current.services));
+    emit(
+      ProfileLoaded(
+        user: updatedUser,
+        displayName: newName,
+        services: current.services,
+      ),
+    );
     return true;
   }
 }

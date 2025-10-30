@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AppDestination {
-  dashboard,
-  services,
-  areas,
-  profile,
-}
+enum AppDestination { dashboard, services, areas, profile }
 
 extension AppDestinationExtension on AppDestination {
   String get label {

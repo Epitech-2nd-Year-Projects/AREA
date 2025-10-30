@@ -30,6 +30,15 @@ class _ServiceLogoState extends State<ServiceLogo> {
   }
 
   @override
+  void didUpdateWidget(ServiceLogo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.serviceName != widget.serviceName) {
+      logoUrl = LogoService.getLogoUrl(widget.serviceName);
+      _logoFailed = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_logoFailed) {
       return _buildFallbackIcon(context);
@@ -98,9 +107,6 @@ class _ServiceLogoState extends State<ServiceLogo> {
   }
 
   Widget _buildFallbackIcon(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       width: widget.size,
       height: widget.size,

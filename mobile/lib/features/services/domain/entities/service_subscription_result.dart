@@ -1,10 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'user_service_subscription.dart';
 
-enum ServiceSubscriptionStatus {
-  authorizationRequired,
-  subscribed,
-}
+enum ServiceSubscriptionStatus { authorizationRequired, subscribed }
 
 class ServiceAuthorizationData extends Equatable {
   final String authorizationUrl;
@@ -23,12 +20,12 @@ class ServiceAuthorizationData extends Equatable {
 
   @override
   List<Object?> get props => [
-        authorizationUrl,
-        state,
-        codeVerifier,
-        codeChallenge,
-        codeChallengeMethod,
-      ];
+    authorizationUrl,
+    state,
+    codeVerifier,
+    codeChallenge,
+    codeChallengeMethod,
+  ];
 }
 
 class ServiceSubscriptionResult extends Equatable {

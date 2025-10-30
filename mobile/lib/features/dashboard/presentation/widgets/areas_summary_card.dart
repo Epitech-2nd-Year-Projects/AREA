@@ -28,11 +28,7 @@ class AreasSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.auto_awesome,
-                color: AppColors.primary,
-                size: 28,
-              ),
+              Icon(Icons.auto_awesome, color: AppColors.primary, size: 28),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(

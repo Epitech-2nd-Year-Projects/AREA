@@ -31,7 +31,9 @@ class AreaModel {
       status: AreaStatus.fromString(json['status'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      action: AreaComponentModel.fromJson(json['action'] as Map<String, dynamic>),
+      action: AreaComponentModel.fromJson(
+        json['action'] as Map<String, dynamic>,
+      ),
       reactions: (json['reactions'] as List<dynamic>)
           .whereType<Map<String, dynamic>>()
           .map(AreaComponentModel.fromJson)

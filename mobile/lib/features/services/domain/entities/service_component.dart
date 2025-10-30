@@ -30,13 +30,13 @@ class ServiceComponent extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        kind,
-        name,
-        displayName,
-        description,
-        provider,
-        metadata,
-        parameters,
-      ];
+    id,
+    kind,
+    name,
+    displayName,
+    description,
+    provider,
+    metadata,
+    parameters,
+  ];
 }

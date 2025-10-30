@@ -9,8 +9,9 @@ class GetServicesWithStatus {
 
   GetServicesWithStatus(this.repository);
 
-  Future<Either<Failure, List<ServiceWithStatus>>>
-    call(ServiceCategory? category) async {
-      return await repository.getServicesWithStatus(category: category);
+  Future<Either<Failure, List<ServiceWithStatus>>> call(
+    ServiceCategory? category,
+  ) async {
+    return await repository.getServicesWithStatus(category: category);
   }
 }

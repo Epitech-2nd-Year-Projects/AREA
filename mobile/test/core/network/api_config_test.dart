@@ -5,7 +5,10 @@ import 'package:area/core/network/api_config.dart';
 void main() {
   group('ApiConfig', () {
     setUpAll(() async {
-      await dotenv.load();
+      try {
+        await dotenv.load();
+      } catch (e) {
+      }
       ApiConfig.initialize();
     });
 

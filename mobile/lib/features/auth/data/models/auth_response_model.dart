@@ -3,9 +3,7 @@ import 'user_model.dart';
 class AuthResponseModel {
   final UserModel user;
 
-  const AuthResponseModel({
-    required this.user,
-  });
+  const AuthResponseModel({required this.user});
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
     return AuthResponseModel(
@@ -14,8 +12,6 @@ class AuthResponseModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'user': user.toJson(),
-    };
+    return {'user': user.toJson()};
   }
 }

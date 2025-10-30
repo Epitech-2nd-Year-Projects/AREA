@@ -23,7 +23,13 @@ import '../widgets/component_configuration_form.dart';
 class AreaFormPage extends StatelessWidget {
   final Area? areaToEdit;
   final AreaTemplate? template;
-  const AreaFormPage({super.key, this.areaToEdit, this.template});
+  final ServiceComponent? initialComponent;
+  const AreaFormPage({
+    super.key,
+    this.areaToEdit,
+    this.template,
+    this.initialComponent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +39,19 @@ class AreaFormPage extends StatelessWidget {
         sl<ServicesRepository>(),
         initialArea: areaToEdit,
       )..primeSubscriptionCache(),
-      child: _AreaFormScreen(template: template),
+      child: _AreaFormScreen(
+        template: template,
+        initialComponent: initialComponent,
+      ),
     );
   }
 }
 
 class _AreaFormScreen extends StatefulWidget {
   final AreaTemplate? template;
+  final ServiceComponent? initialComponent;
 
-  const _AreaFormScreen({this.template});
+  const _AreaFormScreen({this.template, this.initialComponent});
 
   @override
   State<_AreaFormScreen> createState() => _AreaFormScreenState();
@@ -132,19 +142,24 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     }
 
     final template = widget.template;
+    final initialComponent = widget.initialComponent;
+
     if (template != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _applyTemplate(template);
         }
       });
+    } else if (initialComponent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _applyInitialComponent(initialComponent);
+        }
+      });
     }
   }
 
-  Widget _buildActionSection(
-    bool isSubmitting,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildActionSection(bool isSubmitting, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -164,10 +179,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     );
   }
 
-  Widget _buildReactionsSection(
-    bool isSubmitting,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildReactionsSection(bool isSubmitting, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -181,9 +193,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
             final availableWidth = constraints.maxWidth.isFinite
                 ? constraints.maxWidth
                 : 360.0;
-            final buttonWidth = availableWidth < 360.0
-                ? availableWidth
-                : 360.0;
+            final buttonWidth = availableWidth < 360.0 ? availableWidth : 360.0;
 
             return Align(
               alignment: Alignment.center,
@@ -293,9 +303,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(l10n.notSubscribedTitle),
-            content: Text(
-              l10n.notSubscribedMessage(serviceName),
-            ),
+            content: Text(l10n.notSubscribedMessage(serviceName)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
@@ -429,9 +437,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
             component: reactionComponent,
             componentId: reactionComponent.id,
             componentName: reactionComponent.displayName,
-            params: Map<String, dynamic>.from(
-              template.reaction.defaultParams,
-            ),
+            params: Map<String, dynamic>.from(template.reaction.defaultParams),
           ),
         );
     });
@@ -441,6 +447,47 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
     if (!mounted) return;
     setState(() {});
+  }
+
+  Future<void> _applyInitialComponent(ServiceComponent component) async {
+    final cubit = context.read<AreaFormCubit>();
+
+    await cubit.primeSubscriptionCache();
+
+    if (component.isAction) {
+      setState(() {
+        _actionProviderId = component.provider.id;
+        _actionProviderLabel = component.provider.displayName;
+        _actionIsSubscribed = true;
+        _actionComponent = component;
+        _actionComponentId = component.id;
+        _actionComponentName = component.displayName;
+        _actionParams = {};
+      });
+
+      if (mounted) {
+        await _primeActionDefaults(component);
+      }
+    } else {
+      setState(() {
+        final entry = _reactions.first;
+        entry.providerId = component.provider.id;
+        entry.providerLabel = component.provider.displayName;
+        entry.isSubscribed = true;
+        entry.component = component;
+        entry.componentId = component.id;
+        entry.componentName = component.displayName;
+        entry.params = <String, dynamic>{};
+      });
+
+      if (mounted) {
+        await _primeReactionDefaults(0, component);
+      }
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _submit() {
@@ -477,9 +524,9 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
       }
 
       if (!hasProvider || !hasComponent) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.completeReactionSelection)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.completeReactionSelection)));
         return;
       }
 
@@ -493,9 +540,9 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     }
 
     if (reactionDrafts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.atLeastOneReaction)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.atLeastOneReaction)));
       return;
     }
 
@@ -624,10 +671,7 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildReactionsSection(
-                                isSubmitting,
-                                l10n,
-                              ),
+                              child: _buildReactionsSection(isSubmitting, l10n),
                             ),
                           ],
                         )
@@ -799,17 +843,14 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     final reaction = _reactions[index];
 
     return ServiceAndComponentPicker(
-      key: ValueKey(
-        'reaction-picker-$index-${reaction.providerId ?? 'none'}',
-      ),
+      key: ValueKey('reaction-picker-$index-${reaction.providerId ?? 'none'}'),
       title: l10n.reactionNumber(index + 1),
       providerId: reaction.providerId,
       providerLabel: reaction.providerLabel,
       isSubscribed: reaction.isSubscribed,
       selectedComponentId: reaction.componentId,
       kind: ServiceComponentKind.reaction,
-      onSelectService:
-          isSubmitting ? () {} : () => _pickReactionService(index),
+      onSelectService: isSubmitting ? () {} : () => _pickReactionService(index),
       onComponentChanged: (id) {
         if (id == null) {
           _updateReactionComponent(index, null);

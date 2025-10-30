@@ -14,10 +14,7 @@ import '../blocs/email_verification/email_verification_state.dart';
 class EmailVerificationPage extends StatefulWidget {
   final String? token;
 
-  const EmailVerificationPage({
-    super.key,
-    this.token,
-  });
+  const EmailVerificationPage({super.key, this.token});
 
   @override
   State<EmailVerificationPage> createState() => _EmailVerificationPageState();
@@ -53,20 +50,21 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
-                child: BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
-                  builder: (context, state) {
-                    if (state is EmailVerificationInitial) {
-                      return _buildInitialState(context, l10n);
-                    } else if (state is EmailVerificationLoading) {
-                      return _buildLoadingState(context, l10n);
-                    } else if (state is EmailVerificationSuccess) {
-                      return _buildSuccessState(context, l10n);
-                    } else if (state is EmailVerificationError) {
-                      return _buildErrorState(context, l10n, state.message);
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
+                child:
+                    BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+                      builder: (context, state) {
+                        if (state is EmailVerificationInitial) {
+                          return _buildInitialState(context, l10n);
+                        } else if (state is EmailVerificationLoading) {
+                          return _buildLoadingState(context, l10n);
+                        } else if (state is EmailVerificationSuccess) {
+                          return _buildSuccessState(context, l10n);
+                        } else if (state is EmailVerificationError) {
+                          return _buildErrorState(context, l10n, state.message);
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
               ),
             ),
           ),
@@ -79,11 +77,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.email_outlined,
-          size: 80,
-          color: AppColors.primary,
-        ),
+        Icon(Icons.email_outlined, size: 80, color: AppColors.primary),
         const SizedBox(height: AppSpacing.xl),
         Text(
           l10n.checkYourEmail,
@@ -165,7 +159,11 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, AppLocalizations l10n, String message) {
+  Widget _buildErrorState(
+    BuildContext context,
+    AppLocalizations l10n,
+    String message,
+  ) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

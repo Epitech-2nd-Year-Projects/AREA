@@ -2,7 +2,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class LogoService {
   static const String _baseUrl = 'https://img.logo.dev';
-  
+
   static String getLogoUrl(String serviceName) {
     final token = dotenv.env['LOGO_DEV_TOKEN'] ?? '';
     final domain = _normalizeDomain(serviceName);
@@ -11,7 +11,7 @@ class LogoService {
 
   static String _normalizeDomain(String serviceName) {
     final normalized = serviceName.toLowerCase();
-    
+
     final domainMap = {
       'github': 'github.com',
       'google': 'google.com',
@@ -52,7 +52,7 @@ class LogoService {
       'netlify': 'netlify.com',
       'github pages': 'pages.github.com',
     };
-    
+
     return domainMap[normalized] ?? '$normalized.com';
   }
 }

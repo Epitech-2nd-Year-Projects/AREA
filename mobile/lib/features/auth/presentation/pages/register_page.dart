@@ -70,7 +70,10 @@ class _RegisterPageContent extends StatelessWidget {
             listener: (context, state) async {
               if (state is OAuthRedirectReady) {
                 final url = Uri.parse(state.redirectUrl.toString());
-                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                if (!await launchUrl(
+                  url,
+                  mode: LaunchMode.externalApplication,
+                )) {
                   if (!context.mounted) return;
                   // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +152,8 @@ class _RegisterPageContent extends StatelessWidget {
     children: [
       OAuthProviderButton(
         provider: OAuthProvider.google,
-        onPressed: () => context.read<OAuthCubit>().startOAuth(OAuthProvider.google),
+        onPressed: () =>
+            context.read<OAuthCubit>().startOAuth(OAuthProvider.google),
       ),
     ],
   );

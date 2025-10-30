@@ -14,7 +14,7 @@ class OAuthAuthorizationResponseModel {
   });
 
   factory OAuthAuthorizationResponseModel.fromJson(Map<String, dynamic> json) {
-    final url = json['authorization_url'] ?? json['authorizationUrl'];
+    final url = json['authorizationUrl'] ?? json['authorization_url'];
     if (url == null || url is! String) {
       throw Exception('Invalid OAuth authorization response: $json');
     }
@@ -22,10 +22,12 @@ class OAuthAuthorizationResponseModel {
     return OAuthAuthorizationResponseModel(
       authorizationUrl: url,
       state: json['state'] as String?,
-      codeVerifier: (json['code_verifier'] ?? json['codeVerifier']) as String?,
-      codeChallenge: (json['code_challenge'] ?? json['codeChallenge']) as String?,
-      codeChallengeMethod: (json['code_challenge_method'] ??
-          json['codeChallengeMethod']) as String?,
+      codeVerifier: (json['codeVerifier'] ?? json['code_verifier']) as String?,
+      codeChallenge:
+          (json['codeChallenge'] ?? json['code_challenge']) as String?,
+      codeChallengeMethod:
+          (json['codeChallengeMethod'] ?? json['code_challenge_method'])
+              as String?,
     );
   }
 
@@ -36,7 +38,7 @@ class OAuthAuthorizationResponseModel {
       if (codeVerifier != null) 'codeVerifier': codeVerifier,
       if (codeChallenge != null) 'codeChallenge': codeChallenge,
       if (codeChallengeMethod != null)
-        'code_challengeMethod': codeChallengeMethod,
+        'codeChallengeMethod': codeChallengeMethod,
     };
   }
 }
