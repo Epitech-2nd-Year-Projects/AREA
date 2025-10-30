@@ -1,5 +1,3 @@
--- Seed Notion service provider with page-created action and create-page reaction
-
 INSERT INTO "service_providers" (
     "id",
     "name",
@@ -183,4 +181,3 @@ DO UPDATE SET
     "metadata" = EXCLUDED."metadata",
     "is_enabled" = EXCLUDED."is_enabled",
     "updated_at" = NOW();
-

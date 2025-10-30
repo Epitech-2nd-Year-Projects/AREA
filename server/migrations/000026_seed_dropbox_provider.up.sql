@@ -1,5 +1,3 @@
--- Seed Dropbox service provider with file-added action and folder creation reaction
-
 INSERT INTO "service_providers" (
     "id",
     "name",

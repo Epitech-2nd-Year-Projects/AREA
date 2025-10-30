@@ -1,5 +1,3 @@
--- Seed Microsoft service provider with Outlook email polling action and send mail reaction
-
 INSERT INTO "service_providers" (
     "id",
     "name",

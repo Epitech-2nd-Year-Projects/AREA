@@ -1,5 +1,3 @@
--- Seed Spotify service provider with liked-track action and playlist reaction
-
 INSERT INTO "service_providers" (
     "id",
     "name",
