@@ -23,7 +23,13 @@ import '../widgets/component_configuration_form.dart';
 class AreaFormPage extends StatelessWidget {
   final Area? areaToEdit;
   final AreaTemplate? template;
-  const AreaFormPage({super.key, this.areaToEdit, this.template});
+  final ServiceComponent? initialComponent;
+  const AreaFormPage({
+    super.key,
+    this.areaToEdit,
+    this.template,
+    this.initialComponent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +39,16 @@ class AreaFormPage extends StatelessWidget {
         sl<ServicesRepository>(),
         initialArea: areaToEdit,
       )..primeSubscriptionCache(),
-      child: _AreaFormScreen(template: template),
+      child: _AreaFormScreen(template: template, initialComponent: initialComponent),
     );
   }
 }
 
 class _AreaFormScreen extends StatefulWidget {
   final AreaTemplate? template;
+  final ServiceComponent? initialComponent;
 
-  const _AreaFormScreen({this.template});
+  const _AreaFormScreen({this.template, this.initialComponent});
 
   @override
   State<_AreaFormScreen> createState() => _AreaFormScreenState();
@@ -132,10 +139,18 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
     }
 
     final template = widget.template;
+    final initialComponent = widget.initialComponent;
+    
     if (template != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _applyTemplate(template);
+        }
+      });
+    } else if (initialComponent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _applyInitialComponent(initialComponent);
         }
       });
     }
@@ -441,6 +456,47 @@ class _AreaFormScreenState extends State<_AreaFormScreen> {
 
     if (!mounted) return;
     setState(() {});
+  }
+
+  Future<void> _applyInitialComponent(ServiceComponent component) async {
+    final cubit = context.read<AreaFormCubit>();
+
+    await cubit.primeSubscriptionCache();
+
+    if (component.isAction) {
+      setState(() {
+        _actionProviderId = component.provider.id;
+        _actionProviderLabel = component.provider.displayName;
+        _actionIsSubscribed = true;
+        _actionComponent = component;
+        _actionComponentId = component.id;
+        _actionComponentName = component.displayName;
+        _actionParams = {};
+      });
+
+      if (mounted) {
+        await _primeActionDefaults(component);
+      }
+    } else {
+      setState(() {
+        final entry = _reactions.first;
+        entry.providerId = component.provider.id;
+        entry.providerLabel = component.provider.displayName;
+        entry.isSubscribed = true;
+        entry.component = component;
+        entry.componentId = component.id;
+        entry.componentName = component.displayName;
+        entry.params = <String, dynamic>{};
+      });
+
+      if (mounted) {
+        await _primeReactionDefaults(0, component);
+      }
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _submit() {

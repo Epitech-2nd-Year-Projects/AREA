@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -370,7 +371,7 @@ class _ComponentsSectionState extends State<ComponentsSection>
         AppSpacing.xl,
         AppSpacing.md,
         AppSpacing.xl,
-        AppSpacing.xl,
+        AppSpacing.xl * 3,
       ),
       itemCount: components.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
@@ -391,7 +392,9 @@ class _ComponentsSectionState extends State<ComponentsSection>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          context.pushNamed('area-new', extra: component);
+        },
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),

@@ -288,7 +288,10 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
             else
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.sm,
+                    bottom: AppSpacing.xl * 2.4,
+                  ),
                   itemCount: filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (_, i) {
