@@ -11,5 +11,7 @@ export const authMutationKeys = {
   verifyEmail: () => [...baseKey, 'verify-email'] as const,
   logout: () => [...baseKey, 'logout'] as const,
   authorizeOAuth: () => [...baseKey, 'oauth', 'authorize'] as const,
-  exchangeOAuth: () => [...baseKey, 'oauth', 'exchange'] as const
+  exchangeOAuth: () => [...baseKey, 'oauth', 'exchange'] as const,
+  changePassword: () => [...baseKey, 'password', 'change'] as const,
+  changeEmail: () => [...baseKey, 'email', 'change'] as const
 }

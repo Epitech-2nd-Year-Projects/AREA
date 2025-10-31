@@ -13,7 +13,7 @@ export function mapUserDTOToUser(
 ): User {
   const normalizedStatus = dto.status?.toLowerCase() ?? ''
 
-  const role = normalizedStatus === 'admin' ? UserRole.Admin : UserRole.User
+  const role = dto.role === 'admin' ? UserRole.Admin : UserRole.Member
   const emailVerified = normalizedStatus === 'active'
 
   return {
@@ -21,6 +21,7 @@ export function mapUserDTOToUser(
     email: dto.email,
     role,
     emailVerified,
+    status: dto.status,
     imageUrl: options.imageUrl ?? undefined,
     connectedServices: options.connectedServices ?? []
   }

@@ -19,7 +19,9 @@ import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
 import {
   mapUserDTOToUser,
   useCurrentUserQuery,
-  useIdentitiesQuery
+  useIdentitiesQuery,
+  useChangeEmailMutation,
+  useChangePasswordMutation
 } from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
@@ -82,6 +84,27 @@ export default function ProfilePage() {
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
+  const { mutate: changeEmail, isPending: isChangeEmailPending } =
+    useChangeEmailMutation({
+      onSuccess: () => {
+        setProfileStatus({ type: 'success', message: t('profileSaved') })
+      },
+      onError: (error) => {
+        setProfileStatus({ type: 'error', message: error.message })
+      }
+    })
+
+  const { mutate: changePassword, isPending: isChangePasswordPending } =
+    useChangePasswordMutation({
+      onSuccess: () => {
+        setPasswordStatus({ type: 'success', message: t('passwordUpdated') })
+        setPasswordForm(getPasswordInitialState())
+      },
+      onError: (error) => {
+        setPasswordStatus({ type: 'error', message: error.message })
+      }
+    })
+
   useEffect(() => {
     if (!user) return
 
@@ -105,7 +128,19 @@ export default function ProfilePage() {
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPasswordStatus(null)
-    setProfileStatus({ type: 'success', message: t('profileSaved') })
+
+    if (profileForm.email !== user?.email) {
+      if (!passwordForm.currentPassword) {
+        setProfileStatus({ type: 'error', message: t('passwordMissing') })
+        return
+      }
+      changeEmail({
+        email: profileForm.email,
+        password: passwordForm.currentPassword
+      })
+    } else {
+      setProfileStatus({ type: 'success', message: t('profileSaved') })
+    }
   }
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -148,11 +183,20 @@ export default function ProfilePage() {
     }
 
     setProfileStatus(null)
-    setPasswordStatus({ type: 'success', message: t('passwordUpdated') })
-    setPasswordForm(getPasswordInitialState())
+    setPasswordStatus(null)
+
+    changePassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    })
   }
 
-  const isLoading = isUserLoading || isAboutLoading || isIdentitiesLoading
+  const isLoading =
+    isUserLoading ||
+    isAboutLoading ||
+    isIdentitiesLoading ||
+    isChangeEmailPending ||
+    isChangePasswordPending
 
   if (isLoading || !user) {
     return (

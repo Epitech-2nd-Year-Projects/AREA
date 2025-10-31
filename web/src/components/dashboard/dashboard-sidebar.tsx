@@ -61,7 +61,7 @@ const navData: {
     },
     {
       internationalizedTitle: 'myArea',
-      allowedRoles: [UserRole.Admin, UserRole.User],
+      allowedRoles: [UserRole.Admin, UserRole.Member],
       items: [
         {
           internationalizedTitle: 'services',
@@ -89,7 +89,7 @@ export function DashboardSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { data, isLoading } = useCurrentUserQuery()
   const user = data?.user ? mapUserDTOToUser(data.user) : null
-  const effectiveRole = user?.role ?? UserRole.User
+  const effectiveRole = user?.role ?? UserRole.Member
 
   return (
     <Sidebar {...props}>

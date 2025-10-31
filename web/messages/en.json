@@ -192,6 +192,21 @@
         "copyId": "Copy user ID",
         "editUser": "Edit user"
       }
+    },
+    "editDialog": {
+      "title": "Edit user",
+      "description": "Make changes to the user profile here. Click save when you're done.",
+      "email": "Email",
+      "newPassword": "New password",
+      "status": "Status",
+      "statusPlaceholder": "Select a status",
+      "statuses": {
+        "active": "Active",
+        "pending": "Pending",
+        "suspended": "Suspended",
+        "deleted": "Deleted"
+      },
+      "save": "Save changes"
     }
   },
   "LinksPage": {

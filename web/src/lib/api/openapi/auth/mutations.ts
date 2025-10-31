@@ -4,14 +4,18 @@ import {
   exchangeOAuthClient,
   loginClient,
   logoutClient,
-  verifyEmailClient
+  verifyEmailClient,
+  changePasswordClient,
+  changeEmailClient
 } from './client'
 import { authMutationKeys, authKeys } from './query-keys'
 import type {
   LoginRequestDTO,
   OAuthAuthorizationRequestDTO,
   OAuthExchangeRequestDTO,
-  VerifyEmailRequestDTO
+  VerifyEmailRequestDTO,
+  ChangePasswordRequestDTO,
+  ChangeEmailRequestDTO
 } from '@/lib/api/contracts/openapi/auth'
 import type { QueryClient } from '@tanstack/react-query'
 
@@ -57,6 +61,16 @@ export const authMutations = {
         variables.body,
         options?.clientOptions
       )
+  }),
+  changePassword: (options?: { clientOptions?: ClientRequestOptions }) => ({
+    mutationKey: authMutationKeys.changePassword(),
+    mutationFn: (variables: ChangePasswordRequestDTO) =>
+      changePasswordClient(variables, options?.clientOptions)
+  }),
+  changeEmail: (options?: { clientOptions?: ClientRequestOptions }) => ({
+    mutationKey: authMutationKeys.changeEmail(),
+    mutationFn: (variables: ChangeEmailRequestDTO) =>
+      changeEmailClient(variables, options?.clientOptions)
   })
 }
 

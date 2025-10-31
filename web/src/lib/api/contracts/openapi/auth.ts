@@ -10,6 +10,7 @@ export type VerifyEmailRequestDTO = {
 export type UserDTO = {
   id: string
   email: string
+  role: string
   status: string
   createdAt: string
   updatedAt: string
@@ -60,4 +61,19 @@ export type IdentitySummaryDTO = {
 
 export type IdentityListResponseDTO = {
   identities: IdentitySummaryDTO[]
+}
+
+export type ChangePasswordRequestDTO = {
+  currentPassword?: string
+  newPassword?: string
+}
+
+export type ChangeEmailRequestDTO = {
+  email?: string
+  password?: string
+}
+
+export type EmailChangeResponseDTO = {
+  user: UserDTO
+  verificationExpiresAt?: string | null
 }
