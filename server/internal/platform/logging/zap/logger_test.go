@@ -7,6 +7,7 @@ import (
 
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestNewWithDefaultJSON(t *testing.T) {
@@ -26,6 +27,30 @@ func TestNewWithDefaultJSON(t *testing.T) {
 	}
 	if !strings.Contains(output, "\"component\":\"test\"") {
 		t.Fatalf("expected attribute in output, got %q", output)
+	}
+}
+
+func TestWithZapOptions(t *testing.T) {
+	var buf bytes.Buffer
+	var invoked int
+
+	logger, err := New(
+		logging.Config{},
+		WithWriter(&buf),
+		WithZapOptions(zap.Hooks(func(zapcore.Entry) error {
+			invoked++
+			return nil
+		})),
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	logger.Info("hooked")
+	_ = logger.Sync()
+
+	if invoked == 0 {
+		t.Fatal("expected zap hook to be invoked")
 	}
 }
 
