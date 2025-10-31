@@ -118,6 +118,7 @@ func (r userRepo) Update(ctx context.Context, user userdomain.User) error {
 			"email":         model.Email,
 			"password_hash": model.PasswordHash,
 			"status":        model.Status,
+			"role":          model.Role,
 			"last_login_at": model.LastLoginAt,
 			"updated_at":    model.UpdatedAt,
 		}).Error; err != nil {

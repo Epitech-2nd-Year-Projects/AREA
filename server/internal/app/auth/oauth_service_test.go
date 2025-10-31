@@ -88,6 +88,7 @@ func TestOAuthServiceExchangeUpdatesIdentity(t *testing.T) {
 		ID:        uuid.New(),
 		Email:     "user@example.com",
 		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -154,6 +155,7 @@ func TestOAuthServiceLinkServiceCreatesSubscription(t *testing.T) {
 		ID:        uuid.New(),
 		Email:     "user@example.com",
 		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -223,6 +225,7 @@ func TestOAuthServiceLinkServiceIdentityConflict(t *testing.T) {
 		ID:        uuid.New(),
 		Email:     "user@example.com",
 		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -269,7 +272,7 @@ func TestOAuthServiceBeginSubscriptionOAuth2(t *testing.T) {
 	now := time.Unix(1727000000, 0).UTC()
 	clock := &fakeClock{t: now}
 
-	user := userdomain.User{ID: uuid.New()}
+	user := userdomain.User{ID: uuid.New(), Role: userdomain.RoleMember}
 	providerID := uuid.New()
 	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
 		"stub": {ID: providerID, Name: "stub", OAuthType: servicedomain.OAuthTypeOAuth2},
@@ -308,7 +311,7 @@ func TestOAuthServiceBeginSubscriptionWithoutOAuth(t *testing.T) {
 	now := time.Unix(1727100000, 0).UTC()
 	clock := &fakeClock{t: now}
 
-	user := userdomain.User{ID: uuid.New()}
+	user := userdomain.User{ID: uuid.New(), Role: userdomain.RoleMember}
 	providerID := uuid.New()
 	serviceProviders := &memoryServiceProviderRepo{items: map[string]servicedomain.Provider{
 		"timer": {ID: providerID, Name: "timer", OAuthType: servicedomain.OAuthTypeNone},

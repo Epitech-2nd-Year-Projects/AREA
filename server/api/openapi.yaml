@@ -490,6 +490,60 @@ paths:
                     email: alex.martin@example.com
         '401':
           description: Session missing or expired
+  /v1/auth/password:
+    patch:
+      summary: Change account password
+      description: >-
+        Updates the password of the currently authenticated user after validating the
+        existing password.
+      operationId: changePassword
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password updated
+        '400':
+          description: Invalid request or credentials
+        '401':
+          description: Authentication required
+        '500':
+          description: Failed to update password
+  /v1/auth/email:
+    patch:
+      summary: Change account email
+      description: >-
+        Changes the primary email of the authenticated user and sends a fresh verification
+        message to confirm the new address.
+      operationId: changeEmail
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeEmailRequest'
+      responses:
+        '202':
+          description: Verification email queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeResponse'
+        '400':
+          description: Invalid request or credentials
+        '401':
+          description: Authentication required
+        '409':
+          description: Email already in use
+        '500':
+          description: Failed to update email
   /v1/identities:
     get:
       summary: List connected identities
@@ -851,6 +905,104 @@ paths:
           description: Area not found
         '500':
           description: Failed to execute reactions
+  /v1/admin/users/{userId}/password:
+    patch:
+      summary: Reset user password
+      description: Allows administrators to set a new password for the specified user.
+      operationId: adminResetUserPassword
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminResetPasswordRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Authentication required
+        '403':
+          description: Administrator privileges required
+        '404':
+          description: User not found
+        '500':
+          description: Failed to update password
+  /v1/admin/users/{userId}/email:
+    patch:
+      summary: Update user email
+      description: Allows administrators to change the primary email of a user and optionally trigger email verification.
+      operationId: adminUpdateUserEmail
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateEmailRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeResponse'
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Authentication required
+        '403':
+          description: Administrator privileges required
+        '404':
+          description: User not found
+        '409':
+          description: Email already in use
+        '500':
+          description: Failed to update email
+  /v1/admin/users/{userId}/status:
+    patch:
+      summary: Update user status
+      description: Lets administrators change the lifecycle status of a user (activate, suspend, delete, etc.).
+      operationId: adminUpdateUserStatus
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateStatusRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid status value
+        '401':
+          description: Authentication required
+        '403':
+          description: Administrator privileges required
+        '404':
+          description: User not found
+        '500':
+          description: Failed to update status
 components:
   securitySchemes:
     sessionAuth:
@@ -1016,7 +1168,7 @@ components:
     User:
       type: object
       description: Detailed user payload returned by authenticated endpoints.
-      required: [id, email, status, createdAt, updatedAt]
+      required: [id, email, role, status, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1026,6 +1178,9 @@ components:
           type: string
           format: email
           description: Primary email associated with the account.
+        role:
+          type: string
+          description: Permission level for the account (`member` or `admin`).
         status:
           type: string
           description: Lifecycle status (`pending`, `active`, etc.).
@@ -1042,6 +1197,70 @@ components:
           format: date-time
           nullable: true
           description: Timestamp of the most recent successful login.
+    ChangePasswordRequest:
+      type: object
+      description: Payload to update the password of the current user.
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          description: Current password used to confirm account ownership.
+        newPassword:
+          type: string
+          description: Desired replacement password.
+    ChangeEmailRequest:
+      type: object
+      description: Payload to update the email of the current user.
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: New primary email address.
+        password:
+          type: string
+          description: Current password used to authorise the change.
+    EmailChangeResponse:
+      type: object
+      description: Response returned after updating a user's email address.
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        verificationExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiration time of the newly issued verification token, when applicable.
+    AdminResetPasswordRequest:
+      type: object
+      description: Payload for administrators to set a new user password.
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+          description: Replacement password to assign to the user.
+    AdminUpdateEmailRequest:
+      type: object
+      description: Payload for administrators to update a user's email address.
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: New primary email address for the user.
+        sendVerification:
+          type: boolean
+          description: Whether to issue a verification email for the new address.
+          default: true
+    AdminUpdateStatusRequest:
+      type: object
+      description: Payload for administrators to update a user's lifecycle status.
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: Target status (`pending`, `active`, `suspended`, or `deleted`).
     OAuthAuthorizationRequest:
       type: object
       description: Optional parameters forwarded to the configured OAuth provider.
@@ -1453,3 +1672,11 @@ components:
       schema:
         type: string
       example: google
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Unique identifier of the user to manage.
+      schema:
+        type: string
+        format: uuid
