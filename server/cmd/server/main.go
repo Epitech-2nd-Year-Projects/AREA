@@ -28,6 +28,7 @@ import (
 	linearexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/linear"
 	notionexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/notion"
 	outlookexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/outlook"
+	redditexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/reddit"
 	slackexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/slack"
 	spotifyexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/spotify"
 	zoomexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/zoom"
@@ -287,6 +288,16 @@ func run() error {
 			)
 			if outlookExecutor != nil {
 				reactionHandlers = append(reactionHandlers, outlookExecutor)
+			}
+			redditExecutor := redditexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if redditExecutor != nil {
+				reactionHandlers = append(reactionHandlers, redditExecutor)
 			}
 			githubExecutor := githubexecutor.NewIssueExecutor(
 				repo.Identities(),

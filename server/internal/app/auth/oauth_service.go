@@ -309,6 +309,10 @@ func (s *OAuthService) CompleteSubscription(ctx context.Context, user userdomain
 
 	exchange, exchErr := prov.Exchange(ctx, code, req)
 	if exchErr != nil {
+		s.logger.Error("oauth provider exchange failed",
+			zap.String("provider", normalized),
+			zap.String("redirect_uri", strings.TrimSpace(req.RedirectURI)),
+			zap.Error(exchErr))
 		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, fmt.Errorf("auth.OAuthService.CompleteSubscription[%s]: %w", normalized, exchErr)
 	}
 	if exchange.Profile.Empty() {
@@ -319,12 +323,20 @@ func (s *OAuthService) CompleteSubscription(ctx context.Context, user userdomain
 
 	identity, identityErr := s.linkIdentityToUser(ctx, user, normalized, exchange, now)
 	if identityErr != nil {
+		s.logger.Error("oauth identity link failed",
+			zap.String("provider", normalized),
+			zap.Error(identityErr))
 		return subscriptiondomain.Subscription{}, identitydomain.Identity{}, identityErr
 	}
 
 	scopeGrants := selectScopes(exchange.Token.Scope, identity.Scopes)
 	subscription, ensureErr := s.ensureSubscription(ctx, user.ID, providerRecord, &identity.ID, scopeGrants, now)
 	if ensureErr != nil {
+		s.logger.Error("subscription persistence failed",
+			zap.String("provider", normalized),
+			zap.String("user_id", user.ID.String()),
+			zap.String("identity_id", identity.ID.String()),
+			zap.Error(ensureErr))
 		return subscriptiondomain.Subscription{}, identity, ensureErr
 	}
 
@@ -572,6 +584,7 @@ func (s *OAuthService) resolveOrCreateUser(ctx context.Context, profile identity
 		ID:        uuid.New(),
 		Email:     email,
 		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

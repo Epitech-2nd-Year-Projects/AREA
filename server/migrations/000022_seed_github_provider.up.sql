@@ -1,5 +1,3 @@
--- Seed GitHub service provider for catalog exposure
-
 INSERT INTO "service_providers" (
     "id",
     "name",

@@ -9,9 +9,9 @@ INSERT INTO "service_providers" (
 )
 VALUES (
     gen_random_uuid(),
-    'microsoft',
-    'Microsoft',
-    'productivity',
+    'reddit',
+    'Reddit',
+    'social',
     'oauth2',
     '{}'::jsonb,
     TRUE
@@ -25,7 +25,7 @@ ON CONFLICT ("name") DO UPDATE
         "updated_at" = NOW();
 
 WITH provider AS (
-    SELECT id FROM "service_providers" WHERE name = 'microsoft'
+    SELECT id FROM "service_providers" WHERE name = 'reddit'
 )
 INSERT INTO "service_components" (
     "id",
@@ -42,61 +42,60 @@ SELECT
     gen_random_uuid(),
     provider.id,
     'action',
-    'outlook_new_email',
-    'New Outlook email',
-    'Emits an event when a new email arrives in the selected Outlook folder',
+    'reddit_new_post',
+    'New subreddit post',
+    'Emits an event when a new post is published in the selected subreddit',
     1,
     jsonb_build_object(
         'parameters', jsonb_build_array(
             jsonb_build_object(
                 'key', 'identityId',
-                'label', 'Microsoft identity',
+                'label', 'Reddit identity',
                 'type', 'identity',
-                'provider', 'microsoft',
+                'provider', 'reddit',
                 'required', TRUE
             ),
             jsonb_build_object(
-                'key', 'folderId',
-                'label', 'Mail folder',
+                'key', 'subreddit',
+                'label', 'Subreddit',
                 'type', 'text',
                 'required', TRUE,
-                'default', 'Inbox',
-                'helperText', 'Folder display name or identifier (for example Inbox)'
+                'helperText', 'Name of the subreddit without the /r/ prefix'
             ),
             jsonb_build_object(
-                'key', 'maxResults',
-                'label', 'Messages per poll',
+                'key', 'limit',
+                'label', 'Posts per poll',
                 'type', 'integer',
                 'required', FALSE,
                 'minimum', 1,
-                'maximum', 50,
+                'maximum', 100,
                 'default', 25
             )
         ),
         'ingestion', jsonb_build_object(
             'mode', 'polling',
-            'intervalSeconds', 15,
+            'intervalSeconds', 30,
             'handler', 'http',
             'http', jsonb_build_object(
-                'endpoint', 'https://graph.microsoft.com/v1.0/me/mailFolders/{{params.folderId}}/messages',
+                'endpoint', 'https://oauth.reddit.com/r/{{params.subreddit}}/new',
                 'method', 'GET',
-                'itemsPath', 'value',
-                'fingerprintField', 'id',
-                'occurredAtField', 'receivedDateTime',
+                'itemsPath', 'data.children',
+                'fingerprintField', 'data.id',
+                'occurredAtField', 'data.created_utc',
+                'cursor', jsonb_build_object(
+                    'source', 'item',
+                    'itemPath', 'data.name'
+                ),
                 'query', jsonb_build_array(
                     jsonb_build_object(
-                        'name', '$orderby',
-                        'value', 'receivedDateTime desc'
-                    ),
-                    jsonb_build_object(
-                        'name', '$top',
-                        'template', '{{params.maxResults}}',
+                        'name', 'limit',
+                        'template', '{{params.limit}}',
                         'default', '25',
                         'skipIfEmpty', TRUE
                     ),
                     jsonb_build_object(
-                        'name', '$filter',
-                        'template', 'receivedDateTime gt {{cursor.last_seen_ts}}',
+                        'name', 'after',
+                        'template', '{{cursor.last_seen_name}}',
                         'skipIfEmpty', TRUE
                     )
                 ),
@@ -108,20 +107,21 @@ SELECT
                     jsonb_build_object(
                         'name', 'Authorization',
                         'template', 'Bearer {{identity.accessToken}}'
+                    ),
+                    jsonb_build_object(
+                        'name', 'User-Agent',
+                        'value', 'AREA-Server'
                     )
                 ),
                 'auth', jsonb_build_object(
                     'type', 'oauth',
                     'identityParam', 'identityId',
-                    'provider', 'microsoft'
-                ),
-                'cursor', jsonb_build_object(
-                    'source', 'item',
-                    'itemPath', 'receivedDateTime'
+                    'provider', 'reddit',
+                    'scopes', jsonb_build_array('read')
                 ),
                 'skipItems', jsonb_build_array(
                     jsonb_build_object(
-                        'path', 'isDraft',
+                        'path', 'data.stickied',
                         'equals', 'true'
                     )
                 )
@@ -139,7 +139,7 @@ DO UPDATE SET
     "updated_at" = NOW();
 
 WITH provider AS (
-    SELECT id FROM "service_providers" WHERE name = 'microsoft'
+    SELECT id FROM "service_providers" WHERE name = 'reddit'
 )
 INSERT INTO "service_components" (
     "id",
@@ -156,50 +156,32 @@ SELECT
     gen_random_uuid(),
     provider.id,
     'reaction',
-    'outlook_send_email',
-    'Send Outlook email',
-    'Sends an email through the user''s Outlook account',
+    'reddit_comment_post',
+    'Comment on Reddit post',
+    'Posts a comment on the specified Reddit submission using the linked identity',
     1,
     jsonb_build_object(
         'parameters', jsonb_build_array(
             jsonb_build_object(
                 'key', 'identityId',
-                'label', 'Microsoft identity',
+                'label', 'Reddit identity',
                 'type', 'identity',
-                'provider', 'microsoft',
+                'provider', 'reddit',
                 'required', TRUE
             ),
             jsonb_build_object(
-                'key', 'to',
-                'label', 'Recipients',
-                'type', 'emailList',
-                'required', TRUE
-            ),
-            jsonb_build_object(
-                'key', 'subject',
-                'label', 'Subject',
+                'key', 'thingId',
+                'label', 'Post thing ID',
                 'type', 'text',
                 'required', TRUE,
-                'maxLength', 256
+                'helperText', 'Fullname of the post, for example t3_abc123'
             ),
             jsonb_build_object(
-                'key', 'body',
-                'label', 'Body',
+                'key', 'text',
+                'label', 'Comment text',
                 'type', 'textarea',
                 'required', TRUE,
-                'maxLength', 8192
-            ),
-            jsonb_build_object(
-                'key', 'cc',
-                'label', 'Cc',
-                'type', 'emailList',
-                'required', FALSE
-            ),
-            jsonb_build_object(
-                'key', 'bcc',
-                'label', 'Bcc',
-                'type', 'emailList',
-                'required', FALSE
+                'maxLength', 10000
             )
         )
     ),

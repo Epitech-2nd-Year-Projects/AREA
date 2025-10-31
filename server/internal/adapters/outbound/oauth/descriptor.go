@@ -180,6 +180,28 @@ func BuiltIn() Registry {
 			},
 			ProfileExtractor: microsoftProfileExtractor,
 		},
+		"reddit": {
+			DisplayName:      "Reddit",
+			AuthorizationURL: "https://www.reddit.com/api/v1/authorize",
+			TokenURL:         "https://www.reddit.com/api/v1/access_token",
+			UserInfoURL:      "https://oauth.reddit.com/api/v1/me",
+			DefaultScopes: []string{
+				"identity",
+				"read",
+				"submit",
+			},
+			AuthorizationParams: map[string]string{
+				"duration": "permanent",
+			},
+			UserInfoHeaders: map[string]string{
+				"User-Agent": "AREA-Server",
+			},
+			TokenAuthMethod: "basic",
+			TokenHeaders: map[string]string{
+				"User-Agent": "AREA-Server",
+			},
+			ProfileExtractor: redditProfileExtractor,
+		},
 		"zoom": {
 			DisplayName:      "Zoom",
 			AuthorizationURL: "https://zoom.us/oauth/authorize",
@@ -502,6 +524,26 @@ func microsoftProfileExtractor(raw map[string]any) (identitydomain.Profile, erro
 		Email:      email,
 		Name:       stringFrom(raw["displayName"]),
 		PictureURL: "",
+		Raw:        raw,
+	}
+	return profile, nil
+}
+
+func redditProfileExtractor(raw map[string]any) (identitydomain.Profile, error) {
+	subject := stringFrom(raw["id"])
+	if subject == "" {
+		return identitydomain.Profile{}, fmt.Errorf("reddit: id missing")
+	}
+
+	username := stringFrom(raw["name"])
+	email := strings.TrimSpace(stringFrom(raw["email"]))
+
+	profile := identitydomain.Profile{
+		Provider:   "reddit",
+		Subject:    subject,
+		Email:      email,
+		Name:       username,
+		PictureURL: stringFrom(raw["icon_img"]),
 		Raw:        raw,
 	}
 	return profile, nil

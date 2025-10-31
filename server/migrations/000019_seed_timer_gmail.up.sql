@@ -1,5 +1,3 @@
--- Seed scheduler and Gmail components for timer-to-email automation
-
 INSERT INTO "service_providers" ("id", "name", "display_name", "category", "oauth_type", "auth_config", "is_enabled")
 VALUES (gen_random_uuid(), 'google', 'Google', 'productivity', 'oauth2', '{}'::jsonb, TRUE)
 ON CONFLICT ("name") DO UPDATE

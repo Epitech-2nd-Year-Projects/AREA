@@ -98,6 +98,9 @@ var (
 
 	// ErrSessionNotFound is returned when the referenced session cannot be found
 	ErrSessionNotFound = errors.New("auth: session not found")
+
+	// ErrEmailUnchanged indicates the requested email matches the current value
+	ErrEmailUnchanged = errors.New("auth: email unchanged")
 )
 
 // RegistrationResult conveys the outcome of a registration attempt
@@ -120,6 +123,12 @@ type LoginResult struct {
 	User       userdomain.User
 	Session    sessiondomain.Session
 	CookieName string
+}
+
+// EmailChangeResult conveys the outcome of an email update request
+type EmailChangeResult struct {
+	User                userdomain.User
+	VerificationExpires *time.Time
 }
 
 // Register creates a pending user and dispatches a verification email
@@ -149,6 +158,7 @@ func (s *Service) Register(ctx context.Context, email string, password string) (
 		Email:        email,
 		PasswordHash: hash,
 		Status:       userdomain.StatusPending,
+		Role:         userdomain.RoleMember,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
@@ -161,32 +171,9 @@ func (s *Service) Register(ctx context.Context, email string, password string) (
 		return RegistrationResult{}, fmt.Errorf("auth.Service.Register: users.Create: %w", err)
 	}
 
-	tokenValue, err := randomToken()
+	expiresAt, err := s.issueVerification(ctx, createdUser, now)
 	if err != nil {
-		return RegistrationResult{}, fmt.Errorf("auth.Service.Register: randomToken: %w", err)
-	}
-	expiresAt := now.Add(s.cfg.VerificationTTL)
-	_, err = s.tokens.Create(ctx, authdomain.VerificationToken{
-		ID:        uuid.New(),
-		UserID:    createdUser.ID,
-		Token:     tokenValue,
-		ExpiresAt: expiresAt,
-		CreatedAt: now,
-	})
-	if err != nil {
-		return RegistrationResult{}, fmt.Errorf("auth.Service.Register: tokens.Create: %w", err)
-	}
-
-	if s.mailer != nil {
-		msg := outbound.Mail{
-			To:      createdUser.Email,
-			Subject: "Confirme ton compte AREA",
-			Text:    s.verificationTextBody(tokenValue),
-			HTML:    s.verificationHTMLBody(tokenValue),
-		}
-		if err := s.mailer.Send(ctx, msg); err != nil {
-			s.logger.Warn("failed to send verification email", zap.Error(err))
-		}
+		return RegistrationResult{}, fmt.Errorf("auth.Service.Register: %w", err)
 	}
 
 	return RegistrationResult{User: createdUser, VerificationExpires: expiresAt}, nil
@@ -285,6 +272,203 @@ func (s *Service) Login(ctx context.Context, email string, password string, meta
 	return LoginResult{User: usr, Session: createdSession, CookieName: s.cfg.CookieName}, nil
 }
 
+// ChangePassword updates the password after validating the current secret
+func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) (userdomain.User, error) {
+	usr, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.ChangePassword: users.FindByID: %w", err)
+	}
+
+	if err := s.hasher.Compare(usr.PasswordHash, currentPassword); err != nil {
+		return userdomain.User{}, ErrInvalidCredentials
+	}
+
+	hash, err := s.hashPassword("auth.Service.ChangePassword", newPassword)
+	if err != nil {
+		return userdomain.User{}, err
+	}
+
+	now := s.clock.Now().UTC()
+	updated := usr.WithPasswordHash(hash)
+	updated.UpdatedAt = now
+
+	if err := s.users.Update(ctx, updated); err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.ChangePassword: users.Update: %w", err)
+	}
+
+	return updated, nil
+}
+
+// ChangeEmail updates the email and re-issues a verification token
+func (s *Service) ChangeEmail(ctx context.Context, userID uuid.UUID, password string, email string) (EmailChangeResult, error) {
+	normalized := strings.TrimSpace(strings.ToLower(email))
+	if normalized == "" {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: email is empty")
+	}
+	if err := validateEmail(normalized); err != nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: %w", err)
+	}
+
+	usr, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: users.FindByID: %w", err)
+	}
+
+	if err := s.hasher.Compare(usr.PasswordHash, password); err != nil {
+		return EmailChangeResult{}, ErrInvalidCredentials
+	}
+
+	if strings.EqualFold(usr.Email, normalized) {
+		return EmailChangeResult{}, ErrEmailUnchanged
+	}
+
+	if existing, err := s.users.FindByEmail(ctx, normalized); err == nil {
+		if existing.ID != usr.ID {
+			return EmailChangeResult{}, ErrEmailAlreadyRegistered
+		}
+	} else if !errors.Is(err, outbound.ErrNotFound) {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: users.FindByEmail: %w", err)
+	}
+
+	if s.tokens == nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: token repository missing")
+	}
+	if err := s.tokens.DeleteByUser(ctx, usr.ID); err != nil && !errors.Is(err, outbound.ErrNotFound) {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: tokens.DeleteByUser: %w", err)
+	}
+
+	now := s.clock.Now().UTC()
+	updated := usr.WithStatus(userdomain.StatusPending)
+	updated.Email = normalized
+	updated.UpdatedAt = now
+
+	if err := s.users.Update(ctx, updated); err != nil {
+		if errors.Is(err, outbound.ErrConflict) {
+			return EmailChangeResult{}, ErrEmailAlreadyRegistered
+		}
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: users.Update: %w", err)
+	}
+
+	expiresAt, err := s.issueVerification(ctx, updated, now)
+	if err != nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.ChangeEmail: %w", err)
+	}
+
+	return EmailChangeResult{User: updated, VerificationExpires: &expiresAt}, nil
+}
+
+// AdminResetPassword sets a new password for the specified user
+func (s *Service) AdminResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) (userdomain.User, error) {
+	usr, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.AdminResetPassword: users.FindByID: %w", err)
+	}
+
+	hash, err := s.hashPassword("auth.Service.AdminResetPassword", newPassword)
+	if err != nil {
+		return userdomain.User{}, err
+	}
+
+	now := s.clock.Now().UTC()
+	updated := usr.WithPasswordHash(hash)
+	updated.UpdatedAt = now
+
+	if err := s.users.Update(ctx, updated); err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.AdminResetPassword: users.Update: %w", err)
+	}
+
+	return updated, nil
+}
+
+// AdminChangeEmail updates a user's email and optionally issues a verification
+func (s *Service) AdminChangeEmail(ctx context.Context, userID uuid.UUID, email string, sendVerification bool) (EmailChangeResult, error) {
+	normalized := strings.TrimSpace(strings.ToLower(email))
+	if normalized == "" {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: email is empty")
+	}
+	if err := validateEmail(normalized); err != nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: %w", err)
+	}
+
+	usr, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: users.FindByID: %w", err)
+	}
+
+	if strings.EqualFold(usr.Email, normalized) {
+		return EmailChangeResult{}, ErrEmailUnchanged
+	}
+
+	if existing, err := s.users.FindByEmail(ctx, normalized); err == nil {
+		if existing.ID != usr.ID {
+			return EmailChangeResult{}, ErrEmailAlreadyRegistered
+		}
+	} else if !errors.Is(err, outbound.ErrNotFound) {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: users.FindByEmail: %w", err)
+	}
+
+	if s.tokens == nil {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: token repository missing")
+	}
+	if err := s.tokens.DeleteByUser(ctx, usr.ID); err != nil && !errors.Is(err, outbound.ErrNotFound) {
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: tokens.DeleteByUser: %w", err)
+	}
+
+	now := s.clock.Now().UTC()
+	updated := usr
+	updated.Email = normalized
+	if sendVerification {
+		updated.Status = userdomain.StatusPending
+	}
+	updated.UpdatedAt = now
+
+	if err := s.users.Update(ctx, updated); err != nil {
+		if errors.Is(err, outbound.ErrConflict) {
+			return EmailChangeResult{}, ErrEmailAlreadyRegistered
+		}
+		return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: users.Update: %w", err)
+	}
+
+	var expiresAt *time.Time
+	if sendVerification {
+		expiry, err := s.issueVerification(ctx, updated, now)
+		if err != nil {
+			return EmailChangeResult{}, fmt.Errorf("auth.Service.AdminChangeEmail: %w", err)
+		}
+		expiresAt = &expiry
+	}
+
+	return EmailChangeResult{User: updated, VerificationExpires: expiresAt}, nil
+}
+
+// AdminUpdateStatus changes the lifecycle status of a user and revokes sessions when necessary
+func (s *Service) AdminUpdateStatus(ctx context.Context, userID uuid.UUID, status userdomain.Status) (userdomain.User, error) {
+	if !isValidUserStatus(status) {
+		return userdomain.User{}, fmt.Errorf("auth.Service.AdminUpdateStatus: invalid status %q", status)
+	}
+
+	usr, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.AdminUpdateStatus: users.FindByID: %w", err)
+	}
+
+	now := s.clock.Now().UTC()
+	updated := usr.WithStatus(status)
+	updated.UpdatedAt = now
+
+	if err := s.users.Update(ctx, updated); err != nil {
+		return userdomain.User{}, fmt.Errorf("auth.Service.AdminUpdateStatus: users.Update: %w", err)
+	}
+
+	if s.sessions != nil && status != userdomain.StatusActive {
+		if err := s.sessions.DeleteByUser(ctx, updated.ID); err != nil {
+			return userdomain.User{}, fmt.Errorf("auth.Service.AdminUpdateStatus: sessions.DeleteByUser: %w", err)
+		}
+	}
+
+	return updated, nil
+}
+
 // Logout revokes the session referenced by the cookie
 func (s *Service) Logout(ctx context.Context, sessionID uuid.UUID) error {
 	if sessionID == uuid.Nil {
@@ -330,6 +514,63 @@ func (s *Service) ResolveSession(ctx context.Context, sessionID uuid.UUID) (user
 func (s *Service) verificationHTMLBody(token string) string {
 	link := s.verificationLink(token)
 	return fmt.Sprintf(`<p>Bienvenue sur AREA.</p><p>Confirme ton adresse email en cliquant sur <a href="%s">ce lien</a>.</p>`, link)
+}
+
+func (s *Service) issueVerification(ctx context.Context, user userdomain.User, now time.Time) (time.Time, error) {
+	if s.tokens == nil {
+		return time.Time{}, fmt.Errorf("auth.Service.issueVerification: token repository missing")
+	}
+
+	tokenValue, err := randomToken()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("auth.Service.issueVerification: randomToken: %w", err)
+	}
+
+	expiresAt := now.Add(s.cfg.VerificationTTL)
+	_, err = s.tokens.Create(ctx, authdomain.VerificationToken{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Token:     tokenValue,
+		ExpiresAt: expiresAt,
+		CreatedAt: now,
+	})
+	if err != nil {
+		return time.Time{}, fmt.Errorf("auth.Service.issueVerification: tokens.Create: %w", err)
+	}
+
+	if s.mailer != nil {
+		msg := outbound.Mail{
+			To:      user.Email,
+			Subject: "Confirme ton compte AREA",
+			Text:    s.verificationTextBody(tokenValue),
+			HTML:    s.verificationHTMLBody(tokenValue),
+		}
+		if err := s.mailer.Send(ctx, msg); err != nil {
+			s.logger.Warn("failed to send verification email", zap.Error(err))
+		}
+	}
+
+	return expiresAt, nil
+}
+
+func (s *Service) hashPassword(op string, password string) (string, error) {
+	if len(password) < s.cfg.PasswordMinLength {
+		return "", fmt.Errorf("%s: password too short", op)
+	}
+	hash, err := s.hasher.Hash(password)
+	if err != nil {
+		return "", fmt.Errorf("%s: hash password: %w", op, err)
+	}
+	return hash, nil
+}
+
+func isValidUserStatus(status userdomain.Status) bool {
+	switch status {
+	case userdomain.StatusPending, userdomain.StatusActive, userdomain.StatusSuspended, userdomain.StatusDeleted:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Service) verificationTextBody(token string) string {

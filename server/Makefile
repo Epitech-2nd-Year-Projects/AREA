@@ -1,6 +1,6 @@
 APP = server
 
-.PHONY: build test lint run
+.PHONY: build test lint run coverage
 
 build:
 	go build -o bin/$(APP) ./cmd/server
@@ -14,3 +14,6 @@ lint:
 run:
 	go run ./cmd/server
 
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out

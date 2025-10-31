@@ -16,6 +16,7 @@ type userModel struct {
 	Email        string     `gorm:"column:email"`
 	PasswordHash string     `gorm:"column:password_hash"`
 	Status       string     `gorm:"column:status"`
+	Role         string     `gorm:"column:role"`
 	CreatedAt    time.Time  `gorm:"column:created_at"`
 	UpdatedAt    time.Time  `gorm:"column:updated_at"`
 	LastLoginAt  *time.Time `gorm:"column:last_login_at"`
@@ -24,11 +25,17 @@ type userModel struct {
 func (userModel) TableName() string { return "users" }
 
 func (m userModel) toDomain() userdomain.User {
+	role := userdomain.Role(m.Role)
+	if role == "" {
+		role = userdomain.RoleMember
+	}
+
 	return userdomain.User{
 		ID:           m.ID,
 		Email:        m.Email,
 		PasswordHash: m.PasswordHash,
 		Status:       userdomain.Status(m.Status),
+		Role:         role,
 		CreatedAt:    m.CreatedAt,
 		UpdatedAt:    m.UpdatedAt,
 		LastLoginAt:  m.LastLoginAt,
@@ -36,11 +43,17 @@ func (m userModel) toDomain() userdomain.User {
 }
 
 func userFromDomain(u userdomain.User) userModel {
+	role := u.Role
+	if role == "" {
+		role = userdomain.RoleMember
+	}
+
 	return userModel{
 		ID:           u.ID,
 		Email:        u.Email,
 		PasswordHash: u.PasswordHash,
 		Status:       string(u.Status),
+		Role:         string(role),
 		CreatedAt:    u.CreatedAt,
 		UpdatedAt:    u.UpdatedAt,
 		LastLoginAt:  u.LastLoginAt,
