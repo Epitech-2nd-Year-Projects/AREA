@@ -91,10 +91,7 @@ const initialsFromName = (name?: string) => {
 
 export function PublicNavbar({
   logo = { url: '/', src: '/logo.png', alt: 'logo', title: 'AREA' },
-  menu = [
-    { title: 'Explore', url: '/explore' },
-    { title: 'Plans', url: '/plans' }
-  ],
+  menu = [{ title: 'Explore', url: '/explore' }],
   auth = {
     login: { title: 'Login', url: '/login' },
     getStarted: { title: 'Get started', url: '/register' }
@@ -374,6 +371,7 @@ function UserDropdown({
       <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuItem asChild>
           <Link href="/dashboard" className="w-full">
+            <LayoutGrid className="mr-2 h-4 w-4" />
             Dashboard
           </Link>
         </DropdownMenuItem>

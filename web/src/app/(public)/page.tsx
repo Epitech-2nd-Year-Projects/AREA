@@ -40,9 +40,6 @@ export default function Home() {
             <Link href="/explore">{t('secondaryCta')}</Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {t('downloadCta.helper')}
-        </p>
       </section>
 
       <section className="grid gap-6 md:grid-cols-3">
