@@ -143,6 +143,22 @@ func (h compositeHandler) GetCurrentUser(c *gin.Context) {
 	h.auth.GetCurrentUser(c)
 }
 
+func (h compositeHandler) ChangePassword(c *gin.Context) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ChangePassword(c)
+}
+
+func (h compositeHandler) ChangeEmail(c *gin.Context) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.ChangeEmail(c)
+}
+
 func (h compositeHandler) ListIdentities(c *gin.Context) {
 	if h.auth == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
@@ -181,6 +197,30 @@ func (h compositeHandler) SubscribeServiceExchange(c *gin.Context, provider stri
 		return
 	}
 	h.auth.SubscribeServiceExchange(c, provider)
+}
+
+func (h compositeHandler) AdminResetUserPassword(c *gin.Context, userID openapitypes.UUID) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.AdminResetUserPassword(c, userID)
+}
+
+func (h compositeHandler) AdminUpdateUserEmail(c *gin.Context, userID openapitypes.UUID) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.AdminUpdateUserEmail(c, userID)
+}
+
+func (h compositeHandler) AdminUpdateUserStatus(c *gin.Context, userID openapitypes.UUID) {
+	if h.auth == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
+		return
+	}
+	h.auth.AdminUpdateUserStatus(c, userID)
 }
 
 func (h compositeHandler) ExecuteArea(c *gin.Context, areaId openapitypes.UUID) {
