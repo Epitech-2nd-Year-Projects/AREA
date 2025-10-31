@@ -584,6 +584,7 @@ func (s *OAuthService) resolveOrCreateUser(ctx context.Context, profile identity
 		ID:        uuid.New(),
 		Email:     email,
 		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

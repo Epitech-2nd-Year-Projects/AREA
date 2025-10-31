@@ -160,21 +160,87 @@ func (h *Handler) Logout(c *gin.Context) {
 
 // GetCurrentUser handles GET /v1/auth/me
 func (h *Handler) GetCurrentUser(c *gin.Context) {
-	sessionID := h.sessionIDFromCookie(c)
-	if sessionID == uuid.Nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+	usr, _, ok := h.requireSession(c)
+	if !ok {
 		return
 	}
-
-	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.clearSessionCookie(c)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
-		return
-	}
-
-	h.refreshSessionCookie(c, sess)
 	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(usr)})
+}
+
+// ChangePassword handles PATCH /v1/auth/password
+func (h *Handler) ChangePassword(c *gin.Context) {
+	usr, _, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+
+	var payload openapi.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	if strings.TrimSpace(payload.CurrentPassword) == "" || strings.TrimSpace(payload.NewPassword) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	if _, err := h.service.ChangePassword(c.Request.Context(), usr.ID, payload.CurrentPassword, payload.NewPassword); err != nil {
+		switch {
+		case errors.Is(err, ErrInvalidCredentials):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
+		case strings.Contains(err.Error(), "password too short"):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "password too short"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		}
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// ChangeEmail handles PATCH /v1/auth/email
+func (h *Handler) ChangeEmail(c *gin.Context) {
+	usr, _, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+
+	var payload openapi.ChangeEmailRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	email := strings.TrimSpace(string(payload.Email))
+	if email == "" || strings.TrimSpace(payload.Password) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	result, err := h.service.ChangeEmail(c.Request.Context(), usr.ID, payload.Password, email)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrInvalidCredentials):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
+		case errors.Is(err, ErrEmailAlreadyRegistered):
+			c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
+		case errors.Is(err, ErrEmailUnchanged):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email unchanged"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email"})
+		}
+		return
+	}
+
+	resp := openapi.EmailChangeResponse{User: toOpenAPIUser(result.User)}
+	if result.VerificationExpires != nil {
+		expires := result.VerificationExpires.UTC()
+		resp.VerificationExpiresAt = &expires
+	}
+
+	c.JSON(http.StatusAccepted, resp)
 }
 
 // ListIdentities handles GET /v1/identities
@@ -184,20 +250,10 @@ func (h *Handler) ListIdentities(c *gin.Context) {
 		return
 	}
 
-	sessionID := h.sessionIDFromCookie(c)
-	if sessionID == uuid.Nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+	usr, _, ok := h.requireSession(c)
+	if !ok {
 		return
 	}
-
-	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.clearSessionCookie(c)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
-		return
-	}
-
-	h.refreshSessionCookie(c, sess)
 
 	items, err := h.oauth.ListIdentities(c.Request.Context(), usr.ID)
 	if err != nil {
@@ -232,16 +288,8 @@ func (h *Handler) ListServiceSubscriptions(c *gin.Context) {
 		return
 	}
 
-	sessionID := h.sessionIDFromCookie(c)
-	if sessionID == uuid.Nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
-		return
-	}
-
-	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.clearSessionCookie(c)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+	usr, _, ok := h.requireSession(c)
+	if !ok {
 		return
 	}
 
@@ -250,8 +298,6 @@ func (h *Handler) ListServiceSubscriptions(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list subscriptions"})
 		return
 	}
-
-	h.refreshSessionCookie(c, sess)
 
 	c.JSON(http.StatusOK, openapi.SubscriptionListResponse{Subscriptions: mapUserSubscriptions(records)})
 }
@@ -498,6 +544,158 @@ func (h *Handler) SubscribeServiceExchange(c *gin.Context, provider string) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// AdminResetUserPassword handles PATCH /v1/admin/users/{userId}/password
+func (h *Handler) AdminResetUserPassword(c *gin.Context, userID openapitypes.UUID) {
+	if _, _, ok := h.requireAdmin(c); !ok {
+		return
+	}
+
+	var payload openapi.AdminResetPasswordRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	if strings.TrimSpace(payload.NewPassword) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	updated, err := h.service.AdminResetPassword(c.Request.Context(), uuid.UUID(userID), payload.NewPassword)
+	if err != nil {
+		switch {
+		case errors.Is(err, outbound.ErrNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		case strings.Contains(err.Error(), "password too short"):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "password too short"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(updated)})
+}
+
+// AdminUpdateUserEmail handles PATCH /v1/admin/users/{userId}/email
+func (h *Handler) AdminUpdateUserEmail(c *gin.Context, userID openapitypes.UUID) {
+	if _, _, ok := h.requireAdmin(c); !ok {
+		return
+	}
+
+	var payload openapi.AdminUpdateEmailRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	email := strings.TrimSpace(string(payload.Email))
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	sendVerification := true
+	if payload.SendVerification != nil {
+		sendVerification = *payload.SendVerification
+	}
+
+	result, err := h.service.AdminChangeEmail(c.Request.Context(), uuid.UUID(userID), email, sendVerification)
+	if err != nil {
+		switch {
+		case errors.Is(err, outbound.ErrNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		case errors.Is(err, ErrEmailAlreadyRegistered):
+			c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
+		case errors.Is(err, ErrEmailUnchanged):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email unchanged"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email"})
+		}
+		return
+	}
+
+	resp := openapi.EmailChangeResponse{User: toOpenAPIUser(result.User)}
+	if result.VerificationExpires != nil {
+		expires := result.VerificationExpires.UTC()
+		resp.VerificationExpiresAt = &expires
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// AdminUpdateUserStatus handles PATCH /v1/admin/users/{userId}/status
+func (h *Handler) AdminUpdateUserStatus(c *gin.Context, userID openapitypes.UUID) {
+	if _, _, ok := h.requireAdmin(c); !ok {
+		return
+	}
+
+	var payload openapi.AdminUpdateStatusRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	statusValue := strings.TrimSpace(payload.Status)
+	if statusValue == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	status := userdomain.Status(statusValue)
+	updated, err := h.service.AdminUpdateStatus(c.Request.Context(), uuid.UUID(userID), status)
+	if err != nil {
+		switch {
+		case errors.Is(err, outbound.ErrNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		case strings.Contains(err.Error(), "invalid status"):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update status"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(updated)})
+}
+
+func (h *Handler) requireSession(c *gin.Context) (userdomain.User, sessiondomain.Session, bool) {
+	if h.service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth service unavailable"})
+		return userdomain.User{}, sessiondomain.Session{}, false
+	}
+
+	sessionID := h.sessionIDFromCookie(c)
+	if sessionID == uuid.Nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session missing"})
+		return userdomain.User{}, sessiondomain.Session{}, false
+	}
+
+	usr, sess, err := h.service.ResolveSession(c.Request.Context(), sessionID)
+	if err != nil {
+		h.clearSessionCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session invalid"})
+		return userdomain.User{}, sessiondomain.Session{}, false
+	}
+
+	h.refreshSessionCookie(c, sess)
+	return usr, sess, true
+}
+
+func (h *Handler) requireAdmin(c *gin.Context) (userdomain.User, sessiondomain.Session, bool) {
+	usr, sess, ok := h.requireSession(c)
+	if !ok {
+		return userdomain.User{}, sessiondomain.Session{}, false
+	}
+
+	if !usr.IsAdmin() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admin privileges required"})
+		return userdomain.User{}, sessiondomain.Session{}, false
+	}
+
+	return usr, sess, true
+}
+
 func (h *Handler) setSessionCookie(c *gin.Context, name string, sess sessiondomain.Session) {
 	maxAge := int(time.Until(sess.ExpiresAt).Seconds())
 	if maxAge <= 0 {
@@ -580,6 +778,7 @@ func toOpenAPIUser(u userdomain.User) openapi.User {
 	return openapi.User{
 		Id:          u.ID,
 		Email:       openapitypes.Email(u.Email),
+		Role:        string(u.Role),
 		Status:      string(u.Status),
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,

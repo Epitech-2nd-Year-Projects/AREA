@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,6 +96,7 @@ func TestService_Login_Unverified(t *testing.T) {
 		Email:        "user@example.com",
 		PasswordHash: hash,
 		Status:       userdomain.StatusPending,
+		Role:         userdomain.RoleMember,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
@@ -115,6 +117,365 @@ func TestService_Login_Unverified(t *testing.T) {
 	}
 }
 
+func TestService_ChangePassword(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710100000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	oldHash, err := hasher.Hash("oldpassword123")
+	if err != nil {
+		t.Fatalf("hash old password: %v", err)
+	}
+
+	user := userdomain.User{
+		ID:           uuid.New(),
+		Email:        "user@example.com",
+		PasswordHash: oldHash,
+		Status:       userdomain.StatusActive,
+		Role:         userdomain.RoleMember,
+		CreatedAt:    now.Add(-2 * time.Hour),
+		UpdatedAt:    now.Add(-time.Hour),
+	}
+
+	users := &memoryUserRepo{
+		items:  map[uuid.UUID]userdomain.User{user.ID: user},
+		lookup: map[string]uuid.UUID{user.Email: user.ID},
+	}
+
+	svc := NewService(users, &memorySessionRepo{}, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   24 * time.Hour,
+	})
+
+	updated, err := svc.ChangePassword(ctx, user.ID, "oldpassword123", "newpassword456")
+	if err != nil {
+		t.Fatalf("ChangePassword: %v", err)
+	}
+
+	if err := hasher.Compare(updated.PasswordHash, "newpassword456"); err != nil {
+		t.Fatalf("expected password to change: %v", err)
+	}
+	if !updated.UpdatedAt.Equal(now) {
+		t.Fatalf("expected UpdatedAt to equal %v got %v", now, updated.UpdatedAt)
+	}
+	stored := users.items[user.ID]
+	if err := hasher.Compare(stored.PasswordHash, "newpassword456"); err != nil {
+		t.Fatalf("repository not updated: %v", err)
+	}
+}
+
+func TestService_ChangePassword_InvalidCurrent(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710100000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	hash, err := hasher.Hash("oldpassword123")
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+
+	user := userdomain.User{
+		ID:           uuid.New(),
+		Email:        "user@example.com",
+		PasswordHash: hash,
+		Status:       userdomain.StatusActive,
+		Role:         userdomain.RoleMember,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+
+	svc := NewService(users, &memorySessionRepo{}, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   24 * time.Hour,
+	})
+
+	if _, err := svc.ChangePassword(ctx, user.ID, "wrong", "newpassword456"); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials got %v", err)
+	}
+}
+
+func TestService_ChangeEmail(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710200000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	hash, err := hasher.Hash("password123")
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+
+	user := userdomain.User{
+		ID:           uuid.New(),
+		Email:        "user@example.com",
+		PasswordHash: hash,
+		Status:       userdomain.StatusActive,
+		Role:         userdomain.RoleMember,
+		CreatedAt:    now.Add(-time.Hour),
+		UpdatedAt:    now.Add(-time.Minute),
+	}
+	users := &memoryUserRepo{
+		items:  map[uuid.UUID]userdomain.User{user.ID: user},
+		lookup: map[string]uuid.UUID{user.Email: user.ID},
+	}
+	tokens := &memoryTokenRepo{}
+	mailer := &collectingMailer{}
+
+	svc := NewService(users, &memorySessionRepo{}, tokens, mailer, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   36 * time.Hour,
+		BaseURL:           "http://localhost:8080",
+	})
+
+	result, err := svc.ChangeEmail(ctx, user.ID, "password123", "new@example.com")
+	if err != nil {
+		t.Fatalf("ChangeEmail: %v", err)
+	}
+	if result.User.Email != "new@example.com" {
+		t.Fatalf("expected email to change got %s", result.User.Email)
+	}
+	if result.User.Status != userdomain.StatusPending {
+		t.Fatalf("expected pending status got %s", result.User.Status)
+	}
+	if result.VerificationExpires == nil {
+		t.Fatalf("expected verification expiry timestamp")
+	} else {
+		expected := now.Add(36 * time.Hour)
+		if !result.VerificationExpires.Equal(expected) {
+			t.Fatalf("expected expiry %v got %v", expected, result.VerificationExpires)
+		}
+	}
+	if len(tokens.items) != 1 {
+		t.Fatalf("expected verification token to be stored")
+	}
+	if len(mailer.messages) != 1 || mailer.messages[0].To != "new@example.com" {
+		t.Fatalf("expected verification email to new address")
+	}
+}
+
+func TestService_ChangeEmail_InvalidPassword(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710200000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	hash, err := hasher.Hash("password123")
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+
+	user := userdomain.User{
+		ID:           uuid.New(),
+		Email:        "user@example.com",
+		PasswordHash: hash,
+		Status:       userdomain.StatusActive,
+		Role:         userdomain.RoleMember,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+
+	svc := NewService(users, &memorySessionRepo{}, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   24 * time.Hour,
+		BaseURL:           "http://localhost:8080",
+	})
+
+	if _, err := svc.ChangeEmail(ctx, user.ID, "wrong", "new@example.com"); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials got %v", err)
+	}
+}
+
+func TestService_AdminResetPassword(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710300000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
+		CreatedAt: now.Add(-2 * time.Hour),
+		UpdatedAt: now.Add(-time.Hour),
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+
+	svc := NewService(users, &memorySessionRepo{}, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   24 * time.Hour,
+	})
+
+	updated, err := svc.AdminResetPassword(ctx, user.ID, "adminpassword789")
+	if err != nil {
+		t.Fatalf("AdminResetPassword: %v", err)
+	}
+	if err := hasher.Compare(updated.PasswordHash, "adminpassword789"); err != nil {
+		t.Fatalf("expected password to change: %v", err)
+	}
+}
+
+func TestService_AdminChangeEmail(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710400000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusSuspended,
+		Role:      userdomain.RoleMember,
+		CreatedAt: now.Add(-time.Hour),
+		UpdatedAt: now.Add(-time.Minute),
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+	tokens := &memoryTokenRepo{items: map[uuid.UUID]authdomain.VerificationToken{uuid.New(): {ID: uuid.New(), UserID: user.ID}}}
+	mailer := &collectingMailer{}
+
+	svc := NewService(users, &memorySessionRepo{}, tokens, mailer, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   12 * time.Hour,
+		BaseURL:           "http://localhost:8080",
+	})
+
+	result, err := svc.AdminChangeEmail(ctx, user.ID, "managed@example.com", true)
+	if err != nil {
+		t.Fatalf("AdminChangeEmail: %v", err)
+	}
+	if result.User.Email != "managed@example.com" {
+		t.Fatalf("expected email to change got %s", result.User.Email)
+	}
+	if result.User.Status != userdomain.StatusPending {
+		t.Fatalf("expected status pending got %s", result.User.Status)
+	}
+	if result.VerificationExpires == nil {
+		t.Fatalf("expected verification expiry timestamp")
+	}
+	if len(tokens.items) != 1 {
+		t.Fatalf("expected a single verification token after update")
+	}
+	if len(mailer.messages) != 1 {
+		t.Fatalf("expected verification email to be sent")
+	}
+}
+
+func TestService_AdminChangeEmail_SkipVerification(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710400000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+	tokens := &memoryTokenRepo{}
+	mailer := &collectingMailer{}
+
+	svc := NewService(users, &memorySessionRepo{}, tokens, mailer, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   12 * time.Hour,
+		BaseURL:           "http://localhost:8080",
+	})
+
+	result, err := svc.AdminChangeEmail(ctx, user.ID, "managed@example.com", false)
+	if err != nil {
+		t.Fatalf("AdminChangeEmail: %v", err)
+	}
+	if result.User.Status != userdomain.StatusActive {
+		t.Fatalf("expected status to remain active got %s", result.User.Status)
+	}
+	if result.VerificationExpires != nil {
+		t.Fatalf("expected no verification expiry when skipping email")
+	}
+	if len(tokens.items) != 0 {
+		t.Fatalf("expected no verification tokens when skipping email")
+	}
+	if len(mailer.messages) != 0 {
+		t.Fatalf("expected no email to be sent")
+	}
+}
+
+func TestService_AdminUpdateStatus(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710500000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	user := userdomain.User{
+		ID:        uuid.New(),
+		Email:     "user@example.com",
+		Status:    userdomain.StatusActive,
+		Role:      userdomain.RoleMember,
+		CreatedAt: now.Add(-time.Hour),
+		UpdatedAt: now.Add(-time.Minute),
+	}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+	sessID := uuid.New()
+	session := sessiondomain.Session{
+		ID:        sessID,
+		UserID:    user.ID,
+		IssuedAt:  now.Add(-time.Minute),
+		ExpiresAt: now.Add(time.Hour),
+	}
+	sessions := &memorySessionRepo{items: map[uuid.UUID]sessiondomain.Session{sessID: session}}
+
+	svc := NewService(users, sessions, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   12 * time.Hour,
+	})
+
+	updated, err := svc.AdminUpdateStatus(ctx, user.ID, userdomain.StatusSuspended)
+	if err != nil {
+		t.Fatalf("AdminUpdateStatus: %v", err)
+	}
+	if updated.Status != userdomain.StatusSuspended {
+		t.Fatalf("expected suspended status got %s", updated.Status)
+	}
+	if len(sessions.items) != 0 {
+		t.Fatalf("expected sessions to be revoked")
+	}
+}
+
+func TestService_AdminUpdateStatus_Invalid(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1710500000, 0).UTC()
+	clock := &fakeClock{t: now}
+	hasher := password.Hasher{}
+
+	user := userdomain.User{ID: uuid.New(), Email: "user@example.com", Status: userdomain.StatusActive, Role: userdomain.RoleMember}
+	users := &memoryUserRepo{items: map[uuid.UUID]userdomain.User{user.ID: user}, lookup: map[string]uuid.UUID{user.Email: user.ID}}
+
+	svc := NewService(users, &memorySessionRepo{}, &memoryTokenRepo{}, &collectingMailer{}, hasher, clock, zaptest.NewLogger(t), Config{
+		PasswordMinLength: 8,
+		SessionTTL:        time.Hour,
+		VerificationTTL:   12 * time.Hour,
+	})
+
+	_, err := svc.AdminUpdateStatus(ctx, user.ID, userdomain.Status("invalid"))
+	if err == nil || !strings.Contains(err.Error(), "invalid status") {
+		t.Fatalf("expected invalid status error got %v", err)
+	}
+}
+
 // ---- In-memory fixtures ----
 
 type memoryUserRepo struct {
@@ -131,6 +492,9 @@ func (m *memoryUserRepo) Create(ctx context.Context, user userdomain.User) (user
 	}
 	if _, ok := m.lookup[user.Email]; ok {
 		return userdomain.User{}, outbound.ErrConflict
+	}
+	if user.Role == "" {
+		user.Role = userdomain.RoleMember
 	}
 	m.items[user.ID] = user
 	m.lookup[user.Email] = user.ID
@@ -160,7 +524,17 @@ func (m *memoryUserRepo) Update(ctx context.Context, user userdomain.User) error
 	if _, ok := m.items[user.ID]; !ok {
 		return outbound.ErrNotFound
 	}
+	if m.lookup == nil {
+		m.lookup = map[string]uuid.UUID{}
+	}
+	prev := m.items[user.ID]
+	if user.Role == "" {
+		user.Role = userdomain.RoleMember
+	}
 	m.items[user.ID] = user
+	if !strings.EqualFold(prev.Email, user.Email) {
+		delete(m.lookup, prev.Email)
+	}
 	m.lookup[user.Email] = user.ID
 	return nil
 }
