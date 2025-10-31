@@ -1,61 +1,117 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+
+import 'core/accessibility/accessibility_controller.dart';
+import 'core/accessibility/accessibility_route_announcer.dart';
 import 'core/design_system/app_colors.dart';
 import 'core/design_system/app_typography.dart';
+import 'core/di/injector.dart';
 import 'core/navigation/app_navigation.dart';
 import 'features/auth/presentation/router/auth_router.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = _buildRouter();
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'AREA - Automation Platform',
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: null,
-      localeResolutionCallback: (deviceLocale, supportedLocales) {
-        if (deviceLocale == null) {
-          return const Locale('en');
-        }
-        for (final locale in supportedLocales) {
-          if (locale.languageCode == deviceLocale.languageCode &&
-              locale.countryCode == deviceLocale.countryCode) {
-            return locale;
-          }
-        }
-        for (final locale in supportedLocales) {
-          if (locale.languageCode == deviceLocale.languageCode) {
-            return locale;
-          }
-        }
-        return const Locale('en');
+    final accessibility = sl<AccessibilityController>();
+
+    return AnimatedBuilder(
+      animation: accessibility,
+      builder: (context, _) {
+        final isColorBlindMode = accessibility.isColorBlindModeEnabled;
+
+        return MaterialApp.router(
+          title: 'AREA - Automation Platform',
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: null,
+          localeResolutionCallback: (deviceLocale, supportedLocales) {
+            if (deviceLocale == null) {
+              return const Locale('en');
+            }
+            for (final locale in supportedLocales) {
+              if (locale.languageCode == deviceLocale.languageCode &&
+                  locale.countryCode == deviceLocale.countryCode) {
+                return locale;
+              }
+            }
+            for (final locale in supportedLocales) {
+              if (locale.languageCode == deviceLocale.languageCode) {
+                return locale;
+              }
+            }
+            return const Locale('en');
+          },
+          theme: _buildLightTheme(isColorBlindMode),
+          darkTheme: _buildDarkTheme(isColorBlindMode),
+          themeMode: ThemeMode.system,
+          builder: (context, child) {
+            final locale = Localizations.maybeLocaleOf(context);
+            if (locale != null) {
+              unawaited(accessibility.updateSpeechLocale(locale));
+            }
+
+            Widget content = child ?? const SizedBox.shrink();
+
+            final filter = accessibility.colorBlindFilter;
+            if (filter != null) {
+              content = ColorFiltered(
+                colorFilter: filter,
+                child: content,
+              );
+            }
+
+            if (accessibility.isScreenReaderEnabled) {
+              content = Semantics(
+                container: true,
+                explicitChildNodes: true,
+                child: content,
+              );
+            }
+
+            return content;
+          },
+          routerConfig: _router,
+        );
       },
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.system,
-      routerConfig: _buildRouter(),
     );
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildLightTheme(bool colorBlindAware) {
+    final seed = colorBlindAware ? const Color(0xFF1B7F79) : AppColors.primary;
+    final accent =
+        colorBlindAware ? const Color(0xFFE29578) : AppColors.primaryLight;
+
     return ThemeData(
       brightness: Brightness.light,
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
+        seedColor: seed,
         brightness: Brightness.light,
         surface: AppColors.lightSurface,
         onSurface: AppColors.lightTextPrimary,
+      ).copyWith(
+        primary: seed,
+        secondary: accent,
+        tertiary: colorBlindAware ? const Color(0xFF006D77) : AppColors.primary,
       ),
       scaffoldBackgroundColor: AppColors.lightBackground,
       cardColor: AppColors.lightSurface,
@@ -83,7 +139,7 @@ class MyApp extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: seed, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -98,21 +154,32 @@ class MyApp extends StatelessWidget {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
+          backgroundColor: seed,
+          foregroundColor: AppColors.white,
           shadowColor: Colors.transparent,
         ),
       ),
     );
   }
 
-  ThemeData _buildDarkTheme() {
+  ThemeData _buildDarkTheme(bool colorBlindAware) {
+    final seed =
+        colorBlindAware ? const Color(0xFF7AD1CC) : AppColors.primaryLight;
+    final accent =
+        colorBlindAware ? const Color(0xFFE29578) : AppColors.primaryDark;
+
     return ThemeData(
       brightness: Brightness.dark,
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
+        seedColor: seed,
         brightness: Brightness.dark,
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkTextPrimary,
+      ).copyWith(
+        primary: seed,
+        secondary: accent,
+        tertiary: colorBlindAware ? const Color(0xFF006D77) : AppColors.primary,
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
       cardColor: AppColors.darkSurface,
@@ -140,7 +207,7 @@ class MyApp extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+          borderSide: BorderSide(color: seed, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -155,6 +222,8 @@ class MyApp extends StatelessWidget {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
+          backgroundColor: seed,
+          foregroundColor: AppColors.darkTextPrimary,
           shadowColor: Colors.transparent,
         ),
       ),
@@ -165,6 +234,7 @@ class MyApp extends StatelessWidget {
     return GoRouter(
       navigatorKey: AppNavigation.navigatorKey,
       initialLocation: '/',
+      observers: [AccessibilityRouteAnnouncer(sl<AccessibilityController>())],
       routes: AuthRouter.routes,
       redirect: (context, state) {
         final uri = state.uri;
