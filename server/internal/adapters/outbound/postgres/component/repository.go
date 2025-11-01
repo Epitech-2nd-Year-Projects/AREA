@@ -70,7 +70,7 @@ func (r Repository) List(ctx context.Context, opts outbound.ComponentListOptions
 	var models []componentModel
 	query := r.db.WithContext(ctx).
 		Preload("Provider").
-		Where("is_enabled = ?", true)
+		Where("service_components.is_enabled = ?", true)
 
 	if opts.Kind != nil {
 		query = query.Where("kind = ?", string(*opts.Kind))

@@ -18,4 +18,6 @@ export type User = {
   imageUrl?: string
   emailVerified: boolean
   connectedServices: string[]
+  authMethod?: 'password' | 'oauth'
+  hasPassword?: boolean
 }

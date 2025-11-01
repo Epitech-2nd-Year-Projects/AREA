@@ -1,3 +1,13 @@
+export type SubscriptionSummaryDTO = {
+  id: string
+  providerId: string
+  identityId?: string | null
+  status: string
+  scopeGrants?: string[]
+  createdAt: string
+  updatedAt?: string
+}
+
 export type SubscribeServiceRequestDTO = {
   scopes?: string[]
   redirectUri?: string
@@ -9,15 +19,7 @@ export type SubscribeServiceRequestDTO = {
 export type SubscribeServiceResponseDTO = {
   status: 'authorization_required' | 'subscribed'
   authorization?: import('./auth').OAuthAuthorizationResponseDTO
-  subscription?: {
-    id: string
-    providerId: string
-    identityId?: string | null
-    status: string
-    scopeGrants?: string[]
-    createdAt: string
-    updatedAt?: string
-  }
+  subscription?: SubscriptionSummaryDTO
 }
 
 export type SubscribeExchangeRequestDTO = {
@@ -27,15 +29,7 @@ export type SubscribeExchangeRequestDTO = {
 }
 
 export type SubscribeExchangeResponseDTO = {
-  subscription: {
-    id: string
-    providerId: string
-    identityId?: string | null
-    status: string
-    scopeGrants?: string[]
-    createdAt: string
-    updatedAt?: string
-  }
+  subscription: SubscriptionSummaryDTO
   identity?: import('./auth').IdentitySummaryDTO | null
 }
 
@@ -52,4 +46,13 @@ export type ServiceProviderDetailDTO = {
 
 export type ServiceProviderListResponseDTO = {
   providers: ServiceProviderDetailDTO[]
+}
+
+export type UserSubscriptionDTO = {
+  subscription: SubscriptionSummaryDTO
+  provider: ServiceProviderDetailDTO
+}
+
+export type SubscriptionListResponseDTO = {
+  subscriptions: UserSubscriptionDTO[]
 }

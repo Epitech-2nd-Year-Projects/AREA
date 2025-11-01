@@ -68,7 +68,14 @@ export function EditUserDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
+          <DialogDescription>
+            {t('description')}
+            {!user.hasPassword && (
+              <span className="text-sm text-muted-foreground mt-2">
+                {t('oauthUserDescription')}
+              </span>
+            )}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -77,6 +84,7 @@ export function EditUserDialog({
               <Input
                 id="email"
                 value={email}
+                disabled={!user.hasPassword}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -85,6 +93,7 @@ export function EditUserDialog({
               <Input
                 id="password"
                 type="password"
+                disabled={!user.hasPassword}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />

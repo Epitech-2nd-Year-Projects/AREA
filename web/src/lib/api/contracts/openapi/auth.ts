@@ -17,14 +17,21 @@ export type UserDTO = {
   lastLoginAt?: string | null
 }
 
+export type SessionAuthDTO = {
+  method: 'password' | 'oauth'
+  provider?: string | null
+}
+
 export type AuthSessionResponseDTO = {
   tokenType?: string
   expiresAt?: string
   user: UserDTO
+  sessionAuth?: SessionAuthDTO
 }
 
 export type UserResponseDTO = {
   user: UserDTO
+  sessionAuth?: SessionAuthDTO
 }
 
 export type OAuthAuthorizationRequestDTO = {

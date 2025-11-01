@@ -5,7 +5,8 @@ import type {
   SubscribeExchangeRequestDTO,
   SubscribeExchangeResponseDTO,
   SubscribeServiceRequestDTO,
-  SubscribeServiceResponseDTO
+  SubscribeServiceResponseDTO,
+  SubscriptionListResponseDTO
 } from '@/lib/api/contracts/openapi/services'
 import { apiRuntime } from '@/lib/api/runtime'
 import { listServiceProvidersMock } from '@/lib/api/mock/services'
@@ -69,6 +70,16 @@ export function listServiceProvidersClient(options?: ClientRequestOptions) {
   }
   return apiFetchClient<ServiceProviderListResponseDTO>(
     '/v1/services',
+    buildClientOptions(options)
+  )
+}
+
+export function listServiceSubscriptionsClient(options?: ClientRequestOptions) {
+  if (apiRuntime.useMocks) {
+    throw new Error('listServiceSubscriptions mock not implemented')
+  }
+  return apiFetchClient<SubscriptionListResponseDTO>(
+    '/v1/services/subscriptions',
     buildClientOptions(options)
   )
 }

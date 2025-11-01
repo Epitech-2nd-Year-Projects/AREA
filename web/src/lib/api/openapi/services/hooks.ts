@@ -4,6 +4,7 @@ import type { ClientRequestOptions } from '../common'
 import type { Service } from '@/lib/api/contracts/services'
 import { servicesKeys } from './query-keys'
 import { servicesQueries } from './queries'
+import type { SubscriptionListResponseDTO } from '@/lib/api/contracts/openapi/services'
 
 type ServiceProvidersQueryOptions = {
   clientOptions?: ClientRequestOptions
@@ -23,6 +24,28 @@ export function useServiceProvidersQuery(
   const { clientOptions, ...queryOptions } = options ?? {}
   return useQuery({
     ...servicesQueries.list({ clientOptions }),
+    ...queryOptions
+  })
+}
+
+type ServiceSubscriptionsQueryOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseQueryOptions<
+    SubscriptionListResponseDTO,
+    ApiError,
+    SubscriptionListResponseDTO,
+    ReturnType<typeof servicesKeys.subscriptions>
+  >,
+  'queryKey' | 'queryFn'
+>
+
+export function useServiceSubscriptionsQuery(
+  options?: ServiceSubscriptionsQueryOptions
+) {
+  const { clientOptions, ...queryOptions } = options ?? {}
+  return useQuery({
+    ...servicesQueries.subscriptions({ clientOptions }),
     ...queryOptions
   })
 }

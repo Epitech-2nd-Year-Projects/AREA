@@ -4,12 +4,11 @@ import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { useMemo } from 'react'
-import { useServiceProvidersQuery } from '@/lib/api/openapi/services'
 import {
-  useCurrentUserQuery,
-  mapUserDTOToUser,
-  useIdentitiesQuery
-} from '@/lib/api/openapi/auth'
+  useServiceProvidersQuery,
+  useServiceSubscriptionsQuery
+} from '@/lib/api/openapi/services'
+import { useCurrentUserQuery, mapUserDTOToUser } from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
 import { FilteredServiceCardList } from '@/components/services/filtered-service-card-list'
 
@@ -41,8 +40,8 @@ export default function ExplorePage() {
 
   const isUserAuthenticated = Boolean(user)
 
-  const { data: identitiesData, isLoading: isIdentitiesLoading } =
-    useIdentitiesQuery({
+  const { data: subscriptionsData, isLoading: isSubscriptionsLoading } =
+    useServiceSubscriptionsQuery({
       enabled: isUserAuthenticated
     })
 
@@ -51,16 +50,16 @@ export default function ExplorePage() {
       return []
     }
 
-    const identityProviders =
-      identitiesData?.identities?.map((identity) => identity.provider) ?? []
+    const providers =
+      subscriptionsData?.subscriptions?.map((sub) => sub.provider.name) ?? []
 
-    return Array.from(new Set(identityProviders))
-  }, [identitiesData, isUserAuthenticated])
+    return Array.from(new Set(providers))
+  }, [subscriptionsData, isUserAuthenticated])
 
   const isLoading =
     isServicesLoading ||
     (isUserLoading && !isUnauthorized) ||
-    (isIdentitiesLoading && isUserAuthenticated)
+    (isSubscriptionsLoading && isUserAuthenticated)
 
   if (isLoading) {
     return (

@@ -2,12 +2,11 @@
 import { FilteredServiceCardList } from '@/components/services/filtered-service-card-list'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { useServiceProvidersQuery } from '@/lib/api/openapi/services'
 import {
-  mapUserDTOToUser,
-  useCurrentUserQuery,
-  useIdentitiesQuery
-} from '@/lib/api/openapi/auth'
+  useServiceProvidersQuery,
+  useServiceSubscriptionsQuery
+} from '@/lib/api/openapi/services'
+import { mapUserDTOToUser, useCurrentUserQuery } from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -18,8 +17,8 @@ export default function DashboardPage() {
   const user = userData?.user ? mapUserDTOToUser(userData.user) : null
   const isUserAuthenticated = Boolean(user)
 
-  const { data: identitiesData, isLoading: isIdentitiesLoading } =
-    useIdentitiesQuery({
+  const { data: subscriptionsData, isLoading: isSubscriptionsLoading } =
+    useServiceSubscriptionsQuery({
       enabled: isUserAuthenticated
     })
 
@@ -28,16 +27,16 @@ export default function DashboardPage() {
       return []
     }
 
-    const identityProviders =
-      identitiesData?.identities?.map((identity) => identity.provider) ?? []
+    const providers =
+      subscriptionsData?.subscriptions.map((sub) => sub.provider.name) ?? []
 
-    return Array.from(new Set(identityProviders))
-  }, [identitiesData, isUserAuthenticated])
+    return Array.from(new Set(providers))
+  }, [subscriptionsData, isUserAuthenticated])
 
   const isLoading =
     isServicesLoading ||
     isUserLoading ||
-    (isIdentitiesLoading && isUserAuthenticated)
+    (isSubscriptionsLoading && isUserAuthenticated)
 
   if (isLoading) {
     return (
