@@ -375,7 +375,7 @@
     "serviceNotFound": "The requested service could not be found.",
     "integrationDetails": "Integration details",
     "linked": "Linked",
-    "connect": "Connect",
+    "subscribe": "Subscribe",
     "getStarted": "Get Started",
     "actionsTitle": "Actions",
     "noActions": "No actions available for this service.",

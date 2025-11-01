@@ -95,13 +95,13 @@ export default function ExploreServicePage() {
   })
 
   const { data: actions, isLoading: areActionsLoading } = useComponentsQuery({
-    params: { provider: params.service, kind: 'reaction' },
+    params: { provider: params.service, kind: 'action' },
     enabled: !!service
   })
 
   const { data: reactions, isLoading: areReactionsLoading } =
     useComponentsQuery({
-      params: { provider: params.service, kind: 'action' },
+      params: { provider: params.service, kind: 'reaction' },
       enabled: !!service
     })
 
@@ -139,7 +139,7 @@ export default function ExploreServicePage() {
 
   const connectButtonState = isUserAuthenticated
     ? {
-        label: linked ? t('linked') : t('connect'),
+        label: linked ? t('linked') : t('subscribe'),
         variant: 'default' as const
       }
     : { label: t('getStarted'), variant: 'outline' as const }
