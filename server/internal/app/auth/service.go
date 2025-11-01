@@ -39,6 +39,8 @@ type Metadata struct {
 	UserAgent string
 }
 
+const sessionAuthProviderPassword = "password"
+
 // Service manages user registration, verification, and session issuance
 type Service struct {
 	users    outbound.UserRepository
@@ -213,12 +215,13 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, meta Metadata) 
 	_ = s.tokens.DeleteByUser(ctx, usr.ID)
 
 	sess := sessiondomain.Session{
-		ID:        uuid.New(),
-		UserID:    usr.ID,
-		IssuedAt:  now,
-		ExpiresAt: now.Add(s.cfg.SessionTTL),
-		IP:        meta.ClientIP,
-		UserAgent: meta.UserAgent,
+		ID:           uuid.New(),
+		UserID:       usr.ID,
+		IssuedAt:     now,
+		ExpiresAt:    now.Add(s.cfg.SessionTTL),
+		IP:           meta.ClientIP,
+		UserAgent:    meta.UserAgent,
+		AuthProvider: sessionAuthProviderPassword,
 	}
 
 	createdSession, err := s.sessions.Create(ctx, sess)
@@ -250,12 +253,13 @@ func (s *Service) Login(ctx context.Context, email string, password string, meta
 
 	now := s.clock.Now().UTC()
 	sess := sessiondomain.Session{
-		ID:        uuid.New(),
-		UserID:    usr.ID,
-		IssuedAt:  now,
-		ExpiresAt: now.Add(s.cfg.SessionTTL),
-		IP:        meta.ClientIP,
-		UserAgent: meta.UserAgent,
+		ID:           uuid.New(),
+		UserID:       usr.ID,
+		IssuedAt:     now,
+		ExpiresAt:    now.Add(s.cfg.SessionTTL),
+		IP:           meta.ClientIP,
+		UserAgent:    meta.UserAgent,
+		AuthProvider: sessionAuthProviderPassword,
 	}
 
 	createdSession, err := s.sessions.Create(ctx, sess)

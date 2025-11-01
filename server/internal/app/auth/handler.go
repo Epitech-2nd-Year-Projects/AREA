@@ -160,11 +160,14 @@ func (h *Handler) Logout(c *gin.Context) {
 
 // GetCurrentUser handles GET /v1/auth/me
 func (h *Handler) GetCurrentUser(c *gin.Context) {
-	usr, _, ok := h.requireSession(c)
+	usr, sess, ok := h.requireSession(c)
 	if !ok {
 		return
 	}
-	c.JSON(http.StatusOK, openapi.UserResponse{User: toOpenAPIUser(usr)})
+	c.JSON(http.StatusOK, openapi.UserResponse{
+		User:        toOpenAPIUser(usr),
+		SessionAuth: toSessionAuth(sess),
+	})
 }
 
 // ChangePassword handles PATCH /v1/auth/password
@@ -786,13 +789,28 @@ func toOpenAPIUser(u userdomain.User) openapi.User {
 	}
 }
 
+func toSessionAuth(session sessiondomain.Session) *openapi.SessionAuth {
+	method := openapi.Password
+	var provider *string
+	if session.AuthProvider != "" && session.AuthProvider != sessionAuthProviderPassword {
+		method = openapi.Oauth
+		value := session.AuthProvider
+		provider = &value
+	}
+	return &openapi.SessionAuth{
+		Method:   method,
+		Provider: provider,
+	}
+}
+
 func toAuthSessionResponse(user userdomain.User, session sessiondomain.Session) openapi.AuthSessionResponse {
 	expiresAt := session.ExpiresAt.UTC()
 	tokenType := "session"
 	return openapi.AuthSessionResponse{
-		User:      toOpenAPIUser(user),
-		ExpiresAt: &expiresAt,
-		TokenType: &tokenType,
+		User:        toOpenAPIUser(user),
+		ExpiresAt:   &expiresAt,
+		TokenType:   &tokenType,
+		SessionAuth: toSessionAuth(session),
 	}
 }
 

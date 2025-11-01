@@ -62,6 +62,9 @@ func TestOAuthServiceExchangeCreatesUser(t *testing.T) {
 	if login.Session.UserID != login.User.ID {
 		t.Fatalf("session not linked to user")
 	}
+	if login.Session.AuthProvider != "stub" {
+		t.Fatalf("expected stub auth provider got %s", login.Session.AuthProvider)
+	}
 	if len(sessions.items) != 1 {
 		t.Fatalf("expected session to be created")
 	}
@@ -143,6 +146,9 @@ func TestOAuthServiceExchangeUpdatesIdentity(t *testing.T) {
 	}
 	if login.Session.UserID != user.ID {
 		t.Fatalf("session user mismatch")
+	}
+	if login.Session.AuthProvider != "stub" {
+		t.Fatalf("expected stub auth provider got %s", login.Session.AuthProvider)
 	}
 }
 

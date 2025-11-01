@@ -128,7 +128,7 @@ func (s *OAuthService) Exchange(ctx context.Context, provider string, code strin
 		return LoginResult{}, identitydomain.Identity{}, err
 	}
 
-	login, err := s.issueSession(ctx, user, meta, now)
+	login, err := s.issueSession(ctx, user, normalized, meta, now)
 	if err != nil {
 		return LoginResult{}, identitydomain.Identity{}, err
 	}
@@ -604,12 +604,12 @@ func (s *OAuthService) resolveOrCreateUser(ctx context.Context, profile identity
 	return created, nil
 }
 
-func (s *OAuthService) issueSession(ctx context.Context, user userdomain.User, meta Metadata, now time.Time) (LoginResult, error) {
+func (s *OAuthService) issueSession(ctx context.Context, user userdomain.User, provider string, meta Metadata, now time.Time) (LoginResult, error) {
 	if s.sessions == nil {
 		return LoginResult{}, fmt.Errorf("auth.OAuthService.issueSession: session repository missing")
 	}
 
-	session := s.buildSession(user, meta, now)
+	session := s.buildSession(user, provider, meta, now)
 	created, err := s.sessions.Create(ctx, session)
 	if err != nil {
 		return LoginResult{}, fmt.Errorf("auth.OAuthService.issueSession: sessions.Create: %w", err)
@@ -624,14 +624,15 @@ func (s *OAuthService) issueSession(ctx context.Context, user userdomain.User, m
 	return LoginResult{User: user, Session: created, CookieName: s.cfg.CookieName}, nil
 }
 
-func (s *OAuthService) buildSession(user userdomain.User, meta Metadata, now time.Time) sessiondomain.Session {
+func (s *OAuthService) buildSession(user userdomain.User, provider string, meta Metadata, now time.Time) sessiondomain.Session {
 	return sessiondomain.Session{
-		ID:        uuid.New(),
-		UserID:    user.ID,
-		IssuedAt:  now,
-		ExpiresAt: now.Add(s.cfg.SessionTTL),
-		IP:        meta.ClientIP,
-		UserAgent: meta.UserAgent,
+		ID:           uuid.New(),
+		UserID:       user.ID,
+		IssuedAt:     now,
+		ExpiresAt:    now.Add(s.cfg.SessionTTL),
+		IP:           meta.ClientIP,
+		UserAgent:    meta.UserAgent,
+		AuthProvider: provider,
 	}
 }
 
