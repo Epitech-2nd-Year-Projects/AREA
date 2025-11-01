@@ -42,7 +42,11 @@ export default function ProfilePage() {
   const { data: userData, isLoading: isUserLoading } = useCurrentUserQuery()
   const { data: aboutData, isLoading: isAboutLoading } = useAboutQuery()
 
-  const user = userData?.user ? mapUserDTOToUser(userData.user) : null
+  const user = userData
+    ? mapUserDTOToUser(userData.user, {
+        sessionAuth: userData.sessionAuth
+      })
+    : null
   const services = useMemo(
     () => (aboutData ? extractServices(aboutData) : []),
     [aboutData]
@@ -212,6 +216,11 @@ export default function ProfilePage() {
               <CardTitle>{t('profileInformationTitle')}</CardTitle>
               <CardDescription>
                 {t('profileInformationDescription')}
+                {!user.hasPassword && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('oauthProfileDescription')}
+                  </p>
+                )}
               </CardDescription>
             </div>
           </CardHeader>
@@ -266,6 +275,7 @@ export default function ProfilePage() {
                     id="email"
                     type="email"
                     value={profileForm.email}
+                    disabled={!user.hasPassword}
                     onChange={(event) =>
                       setProfileForm((prev) => ({
                         ...prev,
@@ -279,7 +289,9 @@ export default function ProfilePage() {
                 <Badge variant="outline">{roleLabel}</Badge>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">{t('saveProfileButton')}</Button>
+                <Button type="submit" disabled={!user.hasPassword}>
+                  {t('saveProfileButton')}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -304,69 +316,76 @@ export default function ProfilePage() {
               <CardTitle>{t('passwordSectionTitle')}</CardTitle>
               <CardDescription>
                 {t('passwordSectionDescription')}
+                {!user.hasPassword && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('oauthPasswordDescription')}
+                  </p>
+                )}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="currentPassword">
-                  {t('currentPasswordLabel')}
-                </Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(event) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      currentPassword: event.target.value
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">{t('newPasswordLabel')}</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(event) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      newPassword: event.target.value
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">
-                  {t('confirmPasswordLabel')}
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(event) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      confirmPassword: event.target.value
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">{t('updatePasswordButton')}</Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setPasswordForm(getPasswordInitialState())
-                  }}
-                >
-                  {t('cancelPasswordButton')}
-                </Button>
-              </div>
+              <fieldset disabled={!user.hasPassword} className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="currentPassword">
+                    {t('currentPasswordLabel')}
+                  </Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(event) =>
+                      setPasswordForm((prev) => ({
+                        ...prev,
+                        currentPassword: event.target.value
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="newPassword">{t('newPasswordLabel')}</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(event) =>
+                      setPasswordForm((prev) => ({
+                        ...prev,
+                        newPassword: event.target.value
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="confirmPassword">
+                    {t('confirmPasswordLabel')}
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) =>
+                      setPasswordForm((prev) => ({
+                        ...prev,
+                        confirmPassword: event.target.value
+                      }))
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit">{t('updatePasswordButton')}</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setPasswordForm(getPasswordInitialState())
+                    }}
+                  >
+                    {t('cancelPasswordButton')}
+                  </Button>
+                </div>
+              </fieldset>
             </form>
           </CardContent>
         </Card>
