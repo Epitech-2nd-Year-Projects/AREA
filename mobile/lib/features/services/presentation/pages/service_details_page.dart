@@ -154,9 +154,6 @@ class _ServiceDetailsPageContentState
   }
 
   List<String> _getRequestedScopes(String serviceId) {
-    if (serviceId.toLowerCase().contains('google')) {
-      return ['https://www.googleapis.com/auth/gmail.send'];
-    }
     return [];
   }
 

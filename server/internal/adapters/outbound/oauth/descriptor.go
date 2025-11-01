@@ -45,7 +45,17 @@ func BuiltIn() Registry {
 			AuthorizationURL: "https://accounts.google.com/o/oauth2/v2/auth",
 			TokenURL:         "https://oauth2.googleapis.com/token",
 			UserInfoURL:      "https://openidconnect.googleapis.com/v1/userinfo",
-			DefaultScopes:    []string{"openid", "email", "profile"},
+			DefaultScopes: []string{
+				"openid",
+				"email",
+				"profile",
+				"https://www.googleapis.com/auth/gmail.send",
+				"https://www.googleapis.com/auth/calendar",
+				"https://www.googleapis.com/auth/calendar.readonly",
+				"https://www.googleapis.com/auth/drive",
+				"https://www.googleapis.com/auth/drive.file",
+				"https://www.googleapis.com/auth/drive.readonly",
+			},
 			AuthorizationParams: map[string]string{
 				"access_type":            "offline",
 				"include_granted_scopes": "true",
