@@ -70,6 +70,9 @@ func TestService_RegisterVerifyLogin(t *testing.T) {
 	if verifyRes.Session.UserID != verifyRes.User.ID {
 		t.Fatalf("session not linked to user")
 	}
+	if verifyRes.Session.AuthProvider != sessionAuthProviderPassword {
+		t.Fatalf("expected password auth provider for verification session got %s", verifyRes.Session.AuthProvider)
+	}
 
 	clock.t = clock.t.Add(time.Hour)
 	loginRes, err := svc.Login(ctx, "user@example.com", "password123", Metadata{})
@@ -78,6 +81,9 @@ func TestService_RegisterVerifyLogin(t *testing.T) {
 	}
 	if loginRes.Session.UserID != verifyRes.User.ID {
 		t.Fatalf("login session not linked to user")
+	}
+	if loginRes.Session.AuthProvider != sessionAuthProviderPassword {
+		t.Fatalf("expected password auth provider for login session got %s", loginRes.Session.AuthProvider)
 	}
 }
 
