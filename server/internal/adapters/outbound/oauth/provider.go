@@ -487,17 +487,14 @@ func fallbackScopes(primary []string, secondary []string) []string {
 }
 
 // mergeScopes combines request scopes with default scopes, avoiding duplicates
-// Request scopes take priority, then default scopes are appended if not already present
 func mergeScopes(requestScopes []string, defaultScopes []string) []string {
 	if len(requestScopes) == 0 {
 		return append([]string(nil), defaultScopes...)
 	}
-	
-	// Use a map to track unique scopes
+
 	scopeMap := make(map[string]bool)
 	result := make([]string, 0, len(requestScopes)+len(defaultScopes))
-	
-	// Add request scopes first
+
 	for _, scope := range requestScopes {
 		trimmed := strings.TrimSpace(scope)
 		if trimmed == "" {
@@ -508,8 +505,7 @@ func mergeScopes(requestScopes []string, defaultScopes []string) []string {
 			result = append(result, trimmed)
 		}
 	}
-	
-	// Add default scopes that aren't already present
+
 	for _, scope := range defaultScopes {
 		trimmed := strings.TrimSpace(scope)
 		if trimmed == "" {
@@ -520,7 +516,7 @@ func mergeScopes(requestScopes []string, defaultScopes []string) []string {
 			result = append(result, trimmed)
 		}
 	}
-	
+
 	return result
 }
 

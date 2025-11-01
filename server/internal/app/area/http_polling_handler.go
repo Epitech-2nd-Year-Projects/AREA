@@ -440,6 +440,8 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 		assignCursorValue(result.Cursor, cursorState, config.CursorKey, latestCursorValue)
 		if _, err := time.Parse(time.RFC3339Nano, latestCursorValue); err == nil {
 			assignCursorValue(result.Cursor, cursorState, "last_seen_ts", latestCursorValue)
+		} else {
+			assignCursorValue(result.Cursor, cursorState, "last_seen_name", latestCursorValue)
 		}
 		h.logger.Debug("polling cursor updated",
 			zap.String("component", req.Component.Name),
