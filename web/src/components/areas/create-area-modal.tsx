@@ -13,6 +13,7 @@ import { Reaction } from '@/lib/api/contracts/reactions'
 import type { CreateAreaRequestDTO } from '@/lib/api/contracts/openapi/areas'
 import { useCreateAreaMutation } from '@/lib/api/openapi/areas'
 import { ApiError } from '@/lib/api/http/errors'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useAvailableComponentsQuery } from '@/lib/api/openapi/components'
 import type {
@@ -305,7 +306,6 @@ export default function CreateAreaModal() {
     useState<ConfigEditorTarget | null>(null)
   const [areaName, setAreaName] = useState('')
   const [areaDescription, setAreaDescription] = useState('')
-  const [formError, setFormError] = useState<string | null>(null)
 
   const createAreaMutation = useCreateAreaMutation()
 
@@ -318,7 +318,6 @@ export default function CreateAreaModal() {
     setConfigEditorTarget(null)
     setAreaName('')
     setAreaDescription('')
-    setFormError(null)
   }
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
@@ -351,9 +350,6 @@ export default function CreateAreaModal() {
   }
 
   const handleReactionValueChange = (id: string, reactionId: string) => {
-    if (formError) {
-      setFormError(null)
-    }
     setReactionFields((previous) =>
       previous.map((field) => {
         if (field.id !== id) {
@@ -399,9 +395,6 @@ export default function CreateAreaModal() {
   }
 
   const handleActionValueChange = (nextActionId: string) => {
-    if (formError) {
-      setFormError(null)
-    }
     setActionId(nextActionId)
 
     if (!nextActionId) {
@@ -500,7 +493,7 @@ export default function CreateAreaModal() {
     const selectedReactions = reactionFields.filter((field) => field.reactionId)
 
     if (!actionId || selectedReactions.length === 0 || !name) {
-      setFormError(t('missingRequiredFields'))
+      toast.error(t('missingRequiredFields'))
       return
     }
 
@@ -529,17 +522,15 @@ export default function CreateAreaModal() {
       })
     }
 
-    setFormError(null)
-
     try {
       await createAreaMutation.mutateAsync(payload)
       resetForm()
       setOpen(false)
     } catch (error) {
       if (error instanceof ApiError) {
-        setFormError(error.message || t('unknownError'))
+        toast.error(error.message || t('unknownError'))
       } else {
-        setFormError(t('unknownError'))
+        toast.error(t('unknownError'))
       }
     }
   }
@@ -654,9 +645,6 @@ export default function CreateAreaModal() {
                 name="areaName"
                 value={areaName}
                 onChange={(event) => {
-                  if (formError) {
-                    setFormError(null)
-                  }
                   setAreaName(event.target.value)
                 }}
                 placeholder={t('areaNamePlaceholder')}
@@ -672,9 +660,6 @@ export default function CreateAreaModal() {
                 name="areaDescription"
                 value={areaDescription}
                 onChange={(event) => {
-                  if (formError) {
-                    setFormError(null)
-                  }
                   setAreaDescription(event.target.value)
                 }}
                 placeholder={t('areaDescriptionPlaceholder')}
@@ -682,12 +667,6 @@ export default function CreateAreaModal() {
               />
             </div>
           </div>
-
-          {formError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {formError}
-            </p>
-          ) : null}
 
           <DialogFooter>
             <DialogClose asChild>

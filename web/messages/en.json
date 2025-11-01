@@ -111,7 +111,8 @@
   "ExplorePage": {
     "title": "Explore Services",
     "description": "Save time and get more done",
-    "loading": "Loading services..."
+    "loading": "Loading services...",
+    "error": "There was an error loading the services."
   },
   "AboutPage": {
     "title": "About AREA",
@@ -125,7 +126,8 @@
     "servicesLabel": "Services",
     "actionsLabel": "actions",
     "reactionsLabel": "reactions",
-    "loading": "Loading details..."
+    "loading": "Loading details...",
+    "error": "There was an error loading the details."
   },
   "ServiceCard": {
     "getStarted": "Get started",
@@ -374,6 +376,8 @@
     "actionsTitle": "Actions",
     "noActions": "No actions available for this service.",
     "reactionsTitle": "Reactions",
-    "noReactions": "No reactions available for this service."
+    "noReactions": "No reactions available for this service.",
+    "disconnectError": "There was an error disconnecting the service.",
+    "connectError": "There was an error connecting the service."
   }
 }

@@ -1,6 +1,8 @@
 'use client'
+import { useEffect } from 'react'
 import { Loader2, Play, Repeat } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { useAboutQuery, mapAboutResponse } from '@/lib/api/openapi/about'
 import {
   Card,
@@ -22,6 +24,12 @@ export default function AboutPage() {
   const t = useTranslations('AboutPage')
   const { data, isLoading, isError } = useAboutQuery()
 
+  useEffect(() => {
+    if (isError) {
+      toast.error(t('error'))
+    }
+  }, [isError, t])
+
   if (isLoading) {
     return (
       <div className="mx-auto flex max-w-5xl items-center justify-center py-24">
@@ -32,11 +40,7 @@ export default function AboutPage() {
   }
 
   if (isError || !data) {
-    return (
-      <div className="mx-auto max-w-2xl py-24 text-center">
-        <p className="text-destructive text-sm">{t('error')}</p>
-      </div>
-    )
+    return null
   }
 
   const about = mapAboutResponse(data)

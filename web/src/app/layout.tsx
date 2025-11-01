@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { NextIntlClientProvider } from 'next-intl'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/sonner'
 import QueryProvider from '@/providers/QueryProvider'
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
           <QueryProvider>
             <NextIntlClientProvider>{children}</NextIntlClientProvider>
           </QueryProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

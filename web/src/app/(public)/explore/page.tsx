@@ -1,6 +1,8 @@
 'use client'
+import { useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { useMemo } from 'react'
 import { useServiceProvidersQuery } from '@/lib/api/openapi/services'
 import {
@@ -19,6 +21,13 @@ export default function ExplorePage() {
     isLoading: isServicesLoading,
     isError
   } = useServiceProvidersQuery()
+
+  useEffect(() => {
+    if (isError) {
+      toast.error(t('error'))
+    }
+  }, [isError, t])
+
   const {
     data: userData,
     isLoading: isUserLoading,
@@ -63,11 +72,7 @@ export default function ExplorePage() {
   }
 
   if (isError) {
-    return (
-      <div className="mx-auto max-w-2xl py-24 text-center">
-        <p className="text-destructive text-sm">{t('error')}</p>
-      </div>
-    )
+    return null
   }
 
   return (

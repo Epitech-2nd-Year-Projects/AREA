@@ -25,17 +25,13 @@ import {
 } from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
+import { toast } from 'sonner'
 
 const getPasswordInitialState = () => ({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
-
-type FormStatus = {
-  type: 'success' | 'error'
-  message: string
-} | null
 
 function getAvatarFallback(email: string) {
   return email ? email.slice(0, 2).toUpperCase() : '??'
@@ -79,29 +75,27 @@ export default function ProfilePage() {
 
   const [profileForm, setProfileForm] = useState({ email: '', imageUrl: '' })
   const [passwordForm, setPasswordForm] = useState(getPasswordInitialState)
-  const [profileStatus, setProfileStatus] = useState<FormStatus>(null)
-  const [passwordStatus, setPasswordStatus] = useState<FormStatus>(null)
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const { mutate: changeEmail, isPending: isChangeEmailPending } =
     useChangeEmailMutation({
       onSuccess: () => {
-        setProfileStatus({ type: 'success', message: t('profileSaved') })
+        toast.success(t('profileSaved'))
       },
       onError: (error) => {
-        setProfileStatus({ type: 'error', message: error.message })
+        toast.error(error.message)
       }
     })
 
   const { mutate: changePassword, isPending: isChangePasswordPending } =
     useChangePasswordMutation({
       onSuccess: () => {
-        setPasswordStatus({ type: 'success', message: t('passwordUpdated') })
+        toast.success(t('passwordUpdated'))
         setPasswordForm(getPasswordInitialState())
       },
       onError: (error) => {
-        setPasswordStatus({ type: 'error', message: error.message })
+        toast.error(error.message)
       }
     })
 
@@ -127,11 +121,10 @@ export default function ProfilePage() {
 
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPasswordStatus(null)
 
     if (profileForm.email !== user?.email) {
       if (!passwordForm.currentPassword) {
-        setProfileStatus({ type: 'error', message: t('passwordMissing') })
+        toast.error(t('passwordMissing'))
         return
       }
       changeEmail({
@@ -139,7 +132,7 @@ export default function ProfilePage() {
         password: passwordForm.currentPassword
       })
     } else {
-      setProfileStatus({ type: 'success', message: t('profileSaved') })
+      toast.success(t('profileSaved'))
     }
   }
 
@@ -149,7 +142,6 @@ export default function ProfilePage() {
 
     const objectUrl = URL.createObjectURL(file)
     setAvatarFileName(file.name)
-    setProfileStatus(null)
     setProfileForm((prev) => ({ ...prev, imageUrl: objectUrl }))
     event.target.value = ''
   }
@@ -160,7 +152,6 @@ export default function ProfilePage() {
 
   const handleAvatarReset = () => {
     setAvatarFileName(null)
-    setProfileStatus(null)
     setProfileForm((prev) => ({ ...prev, imageUrl: user?.imageUrl ?? '' }))
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -173,17 +164,14 @@ export default function ProfilePage() {
       !passwordForm.newPassword ||
       !passwordForm.confirmPassword
     ) {
-      setPasswordStatus({ type: 'error', message: t('passwordMissing') })
+      toast.error(t('passwordMissing'))
       return
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordStatus({ type: 'error', message: t('passwordMismatch') })
+      toast.error(t('passwordMismatch'))
       return
     }
-
-    setProfileStatus(null)
-    setPasswordStatus(null)
 
     changePassword({
       currentPassword: passwordForm.currentPassword,
@@ -300,7 +288,6 @@ export default function ProfilePage() {
                       email: user.email,
                       imageUrl: user.imageUrl ?? ''
                     })
-                    setProfileStatus(null)
                     setAvatarFileName(null)
                   }}
                 >
@@ -308,18 +295,6 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
-            {profileStatus ? (
-              <p
-                className={
-                  profileStatus.type === 'error'
-                    ? 'text-destructive text-sm'
-                    : 'text-sm text-emerald-600'
-                }
-                role="status"
-              >
-                {profileStatus.message}
-              </p>
-            ) : null}
           </CardContent>
         </Card>
 
@@ -387,25 +362,12 @@ export default function ProfilePage() {
                   variant="outline"
                   onClick={() => {
                     setPasswordForm(getPasswordInitialState())
-                    setPasswordStatus(null)
                   }}
                 >
                   {t('cancelPasswordButton')}
                 </Button>
               </div>
             </form>
-            {passwordStatus ? (
-              <p
-                className={
-                  passwordStatus.type === 'error'
-                    ? 'text-destructive text-sm'
-                    : 'text-sm text-emerald-600'
-                }
-                role="status"
-              >
-                {passwordStatus.message}
-              </p>
-            ) : null}
           </CardContent>
         </Card>
       </div>
