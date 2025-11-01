@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Service } from '@/lib/api/contracts/services'
 import {
+  servicesKeys,
   useSubscribeServiceMutation,
   useUnsubscribeServiceMutation
 } from '@/lib/api/openapi/services'
@@ -21,7 +22,6 @@ import {
   persistOAuthState
 } from '@/lib/auth/oauth'
 import { DisconnectModal } from './disconnect-modal'
-import { authKeys } from '@/lib/api/openapi/auth'
 import { useLogoQuery } from '@/lib/api/logo'
 
 type ServiceCardProps = {
@@ -44,7 +44,7 @@ export function ServiceCard({
     useUnsubscribeServiceMutation({
       onSuccess: () => {
         return queryClient.invalidateQueries({
-          queryKey: authKeys.identities()
+          queryKey: servicesKeys.subscriptions()
         })
       }
     })
@@ -64,7 +64,7 @@ export function ServiceCard({
 
   const connectButtonState = authenticated
     ? {
-        label: linked ? t('linked') : t('connect'),
+        label: linked ? t('linked') : t('subscribe'),
         variant: 'default' as const
       }
     : { label: t('getStarted'), variant: 'outline' as const }

@@ -132,6 +132,7 @@
   "ServiceCard": {
     "getStarted": "Get started",
     "connect": "Connect",
+    "subscribe": "Subscribe",
     "linked": "Already linked",
     "actions": "actions",
     "reactions": "reactions",
