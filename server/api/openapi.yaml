@@ -1131,6 +1131,8 @@ components:
           description: Expiration timestamp (UTC) aligning with the `area_session` cookie expiry.
         user:
           $ref: '#/components/schemas/User'
+        sessionAuth:
+          $ref: '#/components/schemas/SessionAuth'
       example:
         tokenType: session
         expiresAt: 2024-04-18T11:32:00Z
@@ -1140,6 +1142,8 @@ components:
           status: active
           createdAt: 2024-04-01T10:00:00Z
           updatedAt: 2024-04-01T10:00:00Z
+        sessionAuth:
+          method: password
     LoginRequest:
       type: object
       description: Credential-based authentication payload.
@@ -1165,6 +1169,8 @@ components:
       properties:
         user:
           $ref: '#/components/schemas/User'
+        sessionAuth:
+          $ref: '#/components/schemas/SessionAuth'
     User:
       type: object
       description: Detailed user payload returned by authenticated endpoints.
@@ -1197,6 +1203,19 @@ components:
           format: date-time
           nullable: true
           description: Timestamp of the most recent successful login.
+    SessionAuth:
+      type: object
+      description: Authentication metadata describing how the current session was issued.
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [password, oauth]
+          description: Mechanism used to authenticate the session.
+        provider:
+          type: string
+          nullable: true
+          description: OAuth provider slug when `method` equals `oauth`.
     ChangePasswordRequest:
       type: object
       description: Payload to update the password of the current user.
