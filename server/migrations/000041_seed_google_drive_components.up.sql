@@ -1,4 +1,3 @@
--- Seed Google Drive Actions and Reactions
 WITH provider AS (
     SELECT id FROM "service_providers" WHERE name = 'google'
 )
