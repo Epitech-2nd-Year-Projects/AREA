@@ -15,6 +15,8 @@ type Session struct {
 	RevokedAt *time.Time
 	IP        string
 	UserAgent string
+	// AuthProvider identifies the mechanism that issued the session such as password or provider slug
+	AuthProvider string
 }
 
 // Active reports whether the session can still be used for authentication
