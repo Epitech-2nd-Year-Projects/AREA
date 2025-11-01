@@ -37,6 +37,9 @@ class ApiConfig {
   }
 
   static String getServiceCallbackUrl(String provider) {
+    if (provider == "spotify") {
+      return "http://127.0.0.1:8080/services/$provider/callback";
+    }
     return "$callbackBaseUrl/services/$provider/callback";
   }
 }
