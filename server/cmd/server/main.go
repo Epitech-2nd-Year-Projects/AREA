@@ -21,6 +21,8 @@ import (
 	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
 	dropboxexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/dropbox"
+	gcalendarexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gcalendar"
+	gdriveexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gdrive"
 	githubexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/github"
 	gitlabexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gitlab"
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
@@ -379,6 +381,26 @@ func run() error {
 			if zoomExecutor != nil {
 				reactionHandlers = append(reactionHandlers, zoomExecutor)
 			}
+			gcalendarExecutor := gcalendarexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gcalendarExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gcalendarExecutor)
+			}
+			gdriveExecutor := gdriveexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gdriveExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gdriveExecutor)
+			}
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
 
@@ -489,6 +511,9 @@ func buildOAuthManager(cfg configviper.Config, logger *zap.Logger) (*oauthadapte
 			Scopes:       append([]string(nil), provider.Scopes...),
 		}
 		providerConfigs[key] = creds
+		
+		// DEBUG: Show which scopes are being loaded for this provider
+		fmt.Printf("[CONFIG DEBUG] Provider '%s' scopes from config: %v\n", key, creds.Scopes)
 	}
 
 	if len(providerConfigs) == 0 {

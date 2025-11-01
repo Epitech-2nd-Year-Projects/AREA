@@ -115,6 +115,8 @@ func NewProvider(name string, descriptor ProviderDescriptor, creds ProviderCrede
 		tokenHeaders[key] = value
 	}
 
+	selectedScopes := fallbackScopes(creds.Scopes, descriptor.DefaultScopes)
+
 	oauthCfg := oauth2.Config{
 		Name:            descriptor.DisplayName,
 		ClientID:        creds.ClientID,
@@ -122,7 +124,7 @@ func NewProvider(name string, descriptor ProviderDescriptor, creds ProviderCrede
 		AuthURL:         descriptor.AuthorizationURL,
 		TokenURL:        descriptor.TokenURL,
 		UserInfoURL:     descriptor.UserInfoURL,
-		Scopes:          fallbackScopes(creds.Scopes, descriptor.DefaultScopes),
+		Scopes:          selectedScopes,
 		Prompt:          descriptor.DefaultPrompt,
 		Audience:        descriptor.Audience,
 		TokenAuthMethod: descriptor.TokenAuthMethod,
@@ -241,10 +243,8 @@ func (p *provider) AuthorizationURL(ctx context.Context, req identityport.Author
 		return identityport.AuthorizationResponse{}, fmt.Errorf("oauth.Provider[%s].AuthorizationURL: redirect uri missing", p.name)
 	}
 
-	scopes := req.Scopes
-	if len(scopes) == 0 {
-		scopes = p.defaultScopes
-	}
+	// Merge request scopes with default scopes to ensure all required scopes are requested
+	scopes := mergeScopes(req.Scopes, p.defaultScopes)
 
 	extra := make(map[string]string, len(p.descriptor.AuthorizationParams))
 	for key, value := range p.descriptor.AuthorizationParams {
@@ -484,6 +484,44 @@ func fallbackScopes(primary []string, secondary []string) []string {
 		return append([]string(nil), secondary...)
 	}
 	return []string{}
+}
+
+// mergeScopes combines request scopes with default scopes, avoiding duplicates
+// Request scopes take priority, then default scopes are appended if not already present
+func mergeScopes(requestScopes []string, defaultScopes []string) []string {
+	if len(requestScopes) == 0 {
+		return append([]string(nil), defaultScopes...)
+	}
+	
+	// Use a map to track unique scopes
+	scopeMap := make(map[string]bool)
+	result := make([]string, 0, len(requestScopes)+len(defaultScopes))
+	
+	// Add request scopes first
+	for _, scope := range requestScopes {
+		trimmed := strings.TrimSpace(scope)
+		if trimmed == "" {
+			continue
+		}
+		if !scopeMap[trimmed] {
+			scopeMap[trimmed] = true
+			result = append(result, trimmed)
+		}
+	}
+	
+	// Add default scopes that aren't already present
+	for _, scope := range defaultScopes {
+		trimmed := strings.TrimSpace(scope)
+		if trimmed == "" {
+			continue
+		}
+		if !scopeMap[trimmed] {
+			scopeMap[trimmed] = true
+			result = append(result, trimmed)
+		}
+	}
+	
+	return result
 }
 
 func firstNonEmpty(values ...string) string {

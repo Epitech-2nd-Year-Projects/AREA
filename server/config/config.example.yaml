@@ -98,9 +98,15 @@ oauth:
       clientSecretEnv: GOOGLE_OAUTH_CLIENT_SECRET
       redirectURI: http://localhost:3000/oauth/callback
       scopes:
+        - openid
         - email
         - profile
         - https://www.googleapis.com/auth/gmail.send
+        - https://www.googleapis.com/auth/calendar
+        - https://www.googleapis.com/auth/calendar.readonly
+        - https://www.googleapis.com/auth/drive
+        - https://www.googleapis.com/auth/drive.file
+        - https://www.googleapis.com/auth/drive.readonly
     github:
       clientIDEnv: GITHUB_OAUTH_CLIENT_ID
       clientSecretEnv: GITHUB_OAUTH_CLIENT_SECRET
