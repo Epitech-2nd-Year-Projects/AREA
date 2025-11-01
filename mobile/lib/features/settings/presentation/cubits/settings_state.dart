@@ -15,11 +15,15 @@ class SettingsReady extends SettingsState {
   final bool isDirty;
   final bool isValid;
   final String? message;
+  final bool isColorBlindModeEnabled;
+  final bool isScreenReaderEnabled;
 
   const SettingsReady({
     required this.currentAddress,
     required this.isDirty,
     required this.isValid,
+    required this.isColorBlindModeEnabled,
+    required this.isScreenReaderEnabled,
     this.message,
   });
 
@@ -27,18 +31,31 @@ class SettingsReady extends SettingsState {
     String? currentAddress,
     bool? isDirty,
     bool? isValid,
+    bool? isColorBlindModeEnabled,
+    bool? isScreenReaderEnabled,
     String? message,
   }) {
     return SettingsReady(
       currentAddress: currentAddress ?? this.currentAddress,
       isDirty: isDirty ?? this.isDirty,
       isValid: isValid ?? this.isValid,
+      isColorBlindModeEnabled:
+          isColorBlindModeEnabled ?? this.isColorBlindModeEnabled,
+      isScreenReaderEnabled:
+          isScreenReaderEnabled ?? this.isScreenReaderEnabled,
       message: message,
     );
   }
 
   @override
-  List<Object?> get props => [currentAddress, isDirty, isValid, message];
+  List<Object?> get props => [
+        currentAddress,
+        isDirty,
+        isValid,
+        isColorBlindModeEnabled,
+        isScreenReaderEnabled,
+        message,
+      ];
 }
 
 class SettingsError extends SettingsState {

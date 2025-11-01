@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/accessibility/accessibility_controller.dart';
 import 'core/di/injector.dart';
 import 'core/network/api_config.dart';
 import 'features/auth/presentation/blocs/auth_bloc.dart';
@@ -11,6 +12,7 @@ void main() async {
   await dotenv.load();
   ApiConfig.initialize();
   await Injector.setup();
+  await sl<AccessibilityController>().load();
   runApp(
     BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>(), child: const MyApp()),
   );

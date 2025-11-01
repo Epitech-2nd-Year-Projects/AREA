@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../core/accessibility/accessibility_route_announcer.dart';
+import '../../../../core/accessibility/accessibility_controller.dart';
 import '../../../../core/navigation/app_navigation.dart';
 import '../../../areas/presentation/pages/areas_page.dart';
 import '../../../areas/presentation/pages/area_form_page.dart';
@@ -23,6 +25,7 @@ import '../pages/auth_wrapper_page.dart';
 class AuthRouter {
   static List<RouteBase> get routes => [
     ShellRoute(
+      observers: [AccessibilityRouteAnnouncer(sl<AccessibilityController>())],
       builder: (context, state, child) {
         return BlocProvider(
           create: (context) => AuthBloc(sl()),
@@ -33,14 +36,17 @@ class AuthRouter {
       },
       routes: [
         GoRoute(
+          name: 'dashboard',
           path: '/dashboard',
           builder: (context, state) => const DashboardPage(),
         ),
         GoRoute(
+          name: 'services',
           path: '/services',
           builder: (context, state) => const ServicesListPage(),
           routes: [
             GoRoute(
+              name: 'service-details',
               path: ':serviceId',
               builder: (context, state) {
                 final serviceId = state.pathParameters['serviceId']!;
@@ -78,6 +84,7 @@ class AuthRouter {
           ],
         ),
         GoRoute(
+          name: 'profile',
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
           routes: [
@@ -92,6 +99,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'oauth-callback',
       path: '/oauth/:provider/callback',
       builder: (context, state) {
         final provider = state.pathParameters['provider']!;
@@ -112,6 +120,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'service-auth-callback',
       path: '/services/:provider/callback',
       builder: (context, state) {
         final provider = state.pathParameters['provider']!;
@@ -133,6 +142,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'login',
       path: '/login',
       builder: (context, state) => BlocProvider(
         create: (context) => AuthBloc(sl()),
@@ -141,6 +151,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'verify-email',
       path: '/verify-email',
       builder: (context, state) {
         final token = state.uri.queryParameters['token'];
@@ -152,6 +163,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'register',
       path: '/register',
       builder: (context, state) => BlocProvider(
         create: (context) => AuthBloc(sl()),
@@ -160,6 +172,7 @@ class AuthRouter {
     ),
 
     GoRoute(
+      name: 'root',
       path: '/',
       builder: (context, state) => BlocProvider(
         create: (context) => AuthBloc(sl()),

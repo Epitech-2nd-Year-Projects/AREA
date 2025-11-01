@@ -26,6 +26,22 @@ class LocalPrefsManager {
     }
   }
 
+  Future<void> writeBool(String key, bool value) async {
+    try {
+      await _prefs?.setBool(key, value);
+    } catch (e) {
+      throw StorageException("Failed to write pref for $key");
+    }
+  }
+
+  bool readBool(String key, {bool defaultValue = false}) {
+    try {
+      return _prefs?.getBool(key) ?? defaultValue;
+    } catch (e) {
+      throw StorageException("Failed to read pref for $key");
+    }
+  }
+
   Future<void> delete(String key) async {
     try {
       await _prefs?.remove(key);

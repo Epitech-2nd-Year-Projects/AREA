@@ -5,6 +5,8 @@ import '../../domain/repositories/settings_repository.dart';
 
 class SettingsRepositoryImpl implements SettingsRepository {
   static const _kServerAddressKey = 'server_address';
+  static const _kColorBlindModeKey = 'accessibility_color_blind_mode';
+  static const _kScreenReaderKey = 'accessibility_screen_reader';
 
   final LocalPrefsManager _prefs;
   final ApiClient _api;
@@ -39,5 +41,25 @@ class SettingsRepositoryImpl implements SettingsRepository {
     } catch (_) {
       return false;
     }
+  }
+
+  @override
+  bool getColorBlindMode() {
+    return _prefs.readBool(_kColorBlindModeKey, defaultValue: false);
+  }
+
+  @override
+  Future<void> setColorBlindMode(bool enabled) {
+    return _prefs.writeBool(_kColorBlindModeKey, enabled);
+  }
+
+  @override
+  bool getScreenReaderEnabled() {
+    return _prefs.readBool(_kScreenReaderKey, defaultValue: false);
+  }
+
+  @override
+  Future<void> setScreenReaderEnabled(bool enabled) {
+    return _prefs.writeBool(_kScreenReaderKey, enabled);
   }
 }
