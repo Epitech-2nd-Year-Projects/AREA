@@ -511,9 +511,6 @@ func buildOAuthManager(cfg configviper.Config, logger *zap.Logger) (*oauthadapte
 			Scopes:       append([]string(nil), provider.Scopes...),
 		}
 		providerConfigs[key] = creds
-		
-		// DEBUG: Show which scopes are being loaded for this provider
-		fmt.Printf("[CONFIG DEBUG] Provider '%s' scopes from config: %v\n", key, creds.Scopes)
 	}
 
 	if len(providerConfigs) == 0 {

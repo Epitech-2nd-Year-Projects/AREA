@@ -102,8 +102,7 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 	}
 
 	endpoint := fmt.Sprintf("https://www.googleapis.com/drive/v3/files/%s", cfg.fileID)
-	
-	// Fetch current file to get its parents
+
 	currentFile, result, unauthorized, err := e.getFile(ctx, endpoint, accessToken, cfg.fileID)
 	if err != nil {
 		return result, err
@@ -111,8 +110,7 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 	if unauthorized {
 		return result, fmt.Errorf("gdrive.Executor: unauthorized during fetch")
 	}
-	
-	// Extract current parent IDs
+
 	var currentParents []string
 	if parents, ok := currentFile["parents"].([]any); ok {
 		for _, p := range parents {
@@ -123,9 +121,9 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 	}
 
 	requestInfo := map[string]any{
-		"fileId":                  cfg.fileID,
-		"destinationFolderId":     cfg.destinationFolderId,
-		"previousParents":         currentParents,
+		"fileId":              cfg.fileID,
+		"destinationFolderId": cfg.destinationFolderId,
+		"previousParents":     currentParents,
 	}
 
 	result, unauthorized, err = e.moveFileWithParents(ctx, endpoint, accessToken, cfg.destinationFolderId, currentParents, requestInfo)
@@ -190,7 +188,6 @@ func (e *Executor) ensureAccessToken(ctx context.Context, identity identitydomai
 }
 
 func (e *Executor) getFile(ctx context.Context, endpoint string, accessToken string, fileID string) (map[string]any, outbound.ReactionResult, bool, error) {
-	// Query to get the parents field
 	getEndpoint := fmt.Sprintf("%s?fields=parents", endpoint)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getEndpoint, nil)
 	if err != nil {
@@ -240,16 +237,13 @@ func (e *Executor) getFile(ctx context.Context, endpoint string, accessToken str
 }
 
 func (e *Executor) moveFileWithParents(ctx context.Context, endpoint string, accessToken string, destinationFolderId string, currentParents []string, request map[string]any) (outbound.ReactionResult, bool, error) {
-	// Build query parameters for addParents and removeParents
 	query := "?"
 	query += fmt.Sprintf("addParents=%s", url.QueryEscape(destinationFolderId))
-	
-	// Remove all current parents
+
 	for _, parent := range currentParents {
 		query += fmt.Sprintf("&removeParents=%s", url.QueryEscape(parent))
 	}
 
-	// Use an empty body for move operation (Google Drive API doesn't require a body for parent changes)
 	payload := []byte("{}")
 
 	moveEndpoint := endpoint + query
@@ -322,15 +316,14 @@ func cloneMap(source map[string]any) map[string]any {
 }
 
 type moveFileConfig struct {
-	identityID           uuid.UUID
-	fileID               string
-	destinationFolderId  string
+	identityID          uuid.UUID
+	fileID              string
+	destinationFolderId string
 }
 
 func parseMoveFileConfig(params map[string]any) (moveFileConfig, error) {
 	cfg := moveFileConfig{}
 
-	// Parse identity ID
 	identityRaw, ok := params["identityId"]
 	if !ok {
 		return cfg, fmt.Errorf("identityId missing")
@@ -345,7 +338,6 @@ func parseMoveFileConfig(params map[string]any) (moveFileConfig, error) {
 	}
 	cfg.identityID = identityID
 
-	// Parse file ID
 	fileIDRaw, ok := params["fileId"]
 	if !ok {
 		return cfg, fmt.Errorf("fileId missing")
@@ -359,7 +351,6 @@ func parseMoveFileConfig(params map[string]any) (moveFileConfig, error) {
 		return cfg, fmt.Errorf("fileId cannot be empty")
 	}
 
-	// Parse destination folder ID
 	destFolderRaw, ok := params["destinationFolderId"]
 	if !ok {
 		return cfg, fmt.Errorf("destinationFolderId missing")
@@ -393,7 +384,6 @@ type systemClock struct{}
 
 func (systemClock) Now() time.Time { return time.Now().UTC() }
 
-// Ensure Executor satisfies the ComponentReactionHandler contract
 var _ interface {
 	Supports(*componentdomain.Component) bool
 	Execute(context.Context, areadomain.Area, areadomain.Link) (outbound.ReactionResult, error)

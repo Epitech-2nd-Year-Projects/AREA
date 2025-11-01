@@ -102,7 +102,7 @@ func (e *Executor) Execute(ctx context.Context, area areadomain.Area, link aread
 	}
 
 	endpoint := strings.ReplaceAll(gcalendarAPIEndpoint, "{{calendarId}}", cfg.calendarID)
-	
+
 	payload, err := buildEventPayload(cfg)
 	if err != nil {
 		return outbound.ReactionResult{}, fmt.Errorf("gcalendar.Executor: build payload: %w", err)
@@ -280,14 +280,14 @@ func buildEventPayload(cfg eventConfig) ([]byte, error) {
 }
 
 type eventConfig struct {
-	identityID           uuid.UUID
-	calendarID           string
-	summary              string
-	description          string
-	location             string
-	startTime            time.Time
-	endTime              time.Time
-	attendees            []string
+	identityID  uuid.UUID
+	calendarID  string
+	summary     string
+	description string
+	location    string
+	startTime   time.Time
+	endTime     time.Time
+	attendees   []string
 }
 
 func parseEventConfig(params map[string]any) (eventConfig, error) {
@@ -295,7 +295,6 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 		calendarID: "primary",
 	}
 
-	// Parse identity ID
 	identityRaw, ok := params["identityId"]
 	if !ok {
 		return cfg, fmt.Errorf("identityId missing")
@@ -310,7 +309,6 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 	}
 	cfg.identityID = identityID
 
-	// Parse calendar ID
 	if calendarRaw, ok := params["calendarId"]; ok {
 		calendarID, err := toString(calendarRaw)
 		if err == nil && strings.TrimSpace(calendarID) != "" {
@@ -318,7 +316,6 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 		}
 	}
 
-	// Parse summary
 	summaryRaw, ok := params["summary"]
 	if !ok {
 		return cfg, fmt.Errorf("summary missing")
@@ -332,21 +329,18 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 		return cfg, fmt.Errorf("summary cannot be empty")
 	}
 
-	// Parse description
 	if descRaw, ok := params["description"]; ok {
 		if desc, err := toString(descRaw); err == nil {
 			cfg.description = strings.TrimSpace(desc)
 		}
 	}
 
-	// Parse location
 	if locRaw, ok := params["location"]; ok {
 		if loc, err := toString(locRaw); err == nil {
 			cfg.location = strings.TrimSpace(loc)
 		}
 	}
 
-	// Parse start time
 	startRaw, ok := params["startTime"]
 	if !ok {
 		return cfg, fmt.Errorf("startTime missing")
@@ -361,7 +355,6 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 	}
 	cfg.startTime = startTime
 
-	// Parse end time
 	endRaw, ok := params["endTime"]
 	if !ok {
 		return cfg, fmt.Errorf("endTime missing")
@@ -376,12 +369,10 @@ func parseEventConfig(params map[string]any) (eventConfig, error) {
 	}
 	cfg.endTime = endTime
 
-	// Validate that end time is after start time
 	if endTime.Before(startTime) || endTime.Equal(startTime) {
 		return cfg, fmt.Errorf("endTime must be after startTime")
 	}
 
-	// Parse attendees
 	if attendeesRaw, ok := params["attendees"]; ok {
 		if attendees, err := parseList(attendeesRaw); err == nil {
 			cfg.attendees = attendees
