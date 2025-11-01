@@ -158,6 +158,7 @@ var _defaultConfig = Config{
 					"email",
 					"Mail.Read",
 					"Mail.Send",
+					"User.Read",
 				},
 			},
 			"zoom": {
