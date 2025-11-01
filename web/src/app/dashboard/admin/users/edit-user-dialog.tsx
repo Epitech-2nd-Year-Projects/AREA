@@ -71,9 +71,9 @@ export function EditUserDialog({
           <DialogDescription>
             {t('description')}
             {!user.hasPassword && (
-              <p className="text-sm text-muted-foreground mt-2">
+              <span className="text-sm text-muted-foreground mt-2">
                 {t('oauthUserDescription')}
-              </p>
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>

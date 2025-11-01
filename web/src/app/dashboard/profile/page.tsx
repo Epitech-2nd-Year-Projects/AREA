@@ -217,9 +217,9 @@ export default function ProfilePage() {
               <CardDescription>
                 {t('profileInformationDescription')}
                 {!user.hasPassword && (
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <span className="text-sm text-muted-foreground mt-2">
                     {t('oauthProfileDescription')}
-                  </p>
+                  </span>
                 )}
               </CardDescription>
             </div>
@@ -317,9 +317,9 @@ export default function ProfilePage() {
               <CardDescription>
                 {t('passwordSectionDescription')}
                 {!user.hasPassword && (
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <span className="text-sm text-muted-foreground mt-2">
                     {t('oauthPasswordDescription')}
-                  </p>
+                  </span>
                 )}
               </CardDescription>
             </div>
