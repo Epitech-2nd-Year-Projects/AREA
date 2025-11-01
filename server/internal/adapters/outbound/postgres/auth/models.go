@@ -61,38 +61,41 @@ func userFromDomain(u userdomain.User) userModel {
 }
 
 type sessionModel struct {
-	ID        uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
-	UserID    uuid.UUID  `gorm:"column:user_id"`
-	IssuedAt  time.Time  `gorm:"column:issued_at"`
-	ExpiresAt time.Time  `gorm:"column:expires_at"`
-	RevokedAt *time.Time `gorm:"column:revoked_at"`
-	IP        string     `gorm:"column:ip"`
-	UserAgent string     `gorm:"column:user_agent"`
+	ID           uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
+	UserID       uuid.UUID  `gorm:"column:user_id"`
+	IssuedAt     time.Time  `gorm:"column:issued_at"`
+	ExpiresAt    time.Time  `gorm:"column:expires_at"`
+	RevokedAt    *time.Time `gorm:"column:revoked_at"`
+	IP           string     `gorm:"column:ip"`
+	UserAgent    string     `gorm:"column:user_agent"`
+	AuthProvider string     `gorm:"column:auth_provider"`
 }
 
 func (sessionModel) TableName() string { return "sessions" }
 
 func (m sessionModel) toDomain() sessiondomain.Session {
 	return sessiondomain.Session{
-		ID:        m.ID,
-		UserID:    m.UserID,
-		IssuedAt:  m.IssuedAt,
-		ExpiresAt: m.ExpiresAt,
-		RevokedAt: m.RevokedAt,
-		IP:        m.IP,
-		UserAgent: m.UserAgent,
+		ID:           m.ID,
+		UserID:       m.UserID,
+		IssuedAt:     m.IssuedAt,
+		ExpiresAt:    m.ExpiresAt,
+		RevokedAt:    m.RevokedAt,
+		IP:           m.IP,
+		UserAgent:    m.UserAgent,
+		AuthProvider: m.AuthProvider,
 	}
 }
 
 func sessionFromDomain(s sessiondomain.Session) sessionModel {
 	return sessionModel{
-		ID:        s.ID,
-		UserID:    s.UserID,
-		IssuedAt:  s.IssuedAt,
-		ExpiresAt: s.ExpiresAt,
-		RevokedAt: s.RevokedAt,
-		IP:        s.IP,
-		UserAgent: s.UserAgent,
+		ID:           s.ID,
+		UserID:       s.UserID,
+		IssuedAt:     s.IssuedAt,
+		ExpiresAt:    s.ExpiresAt,
+		RevokedAt:    s.RevokedAt,
+		IP:           s.IP,
+		UserAgent:    s.UserAgent,
+		AuthProvider: s.AuthProvider,
 	}
 }
 
