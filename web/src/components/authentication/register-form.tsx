@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRegisterUserMutation } from '@/lib/api/openapi/users'
 import { ApiError } from '@/lib/api/http/errors'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,7 +22,6 @@ export function RegisterForm({
   const t = useTranslations('RegisterPage')
   const registerMutation = useRegisterUserMutation()
   const isPending = registerMutation.isPending
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -33,27 +33,25 @@ export function RegisterForm({
     const password = String(formData.get('password') ?? '')
     const confirmPassword = String(formData.get('confirmPassword') ?? '')
 
-    setErrorMessage(null)
-
     if (!email) {
-      setErrorMessage(t('errors.emailRequired'))
+      toast.error(t('errors.emailRequired'))
       return
     }
 
     if (!password) {
-      setErrorMessage(t('errors.passwordRequired'))
+      toast.error(t('errors.passwordRequired'))
       return
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setErrorMessage(
+      toast.error(
         t('errors.passwordTooShort', { minLength: MIN_PASSWORD_LENGTH })
       )
       return
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage(t('errors.passwordMismatch'))
+      toast.error(t('errors.passwordMismatch'))
       return
     }
 
@@ -70,11 +68,11 @@ export function RegisterForm({
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 409) {
-          setErrorMessage(t('errors.emailAlreadyUsed', { email }))
+          toast.error(t('errors.emailAlreadyUsed', { email }))
           return
         }
       }
-      setErrorMessage(t('errors.generic'))
+      toast.error(t('errors.generic'))
     }
   }
 
@@ -90,11 +88,6 @@ export function RegisterForm({
                   {t('createAccountToAccess')}
                 </p>
               </div>
-              {errorMessage ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {errorMessage}
-                </p>
-              ) : null}
               <div className="grid gap-3">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input

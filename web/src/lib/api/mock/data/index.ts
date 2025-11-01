@@ -479,8 +479,7 @@ export const mockUsers: User[] = [
   {
     id: '2',
     email: 'test2@test.com',
-    imageUrl: 'https://example.com/image2.png',
-    role: UserRole.User,
+    role: UserRole.Member,
     emailVerified: true,
     connectedServices: mockUserLinkedServices
   },
@@ -488,7 +487,7 @@ export const mockUsers: User[] = [
     id: '3',
     email: 'test3@test.com',
     imageUrl: 'https://example.com/image3.png',
-    role: UserRole.User,
+    role: UserRole.Member,
     emailVerified: false,
     connectedServices: mockUserLinkedServices
   }
@@ -550,7 +549,7 @@ export const mockRegisterUser = async ({
   const newUser: User = {
     id: (mockUsers.length + 1).toString(),
     email: normalizedEmail,
-    role: UserRole.User,
+    role: UserRole.Member,
     emailVerified: false,
     connectedServices: []
   }

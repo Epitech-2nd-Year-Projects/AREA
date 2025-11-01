@@ -9,7 +9,10 @@ import {
   OAuthExchangeRequestDTO,
   IdentityListResponseDTO,
   UserResponseDTO,
-  VerifyEmailRequestDTO
+  VerifyEmailRequestDTO,
+  ChangePasswordRequestDTO,
+  ChangeEmailRequestDTO,
+  EmailChangeResponseDTO
 } from '@/lib/api/contracts/openapi/auth'
 import { apiRuntime } from '@/lib/api/runtime'
 import {
@@ -65,6 +68,34 @@ export function currentUserClient(options?: ClientRequestOptions) {
     '/v1/auth/me',
     buildClientOptions(options)
   )
+}
+
+export function changePasswordClient(
+  body: ChangePasswordRequestDTO,
+  options?: ClientRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    throw new Error('Change password mock not implemented')
+  }
+  return apiFetchClient<void>('/v1/auth/password', {
+    method: 'PATCH',
+    body,
+    ...buildClientOptions(options)
+  })
+}
+
+export function changeEmailClient(
+  body: ChangeEmailRequestDTO,
+  options?: ClientRequestOptions
+) {
+  if (apiRuntime.useMocks) {
+    throw new Error('Change email mock not implemented')
+  }
+  return apiFetchClient<EmailChangeResponseDTO>('/v1/auth/email', {
+    method: 'PATCH',
+    body,
+    ...buildClientOptions(options)
+  })
 }
 
 export function listIdentitiesClient(options?: ClientRequestOptions) {

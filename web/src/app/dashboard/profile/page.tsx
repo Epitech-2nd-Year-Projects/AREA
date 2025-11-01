@@ -19,21 +19,19 @@ import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
 import {
   mapUserDTOToUser,
   useCurrentUserQuery,
-  useIdentitiesQuery
+  useIdentitiesQuery,
+  useChangeEmailMutation,
+  useChangePasswordMutation
 } from '@/lib/api/openapi/auth'
 import { Loader2 } from 'lucide-react'
 import { UserRole } from '@/lib/api/contracts/users'
+import { toast } from 'sonner'
 
 const getPasswordInitialState = () => ({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
-
-type FormStatus = {
-  type: 'success' | 'error'
-  message: string
-} | null
 
 function getAvatarFallback(email: string) {
   return email ? email.slice(0, 2).toUpperCase() : '??'
@@ -77,10 +75,29 @@ export default function ProfilePage() {
 
   const [profileForm, setProfileForm] = useState({ email: '', imageUrl: '' })
   const [passwordForm, setPasswordForm] = useState(getPasswordInitialState)
-  const [profileStatus, setProfileStatus] = useState<FormStatus>(null)
-  const [passwordStatus, setPasswordStatus] = useState<FormStatus>(null)
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const { mutate: changeEmail, isPending: isChangeEmailPending } =
+    useChangeEmailMutation({
+      onSuccess: () => {
+        toast.success(t('profileSaved'))
+      },
+      onError: (error) => {
+        toast.error(error.message)
+      }
+    })
+
+  const { mutate: changePassword, isPending: isChangePasswordPending } =
+    useChangePasswordMutation({
+      onSuccess: () => {
+        toast.success(t('passwordUpdated'))
+        setPasswordForm(getPasswordInitialState())
+      },
+      onError: (error) => {
+        toast.error(error.message)
+      }
+    })
 
   useEffect(() => {
     if (!user) return
@@ -104,8 +121,19 @@ export default function ProfilePage() {
 
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPasswordStatus(null)
-    setProfileStatus({ type: 'success', message: t('profileSaved') })
+
+    if (profileForm.email !== user?.email) {
+      if (!passwordForm.currentPassword) {
+        toast.error(t('passwordMissing'))
+        return
+      }
+      changeEmail({
+        email: profileForm.email,
+        password: passwordForm.currentPassword
+      })
+    } else {
+      toast.success(t('profileSaved'))
+    }
   }
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +142,6 @@ export default function ProfilePage() {
 
     const objectUrl = URL.createObjectURL(file)
     setAvatarFileName(file.name)
-    setProfileStatus(null)
     setProfileForm((prev) => ({ ...prev, imageUrl: objectUrl }))
     event.target.value = ''
   }
@@ -125,7 +152,6 @@ export default function ProfilePage() {
 
   const handleAvatarReset = () => {
     setAvatarFileName(null)
-    setProfileStatus(null)
     setProfileForm((prev) => ({ ...prev, imageUrl: user?.imageUrl ?? '' }))
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -138,21 +164,27 @@ export default function ProfilePage() {
       !passwordForm.newPassword ||
       !passwordForm.confirmPassword
     ) {
-      setPasswordStatus({ type: 'error', message: t('passwordMissing') })
+      toast.error(t('passwordMissing'))
       return
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordStatus({ type: 'error', message: t('passwordMismatch') })
+      toast.error(t('passwordMismatch'))
       return
     }
 
-    setProfileStatus(null)
-    setPasswordStatus({ type: 'success', message: t('passwordUpdated') })
-    setPasswordForm(getPasswordInitialState())
+    changePassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    })
   }
 
-  const isLoading = isUserLoading || isAboutLoading || isIdentitiesLoading
+  const isLoading =
+    isUserLoading ||
+    isAboutLoading ||
+    isIdentitiesLoading ||
+    isChangeEmailPending ||
+    isChangePasswordPending
 
   if (isLoading || !user) {
     return (
@@ -256,7 +288,6 @@ export default function ProfilePage() {
                       email: user.email,
                       imageUrl: user.imageUrl ?? ''
                     })
-                    setProfileStatus(null)
                     setAvatarFileName(null)
                   }}
                 >
@@ -264,18 +295,6 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
-            {profileStatus ? (
-              <p
-                className={
-                  profileStatus.type === 'error'
-                    ? 'text-destructive text-sm'
-                    : 'text-sm text-emerald-600'
-                }
-                role="status"
-              >
-                {profileStatus.message}
-              </p>
-            ) : null}
           </CardContent>
         </Card>
 
@@ -343,25 +362,12 @@ export default function ProfilePage() {
                   variant="outline"
                   onClick={() => {
                     setPasswordForm(getPasswordInitialState())
-                    setPasswordStatus(null)
                   }}
                 >
                   {t('cancelPasswordButton')}
                 </Button>
               </div>
             </form>
-            {passwordStatus ? (
-              <p
-                className={
-                  passwordStatus.type === 'error'
-                    ? 'text-destructive text-sm'
-                    : 'text-sm text-emerald-600'
-                }
-                role="status"
-              >
-                {passwordStatus.message}
-              </p>
-            ) : null}
           </CardContent>
         </Card>
       </div>

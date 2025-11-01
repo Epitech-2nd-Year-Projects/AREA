@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import { useAboutQuery, extractServices } from '@/lib/api/openapi/about'
 import {
@@ -39,6 +40,13 @@ export default function ExploreServicePage() {
   const queryClient = useQueryClient()
 
   const { data, isLoading: isServicesLoading, isError } = useAboutQuery()
+
+  useEffect(() => {
+    if (isError) {
+      toast.error(t('errorLoading'))
+    }
+  }, [isError, t])
+
   const {
     data: userData,
     isLoading: isUserLoading,
@@ -114,13 +122,7 @@ export default function ExploreServicePage() {
   }
 
   if (isError || !service) {
-    return (
-      <div className="mx-auto max-w-2xl py-24 text-center">
-        <p className="text-destructive text-sm">
-          {isError ? t('errorLoading') : t('serviceNotFound')}
-        </p>
-      </div>
-    )
+    return null
   }
 
   const handleDisconnectConfirm = async () => {
@@ -131,7 +133,7 @@ export default function ExploreServicePage() {
     try {
       await unsubscribeService({ provider: service.name })
     } catch {
-      // TODO: show an error toast
+      toast.error(t('disconnectError'))
     }
   }
 
@@ -184,7 +186,7 @@ export default function ExploreServicePage() {
           }
           router.refresh()
         } catch {
-          // TODO: Error toast
+          toast.error(t('connectError'))
         }
       }
     : () => router.push('/register')

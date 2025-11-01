@@ -9,6 +9,7 @@ import {
   useLoginMutation
 } from '@/lib/api/openapi/auth'
 import { ApiError } from '@/lib/api/http/errors'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -46,7 +47,6 @@ export function LoginForm({
     useExchangeOAuthMutation()
   const isPending = loginMutation.isPending
   const isOAuthPending = isAuthorizePending || isExchangePending
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [resendFeedback, setResendFeedback] = useState<FeedbackState | null>(
@@ -77,7 +77,6 @@ export function LoginForm({
       const normalizedEmail = emailParam.trim()
       setStatusMessage(t('emailNotVerified', { email: normalizedEmail }))
       setUnverifiedEmail(normalizedEmail)
-      setErrorMessage(null)
       setResendFeedback({
         message: tAuth('resendVerificationSuccess', { email: normalizedEmail }),
         variant: 'success'
@@ -109,9 +108,9 @@ export function LoginForm({
       setResendFeedback(null)
       setUnverifiedEmail(null)
       if (oauthError === 'access_denied') {
-        setErrorMessage(t('oauth.canceled'))
+        toast.error(t('oauth.canceled'))
       } else {
-        setErrorMessage(t('oauth.exchangeFailed'))
+        toast.error(t('oauth.exchangeFailed'))
       }
       cleanAndReplace()
       return
@@ -124,7 +123,6 @@ export function LoginForm({
     let cancelled = false
 
     const runExchange = async () => {
-      setErrorMessage(null)
       setResendFeedback(null)
       setUnverifiedEmail(null)
       setStatusMessage(t('oauth.exchanging'))
@@ -134,7 +132,7 @@ export function LoginForm({
       if (!storedState) {
         clearOAuthState(GOOGLE_PROVIDER)
         setStatusMessage(null)
-        setErrorMessage(t('oauth.stateMismatch'))
+        toast.error(t('oauth.stateMismatch'))
         cleanAndReplace()
         return
       }
@@ -142,7 +140,7 @@ export function LoginForm({
       if (storedState.state && stateParam && storedState.state !== stateParam) {
         clearOAuthState(GOOGLE_PROVIDER)
         setStatusMessage(null)
-        setErrorMessage(t('oauth.stateMismatch'))
+        toast.error(t('oauth.stateMismatch'))
         cleanAndReplace()
         return
       }
@@ -162,7 +160,6 @@ export function LoginForm({
 
         clearOAuthState(GOOGLE_PROVIDER)
         setStatusMessage(null)
-        setErrorMessage(null)
         setResendFeedback(null)
         setUnverifiedEmail(null)
 
@@ -178,14 +175,14 @@ export function LoginForm({
 
         if (error instanceof ApiError) {
           if (error.status === 404) {
-            setErrorMessage(t('oauth.unavailable'))
+            toast.error(t('oauth.unavailable'))
           } else if (error.status === 400) {
-            setErrorMessage(t('oauth.exchangeFailed'))
+            toast.error(t('oauth.exchangeFailed'))
           } else {
-            setErrorMessage(t('errors.generic'))
+            toast.error(t('errors.generic'))
           }
         } else {
-          setErrorMessage(t('errors.generic'))
+          toast.error(t('errors.generic'))
         }
 
         const cleanPath = buildCleanOAuthPath(params)
@@ -209,17 +206,16 @@ export function LoginForm({
     const email = String(formData.get('email') ?? '').trim()
     const password = String(formData.get('password') ?? '')
 
-    setErrorMessage(null)
     setStatusMessage(null)
     setResendFeedback(null)
 
     if (!email) {
-      setErrorMessage(t('errors.emailRequired'))
+      toast.error(t('errors.emailRequired'))
       return
     }
 
     if (!password) {
-      setErrorMessage(t('errors.passwordRequired'))
+      toast.error(t('errors.passwordRequired'))
       return
     }
 
@@ -232,7 +228,7 @@ export function LoginForm({
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 400) {
-          setErrorMessage(t('errors.invalidCredentials'))
+          toast.error(t('errors.invalidCredentials'))
           setUnverifiedEmail(null)
           return
         }
@@ -246,7 +242,7 @@ export function LoginForm({
           return
         }
       }
-      setErrorMessage(t('errors.generic'))
+      toast.error(t('errors.generic'))
       setUnverifiedEmail(null)
     }
   }
@@ -254,7 +250,6 @@ export function LoginForm({
   const handleGoogleLogin = async () => {
     if (typeof window === 'undefined') return
 
-    setErrorMessage(null)
     setStatusMessage(null)
     setResendFeedback(null)
     setUnverifiedEmail(null)
@@ -298,12 +293,12 @@ export function LoginForm({
 
       if (error instanceof ApiError) {
         if (error.status === 404) {
-          setErrorMessage(t('oauth.unavailable'))
+          toast.error(t('oauth.unavailable'))
         } else {
-          setErrorMessage(t('oauth.initFailed'))
+          toast.error(t('oauth.initFailed'))
         }
       } else {
-        setErrorMessage(t('errors.generic'))
+        toast.error(t('errors.generic'))
       }
     }
   }
@@ -356,11 +351,7 @@ export function LoginForm({
                   )}
                 </div>
               ) : null}
-              {errorMessage ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {errorMessage}
-                </p>
-              ) : null}
+
               <div className="grid gap-3">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input

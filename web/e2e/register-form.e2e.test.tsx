@@ -35,8 +35,15 @@ vi.mock('@/lib/api/openapi/users', () => ({
   })
 }))
 
+vi.mock('sonner', () => ({
+  toast: {
+    error: vi.fn()
+  }
+}))
+
 import { RegisterForm } from '@/components/authentication/register-form'
 import enMessages from '../messages/en.json'
+import { toast } from 'sonner'
 
 const renderForm = () =>
   render(
@@ -66,10 +73,11 @@ describe('RegisterForm (integration)', () => {
     expect(form).not.toBeNull()
     fireEvent.submit(form!)
 
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent(
-      enMessages.RegisterPage.errors.emailRequired
-    )
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        enMessages.RegisterPage.errors.emailRequired
+      )
+    })
     expect(mutateAsyncMock).not.toHaveBeenCalled()
   })
 
@@ -103,10 +111,11 @@ describe('RegisterForm (integration)', () => {
     expect(form).not.toBeNull()
     fireEvent.submit(form!)
 
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent(
-      enMessages.RegisterPage.errors.passwordMismatch
-    )
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        enMessages.RegisterPage.errors.passwordMismatch
+      )
+    })
     expect(mutateAsyncMock).not.toHaveBeenCalled()
   })
 

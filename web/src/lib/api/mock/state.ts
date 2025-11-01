@@ -94,6 +94,7 @@ export function toUserDTO(user: User): UserDTO {
   return {
     id: user.id,
     email: user.email,
+    role: user.role,
     status: meta.status,
     createdAt: new Date(meta.createdAt).toISOString(),
     updatedAt: new Date(meta.updatedAt).toISOString(),

@@ -13,7 +13,10 @@ import {
   OAuthAuthorizationResponseDTO,
   IdentityListResponseDTO,
   UserResponseDTO,
-  VerifyEmailRequestDTO
+  VerifyEmailRequestDTO,
+  ChangePasswordRequestDTO,
+  ChangeEmailRequestDTO,
+  EmailChangeResponseDTO
 } from '@/lib/api/contracts/openapi/auth'
 import { authKeys } from './query-keys'
 import { authQueries } from './queries'
@@ -77,10 +80,24 @@ type AuthorizeOAuthMutationOptions = {
 type ExchangeOAuthMutationOptions = {
   clientOptions?: ClientRequestOptions
 } & Omit<
+  UseMutationOptions<AuthSessionResponseDTO, ApiError, ExchangeOAuthVariables>,
+  'mutationFn' | 'mutationKey'
+>
+
+type ChangePasswordMutationOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
+  UseMutationOptions<void, ApiError, ChangePasswordRequestDTO, unknown>,
+  'mutationFn' | 'mutationKey'
+>
+
+type ChangeEmailMutationOptions = {
+  clientOptions?: ClientRequestOptions
+} & Omit<
   UseMutationOptions<
-    AuthSessionResponseDTO,
+    EmailChangeResponseDTO,
     ApiError,
-    ExchangeOAuthVariables,
+    ChangeEmailRequestDTO,
     unknown
   >,
   'mutationFn' | 'mutationKey'
@@ -168,6 +185,31 @@ export function useExchangeOAuthMutation(
   const { clientOptions, onSuccess, ...mutationOptions } = options ?? {}
   return useMutation({
     ...authMutations.exchangeOAuth({ clientOptions }),
+    onSuccess: async (data, variables, context, mutation) => {
+      await invalidateAuthUser(queryClient)
+      if (onSuccess) {
+        await onSuccess(data, variables, context, mutation)
+      }
+    },
+    ...mutationOptions
+  })
+}
+
+export function useChangePasswordMutation(
+  options?: ChangePasswordMutationOptions
+) {
+  const { clientOptions, ...mutationOptions } = options ?? {}
+  return useMutation({
+    ...authMutations.changePassword({ clientOptions }),
+    ...mutationOptions
+  })
+}
+
+export function useChangeEmailMutation(options?: ChangeEmailMutationOptions) {
+  const queryClient = useQueryClient()
+  const { clientOptions, onSuccess, ...mutationOptions } = options ?? {}
+  return useMutation({
+    ...authMutations.changeEmail({ clientOptions }),
     onSuccess: async (data, variables, context, mutation) => {
       await invalidateAuthUser(queryClient)
       if (onSuccess) {
