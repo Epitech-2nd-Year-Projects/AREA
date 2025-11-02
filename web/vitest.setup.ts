@@ -4,18 +4,38 @@ import React from 'react'
 import { vi } from 'vitest'
 
 vi.mock('next/link', () => {
-  const NextLinkMock = React.forwardRef<
-    HTMLAnchorElement,
-    React.ComponentPropsWithoutRef<'a'> & { href: string | URL }
-  >(({ href, children, ...props }, ref) => {
-    const resolvedHref = href ? String(href) : ''
+  type NextLinkProps = React.ComponentPropsWithoutRef<'a'> & {
+    href: string | URL
+    prefetch?: boolean
+    replace?: boolean
+    scroll?: boolean
+    shallow?: boolean
+    passHref?: boolean
+    legacyBehavior?: boolean
+    locale?: string
+  }
 
-    return React.createElement(
-      'a',
-      { ...props, href: resolvedHref, ref },
-      children
-    )
-  })
+  const NextLinkMock = React.forwardRef<HTMLAnchorElement, NextLinkProps>(
+    ({ href, children, ...props }, ref) => {
+      const resolvedHref = href ? String(href) : ''
+      const {
+        prefetch: _prefetch,
+        replace: _replace,
+        scroll: _scroll,
+        shallow: _shallow,
+        passHref: _passHref,
+        legacyBehavior: _legacyBehavior,
+        locale: _locale,
+        ...anchorProps
+      } = props
+
+      return React.createElement(
+        'a',
+        { ...anchorProps, href: resolvedHref, ref },
+        children
+      )
+    }
+  )
   NextLinkMock.displayName = 'NextLinkMock'
 
   return {

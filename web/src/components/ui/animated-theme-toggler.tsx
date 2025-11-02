@@ -3,8 +3,9 @@
 import { Moon, SunDim } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 type props = {
   className?: string
@@ -12,6 +13,7 @@ type props = {
 
 export const AnimatedThemeToggler = ({ className }: props) => {
   const { resolvedTheme, setTheme } = useTheme()
+  const t = useTranslations('Common.themeSwitcher')
   const [mounted, setMounted] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
@@ -70,7 +72,14 @@ export const AnimatedThemeToggler = ({ className }: props) => {
   if (!mounted) return null
 
   return (
-    <button ref={buttonRef} onClick={changeTheme} className={cn(className)}>
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={changeTheme}
+      aria-pressed={isDarkMode}
+      aria-label={isDarkMode ? t('switchToLight') : t('switchToDark')}
+      className={cn(className)}
+    >
       {isDarkMode ? <SunDim /> : <Moon />}
     </button>
   )

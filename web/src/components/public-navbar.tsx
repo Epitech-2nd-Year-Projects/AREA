@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler'
+import { LanguageSwitcher } from './ui/language-switcher'
 import {
   useCurrentUserQuery,
   mapUserDTOToUser,
@@ -179,6 +180,7 @@ export function PublicNavbar({
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                <LanguageSwitcher />
                 <AnimatedThemeToggler />
                 {!effectiveIsAuthenticated ? (
                   <>
@@ -277,6 +279,7 @@ export function PublicNavbar({
                       </Accordion>
 
                       <div className="flex flex-col gap-3">
+                        <LanguageSwitcher />
                         <AnimatedThemeToggler />
                         {!effectiveIsAuthenticated ? (
                           <>
