@@ -64,19 +64,32 @@ class ServiceCard extends StatelessWidget {
               final titleFontSize = isSmall ? 15.0 : 16.0;
               final categoryFontSize = isSmall ? 11.0 : 12.0;
 
-              return Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _buildServiceIcon(iconSize),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTitle(context, titleFontSize),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildCategory(context, categoryFontSize),
-                  ],
-                ),
+              return Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildServiceIcon(iconSize),
+                          const SizedBox(height: AppSpacing.md),
+                          _buildTitle(context, titleFontSize),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildCategory(context, categoryFontSize),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (service.isSubscribed)
+                    Positioned(
+                      top: AppSpacing.sm,
+                      right: AppSpacing.sm,
+                      child: _buildSubscribedBadge(),
+                    ),
+                ],
               );
             },
           ),
@@ -181,5 +194,25 @@ class ServiceCard extends StatelessWidget {
       case ServiceCategory.other:
         return isDark ? AppColors.otherDark : AppColors.otherWhite;
     }
+  }
+
+  Widget _buildSubscribedBadge() {
+    return Container(
+      height: 22,
+      width: 22,
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.55),
+          width: 0.8,
+        ),
+      ),
+      child: Icon(
+        Icons.verified_rounded,
+        size: 14,
+        color: AppColors.success,
+      ),
+    );
   }
 }
