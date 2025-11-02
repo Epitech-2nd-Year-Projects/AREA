@@ -860,6 +860,64 @@ paths:
         '401':
           description: Authentication required
   /v1/areas/{areaId}:
+    get:
+      summary: Retrieve an automation owned by the current user
+      operationId: getArea
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Automation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
+    patch:
+      summary: Update an automation owned by the current user
+      operationId: updateArea
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAreaRequest'
+      responses:
+        '200':
+          description: Automation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
     delete:
       summary: Delete an automation owned by the current user
       operationId: deleteArea
@@ -905,6 +963,108 @@ paths:
           description: Area not found
         '500':
           description: Failed to execute reactions
+  /v1/areas/{areaId}/status:
+    patch:
+      summary: Update the lifecycle status of an automation
+      operationId: updateAreaStatus
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAreaStatusRequest'
+      responses:
+        '200':
+          description: Updated automation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '400':
+          description: Invalid status
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
+  /v1/areas/{areaId}/duplicate:
+    post:
+      summary: Duplicate an automation and persist the copy for the current user
+      operationId: duplicateArea
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateAreaRequest'
+      responses:
+        '201':
+          description: Automation duplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
+  /v1/areas/{areaId}/history:
+    get:
+      summary: List recent executions for an automation
+      operationId: listAreaHistory
+      tags:
+        - areas
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+          description: Maximum number of executions to return (default 50)
+      responses:
+        '200':
+          description: Execution history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaHistoryResponse'
+        '401':
+          description: Authentication required
+        '403':
+          description: Area owned by another user
+        '404':
+          description: Area not found
   /v1/admin/users/{userId}/password:
     patch:
       summary: Reset user password
@@ -1487,6 +1647,142 @@ components:
           description: Persisted configuration parameters supplied when creating the AREA.
         component:
           $ref: '#/components/schemas/ComponentSummary'
+    UpdateAreaRequest:
+      type: object
+      description: Patch payload allowing partial updates of an automation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: New display name for the automation.
+        description:
+          type: string
+          nullable: true
+          maxLength: 512
+          description: Updated summary or null to clear the description.
+        action:
+          $ref: '#/components/schemas/UpdateAreaAction'
+        reactions:
+          type: array
+          description: Reaction configurations to update.
+          items:
+            $ref: '#/components/schemas/UpdateAreaReaction'
+    UpdateAreaAction:
+      type: object
+      description: Partial update instructions for the automation action.
+      required: [configId]
+      properties:
+        configId:
+          type: string
+          format: uuid
+          description: Identifier of the existing action configuration to update.
+        name:
+          type: string
+          maxLength: 128
+          description: Optional nickname saved alongside the configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Replacement configuration parameters.
+    UpdateAreaReaction:
+      type: object
+      description: Partial update instructions for a reaction configuration.
+      required: [configId]
+      properties:
+        configId:
+          type: string
+          format: uuid
+          description: Identifier of the reaction configuration to update.
+        name:
+          type: string
+          maxLength: 128
+          description: Optional nickname saved alongside the configuration.
+        params:
+          type: object
+          additionalProperties: true
+          description: Replacement configuration parameters.
+    UpdateAreaStatusRequest:
+      type: object
+      description: Payload used to update the lifecycle status of an automation.
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [enabled, disabled, archived]
+          description: Desired lifecycle status.
+    DuplicateAreaRequest:
+      type: object
+      description: Optional overrides applied when duplicating an automation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Name assigned to the duplicated automation.
+        description:
+          type: string
+          nullable: true
+          maxLength: 512
+          description: Description stored on the duplicated automation.
+    AreaHistoryResponse:
+      type: object
+      description: Collection of recent execution attempts for an automation.
+      required: [executions]
+      properties:
+        executions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaHistoryEntry'
+          description: Ordered list of executions starting with the most recent.
+    AreaHistoryEntry:
+      type: object
+      description: Historical execution of a reaction within the automation.
+      required: [jobId, status, attempt, runAt, createdAt, updatedAt, reaction]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Identifier of the reaction job.
+        status:
+          type: string
+          description: Execution status (`queued`, `running`, `succeeded`, `failed`, etc.).
+        attempt:
+          type: integer
+          description: Attempt count for the execution.
+        runAt:
+          type: string
+          format: date-time
+          description: Scheduled execution time.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the job was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the last job update.
+        error:
+          type: string
+          nullable: true
+          description: Error message if the execution failed.
+        resultPayload:
+          type: object
+          additionalProperties: true
+          description: Result payload captured after execution.
+        reaction:
+          $ref: '#/components/schemas/AreaHistoryReaction'
+    AreaHistoryReaction:
+      type: object
+      description: Reaction metadata associated with the execution.
+      required: [component, provider]
+      properties:
+        component:
+          type: string
+          description: Display name of the reaction component.
+        provider:
+          type: string
+          description: Service provider powering the reaction.
     ComponentSummary:
       type: object
       description: Minimal catalog metadata required by clients to render a component reference.
