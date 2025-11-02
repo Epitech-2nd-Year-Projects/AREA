@@ -60,6 +60,17 @@ export async function apiFetchClient<T>(
     await parseAndThrowApiError(res)
   }
 
-  if (res.status === 204) return undefined as T
-  return (await res.json()) as T
+  if (res.status === 204 || res.status === 205) return undefined as T
+
+  const rawBody = await res.text()
+  if (!rawBody) return undefined as T
+
+  const trimmedBody = rawBody.trim()
+  if (!trimmedBody) return undefined as T
+
+  try {
+    return JSON.parse(trimmedBody) as T
+  } catch (error) {
+    throw error
+  }
 }
