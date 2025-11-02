@@ -88,3 +88,9 @@ GitHub Actions runs:
 - **Go server**: `cd server && go run ./cmd/server`
 - **Web**: `cd web && npm run dev`
 - **Mobile**: `cd mobile && flutter run`
+
+---
+
+## Contribution guide
+
+Read `HOWTOCONTRIBUTE.md` for step-by-step instructions on extending the platform (branch naming, migrations, API updates, and client sync).
