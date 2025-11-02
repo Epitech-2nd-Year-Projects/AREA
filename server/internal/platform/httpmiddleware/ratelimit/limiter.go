@@ -43,28 +43,39 @@ func (l *sessionLimiter) allow(now time.Time) (bool, time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.lastSeen = now
+	inactive := now.Sub(l.lastSeen)
+	if !l.burstStart.IsZero() && inactive >= l.burstWindow {
+		l.burstStart = time.Time{}
+		if l.burst != nil {
+			l.burst.reset(now)
+		}
+	}
+
+	inBurst := l.burst != nil && !l.burstStart.IsZero()
+	if inBurst && now.Sub(l.burstStart) >= l.burstWindow {
+		l.lastSeen = now
+		return false, l.nextRetry(now)
+	}
 
 	if l.base.allow(now) {
-		l.burstStart = time.Time{}
+		l.lastSeen = now
 		return true, 0
 	}
 
 	if l.burst == nil || l.burstWindow <= 0 {
-		return false, l.nextRetry(now)
-	}
-
-	if !l.burstStart.IsZero() && now.Sub(l.burstStart) >= l.burstWindow {
+		l.lastSeen = now
 		return false, l.nextRetry(now)
 	}
 
 	if l.burst.allow(now) {
-		if l.burstStart.IsZero() {
+		if !inBurst {
 			l.burstStart = now
 		}
+		l.lastSeen = now
 		return true, 0
 	}
 
+	l.lastSeen = now
 	return false, l.nextRetry(now)
 }
 
@@ -135,6 +146,11 @@ func (b *tokenBucket) refill(now time.Time) {
 	if b.tokens > b.capacity {
 		b.tokens = b.capacity
 	}
+	b.lastRefill = now
+}
+
+func (b *tokenBucket) reset(now time.Time) {
+	b.tokens = b.capacity
 	b.lastRefill = now
 }
 
