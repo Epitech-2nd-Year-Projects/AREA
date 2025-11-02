@@ -232,6 +232,9 @@ func run() error {
 			provisionerRegistry,
 		)
 
+		jobRepo := executionpostgres.NewJobRepository(db)
+		logRepo := executionpostgres.NewDeliveryLogRepository(db)
+
 		areaCookies := areaapp.CookieConfig{
 			Name:     cfg.Security.Sessions.CookieName,
 			Domain:   cfg.Security.Sessions.Domain,
@@ -240,7 +243,7 @@ func run() error {
 			HTTPOnly: cfg.Security.Sessions.HTTPOnly,
 			SameSite: parseSameSite(cfg.Security.Sessions.SameSite),
 		}
-		areaHandler = areaapp.NewHandler(areaService, authService, areaCookies)
+		areaHandler = areaapp.NewHandler(areaService, authService, areaCookies, jobRepo)
 		webhookHandler = areaapp.NewWebhookHandler(areaService, logger)
 
 		componentHandler = componentapp.NewHandler(
@@ -382,8 +385,6 @@ func run() error {
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)
 
-		jobRepo := executionpostgres.NewJobRepository(db)
-		logRepo := executionpostgres.NewDeliveryLogRepository(db)
 		jobWorker = automation.NewWorker(jobQueue, jobRepo, logRepo, areaService, reactionExecutor, logger)
 
 		monitorService := monitorapp.NewService(jobRepo, logRepo)
