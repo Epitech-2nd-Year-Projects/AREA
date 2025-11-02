@@ -5,6 +5,7 @@ import '../../domain/repositories/area_repository.dart';
 import '../datasources/area_remote_datasource.dart';
 import '../models/area_model.dart';
 import '../models/area_request_model.dart';
+import '../models/area_update_request_model.dart';
 
 class AreaRepositoryImpl implements AreaRepository {
   final AreaRemoteDataSource _remote;
@@ -25,9 +26,12 @@ class AreaRepositoryImpl implements AreaRepository {
   }
 
   @override
-  Future<Area> updateArea(String areaId, AreaDraft draft) async {
-    final request = AreaRequestModel.fromDraft(draft);
-    final model = await _remote.updateArea(areaId, request);
+  Future<Area> updateArea(Area initial, AreaDraft draft) async {
+    final request = AreaUpdateRequestModel.fromArea(initial, draft);
+    if (request.isEmpty) {
+      throw Exception('No changes detected.');
+    }
+    final model = await _remote.updateArea(initial.id, request);
     return model.toEntity();
   }
 
