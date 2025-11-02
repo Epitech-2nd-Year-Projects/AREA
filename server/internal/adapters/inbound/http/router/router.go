@@ -111,6 +111,46 @@ func (h compositeHandler) CreateArea(c *gin.Context) {
 	h.area.CreateArea(c)
 }
 
+func (h compositeHandler) GetArea(c *gin.Context, areaID openapitypes.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.GetArea(c, areaID)
+}
+
+func (h compositeHandler) UpdateArea(c *gin.Context, areaID openapitypes.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.UpdateArea(c, areaID)
+}
+
+func (h compositeHandler) UpdateAreaStatus(c *gin.Context, areaID openapitypes.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.UpdateAreaStatus(c, areaID)
+}
+
+func (h compositeHandler) DuplicateArea(c *gin.Context, areaID openapitypes.UUID) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.DuplicateArea(c, areaID)
+}
+
+func (h compositeHandler) ListAreaHistory(c *gin.Context, areaID openapitypes.UUID, params openapi.ListAreaHistoryParams) {
+	if h.area == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "area handler missing"})
+		return
+	}
+	h.area.ListAreaHistory(c, areaID, params)
+}
+
 func (h compositeHandler) VerifyEmail(c *gin.Context) {
 	if h.auth == nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": "auth handler missing"})
