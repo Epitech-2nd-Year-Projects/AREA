@@ -171,7 +171,7 @@
     "adminUsers": "Users management",
     "myArea": "My area",
     "services": "Services",
-    "links": "Links"
+    "areas": "Areas"
   },
   "SidebarUserNavigation": {
     "profile": "Profile",
@@ -222,7 +222,7 @@
       "save": "Save changes"
     }
   },
-  "LinksPage": {
+  "AreasPage": {
     "searchAreas": "Search areas...",
     "loadingAreas": "Loading your AREAs...",
     "errorLoadingAreas": "We couldn't load your AREAs. Please try again.",

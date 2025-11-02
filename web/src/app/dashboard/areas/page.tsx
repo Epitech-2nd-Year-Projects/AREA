@@ -7,9 +7,9 @@ import { useMemo, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAreasQuery } from '@/lib/api/openapi/areas'
 
-export default function LinksPage() {
+export default function AreasPage() {
   const locale = useLocale()
-  const t = useTranslations('LinksPage')
+  const t = useTranslations('AreasPage')
   const { data: areas, isLoading, isError, error } = useAreasQuery()
   const [searchValue, setSearchValue] = useState('')
 

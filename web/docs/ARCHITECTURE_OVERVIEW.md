@@ -235,7 +235,7 @@ createArea.mutate(payload)
 | ----------------------- | ---------------------------------------------------------- | ---------------------------------------- |
 | **Authentication**      | `components/authentication/*`, `/login`, `/register`       | `lib/api/openapi/auth`                   |
 | **Services**            | `components/services/*`, `/dashboard`                      | `lib/api/openapi/services`               |
-| **Areas (Automations)** | `components/areas/*`, `/dashboard/links`                   | `lib/api/openapi/areas`, `components`    |
+| **Areas (Automations)** | `components/areas/*`, `/dashboard/areas`                   | `lib/api/openapi/areas`, `components`    |
 | **Accounts**            | `/dashboard/profile`, `components/dashboard/user-dropdown` | `lib/api/openapi/users`                  |
 | **Marketing**           | `(public)/*`                                               | `lib/api/openapi/about` (mocked content) |
 
