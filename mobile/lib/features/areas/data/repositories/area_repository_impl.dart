@@ -1,5 +1,6 @@
 import '../../domain/entities/area.dart';
 import '../../domain/entities/area_draft.dart';
+import '../../domain/entities/area_history_entry.dart';
 import '../../domain/entities/area_status.dart';
 import '../../domain/repositories/area_repository.dart';
 import '../datasources/area_remote_datasource.dart';
@@ -39,6 +40,15 @@ class AreaRepositoryImpl implements AreaRepository {
   Future<Area> updateAreaStatus(String areaId, AreaStatus status) async {
     final model = await _remote.updateAreaStatus(areaId, status);
     return model.toEntity();
+  }
+
+  @override
+  Future<List<AreaHistoryEntry>> getAreaHistory(
+    String areaId, {
+    int limit = 5,
+  }) async {
+    final models = await _remote.getAreaHistory(areaId, limit: limit);
+    return models.map((model) => model.toEntity()).toList();
   }
 
   @override
