@@ -2,7 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { Area } from '@/lib/api/contracts/areas'
+import { useUpdateAreaStatusMutation } from '@/lib/api/openapi/areas'
 import {
   ChevronDownIcon,
   CopyIcon,
@@ -49,12 +51,40 @@ export function AreaCard({ area }: AreaCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDuplicateOpen, setIsDuplicateOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const updateStatusMutation = useUpdateAreaStatusMutation(area.id, {
+    onSuccess: (updatedArea) => {
+      setIsEnabled(updatedArea.enabled)
+      toast.success(
+        updatedArea.enabled
+          ? t('statusEnabled', { area: updatedArea.name })
+          : t('statusDisabled', { area: updatedArea.name })
+      )
+    },
+    onError: (error) => {
+      setIsEnabled(area.enabled)
+      toast.error(error.message || t('statusError'))
+    }
+  })
 
   useEffect(() => {
     setIsEnabled(area.enabled)
   }, [area.enabled])
 
   const toggleLabel = isEnabled ? t('disableArea') : t('enableArea')
+
+  const handleToggleArea = () => {
+    if (updateStatusMutation.isPending) {
+      return
+    }
+
+    const nextEnabled = !isEnabled
+    setIsEnabled(nextEnabled)
+    updateStatusMutation
+      .mutateAsync({ status: nextEnabled ? 'enabled' : 'disabled' })
+      .catch(() => {
+        setIsEnabled(area.enabled)
+      })
+  }
 
   return (
     <>
@@ -80,7 +110,8 @@ export function AreaCard({ area }: AreaCardProps) {
                     size="icon"
                     className="size-8 cursor-pointer"
                     aria-label={toggleLabel}
-                    onClick={() => setIsEnabled((prev) => !prev)}
+                    onClick={handleToggleArea}
+                    disabled={updateStatusMutation.isPending}
                   >
                     <PowerIcon
                       className={cn(
@@ -155,12 +186,12 @@ export function AreaCard({ area }: AreaCardProps) {
         onOpenChange={setIsEditOpen}
       />
       <DuplicateAreaModal
-        areaName={area.name}
+        area={area}
         open={isDuplicateOpen}
         onOpenChange={setIsDuplicateOpen}
       />
       <DeleteAreaModal
-        areaName={area.name}
+        area={area}
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
       />

@@ -160,7 +160,10 @@
     "duplicateArea": "Duplicate Area",
     "deleteArea": "Delete Area",
     "enableArea": "Enable Area",
-    "disableArea": "Disable Area"
+    "disableArea": "Disable Area",
+    "statusEnabled": "{area} is now enabled.",
+    "statusDisabled": "{area} is now disabled.",
+    "statusError": "Failed to update the AREA status."
   },
   "Sidebar": {
     "admin": "Admin",
@@ -309,19 +312,27 @@
     "areaDescriptionLabel": "AREA description",
     "areaDescriptionPlaceholder": "Describe what your AREA will do",
     "cancel": "Cancel",
-    "submit": "Save changes"
+    "submit": "Save changes",
+    "success": "{area} has been updated.",
+    "error": "We couldn't update this AREA.",
+    "nameRequired": "A name is required to save your AREA.",
+    "noChanges": "No changes detected."
   },
   "DuplicateAreaModal": {
     "title": "Duplicate AREA",
     "description": "A copy of {area} will be created. You can adjust the details after duplication.",
     "cancel": "Cancel",
-    "confirm": "Duplicate"
+    "confirm": "Duplicate",
+    "success": "{area} was duplicated.",
+    "error": "Unable to duplicate this AREA."
   },
   "DeleteAreaModal": {
     "title": "Delete AREA",
     "description": "Are you sure you want to delete {area}? This action cannot be undone.",
     "cancel": "Cancel",
-    "confirm": "Delete"
+    "confirm": "Delete",
+    "success": "{area} was deleted.",
+    "error": "Unable to delete this AREA."
   },
   "TestRunAreaModal": {
     "title": "Test run",
@@ -329,14 +340,18 @@
     "summaryTitle": "Latest test summary",
     "statusIdle": "Not run",
     "statusCompleted": "Completed",
+    "statusRunning": "Running",
     "idleDescription": "Trigger a test run to simulate the workflow and review the results.",
+    "runningDescription": "Hold on while we trigger this AREA and gather the outcome.",
     "runAt": "Simulated at {date}",
     "actionHeading": "Action",
     "reactionsHeading": "Reactions",
     "noReactions": "No reactions configured.",
     "close": "Close",
     "runTest": "Run test",
-    "runAgain": "Run again"
+    "runAgain": "Run again",
+    "success": "Test run triggered for {area}.",
+    "error": "Unable to trigger the test run."
   },
   "ComponentConfigSheet": {
     "titleAction": "Configure {componentName}",
@@ -366,6 +381,7 @@
     "empty": "No runs recorded yet.",
     "statusSuccess": "Success",
     "statusFailure": "Failed",
+    "statusGeneric": "{status}",
     "successSummary": "{count, plural, one {# reaction completed} other {# reactions completed}} in {duration}.",
     "failureSummary": "Failed after {duration}. {error}",
     "triggeredBy": "Triggered by {action}",
@@ -373,7 +389,11 @@
     "durationSeconds": "{seconds} s",
     "duration": "Duration: {duration}",
     "close": "Close",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "loading": "Loading history...",
+    "error": "Unable to load the run history.",
+    "retry": "Retry",
+    "durationUnavailable": "not available"
   },
   "ExploreServicePage": {
     "loading": "Loading service details...",

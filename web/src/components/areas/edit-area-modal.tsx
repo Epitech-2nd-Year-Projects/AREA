@@ -8,11 +8,16 @@ import {
   TrashIcon
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { mockActions, mockReactions, mockServices } from '@/lib/api/mock'
 import { Area } from '@/lib/api/contracts/areas'
 import { Action } from '@/lib/api/contracts/actions'
 import { Reaction } from '@/lib/api/contracts/reactions'
-import type { ComponentParameterDTO } from '@/lib/api/contracts/openapi/areas'
+import type {
+  ComponentParameterDTO,
+  UpdateAreaRequestDTO
+} from '@/lib/api/contracts/openapi/areas'
+import { useUpdateAreaMutation } from '@/lib/api/openapi/areas'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import {
@@ -199,6 +204,17 @@ export function EditAreaModal({
     setAreaDescription(area.description)
   }, [area])
 
+  const updateMutation = useUpdateAreaMutation(area.id, {
+    onSuccess: () => {
+      toast.success(t('success', { area: area.name }))
+      resetForm()
+      onOpenChange(false)
+    },
+    onError: (error) => {
+      toast.error(error.message || t('error'))
+    }
+  })
+
   useEffect(() => {
     if (!open) {
       resetForm()
@@ -214,6 +230,7 @@ export function EditAreaModal({
   const handleDialogOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       resetForm()
+      updateMutation.reset()
     }
 
     onOpenChange(nextOpen)
@@ -376,12 +393,36 @@ export function EditAreaModal({
       ? (actionConfig ?? createEmptyComponentConfig())
       : (currentReactionField?.config ?? createEmptyComponentConfig())
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    // TODO: Wire up AREA update once the backend endpoint is available.
-    resetForm()
-    onOpenChange(false)
+    const trimmedName = areaName.trim()
+    if (!trimmedName) {
+      toast.error(t('nameRequired'))
+      return
+    }
+
+    const payload: UpdateAreaRequestDTO = {}
+    if (trimmedName !== area.name) {
+      payload.name = trimmedName
+    }
+
+    const descriptionChanged = areaDescription !== area.description
+    if (descriptionChanged) {
+      payload.description = areaDescription ? areaDescription : null
+    }
+
+    if (Object.keys(payload).length === 0) {
+      toast.info(t('noChanges'))
+      onOpenChange(false)
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync(payload)
+    } catch {
+      // handled via onError
+    }
   }
 
   return (
@@ -498,7 +539,9 @@ export function EditAreaModal({
                 {t('cancel')}
               </Button>
             </DialogClose>
-            <Button type="submit">{t('submit')}</Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {t('submit')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

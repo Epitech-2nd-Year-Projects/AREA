@@ -21,3 +21,20 @@ export type Area = {
   action: AreaComponent
   reactions: AreaComponent[]
 }
+
+export type AreaHistoryReaction = {
+  component: string
+  provider: string
+}
+
+export type AreaHistoryEntry = {
+  jobId: string
+  status: string
+  attempt: number
+  runAt: Date
+  createdAt: Date
+  updatedAt: Date
+  error?: string | null
+  resultPayload?: Record<string, unknown>
+  reaction: AreaHistoryReaction
+}

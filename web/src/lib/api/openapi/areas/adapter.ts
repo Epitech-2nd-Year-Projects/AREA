@@ -1,7 +1,14 @@
-import type { Area, AreaComponent, AreaStatus } from '@/lib/api/contracts/areas'
+import type {
+  Area,
+  AreaComponent,
+  AreaHistoryEntry,
+  AreaStatus
+} from '@/lib/api/contracts/areas'
 import type {
   AreaComponentDTO,
   AreaDTO,
+  AreaHistoryEntryDTO,
+  AreaHistoryResponseDTO,
   ListAreasResponseDTO
 } from '@/lib/api/contracts/openapi/areas'
 
@@ -61,4 +68,49 @@ export function mapAreaDTOToArea(dto: AreaDTO): Area {
 
 export function mapListAreasResponse(response: ListAreasResponseDTO): Area[] {
   return response.areas.map(mapAreaDTOToArea)
+}
+
+function cloneResultPayload(
+  payload?: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!payload) return undefined
+  return Object.entries(payload).reduce<Record<string, unknown>>(
+    (acc, [key, value]) => {
+      acc[key] = value
+      return acc
+    },
+    {}
+  )
+}
+
+function mapAreaHistoryEntry(dto: AreaHistoryEntryDTO): AreaHistoryEntry {
+  const entry: AreaHistoryEntry = {
+    jobId: dto.jobId,
+    status: dto.status,
+    attempt: dto.attempt,
+    runAt: new Date(dto.runAt),
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+    reaction: {
+      component: dto.reaction.component,
+      provider: dto.reaction.provider
+    }
+  }
+
+  if (dto.error !== undefined) {
+    entry.error = dto.error
+  }
+
+  const resultPayload = cloneResultPayload(dto.resultPayload)
+  if (resultPayload) {
+    entry.resultPayload = resultPayload
+  }
+
+  return entry
+}
+
+export function mapAreaHistoryResponse(
+  response: AreaHistoryResponseDTO
+): AreaHistoryEntry[] {
+  return response.executions.map(mapAreaHistoryEntry)
 }

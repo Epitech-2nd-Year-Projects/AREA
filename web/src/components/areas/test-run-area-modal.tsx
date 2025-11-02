@@ -1,7 +1,9 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { Area } from '@/lib/api/contracts/areas'
+import { useExecuteAreaMutation } from '@/lib/api/openapi/areas'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,25 +39,41 @@ export function TestRunAreaModal({
 }: TestRunAreaModalProps) {
   const t = useTranslations('TestRunAreaModal')
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null)
+  const executeMutation = useExecuteAreaMutation(area.id, {
+    onSuccess: () => {
+      setLastRunAt(new Date())
+      toast.success(t('success', { area: area.name }))
+    },
+    onError: (error) => {
+      toast.error(error.message || t('error'))
+    }
+  })
 
   const summaryState = useMemo(() => {
+    if (executeMutation.isPending) {
+      return 'running' as const
+    }
     if (!lastRunAt) {
       return 'idle' as const
     }
 
     return 'completed' as const
-  }, [lastRunAt])
+  }, [executeMutation.isPending, lastRunAt])
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setLastRunAt(null)
+      executeMutation.reset()
     }
 
     onOpenChange(nextOpen)
   }
 
   const handleSimulateRun = () => {
-    setLastRunAt(new Date())
+    if (executeMutation.isPending) {
+      return
+    }
+    executeMutation.mutate(undefined)
   }
 
   return (
@@ -73,17 +91,27 @@ export function TestRunAreaModal({
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">{t('summaryTitle')}</p>
               <Badge
-                variant={summaryState === 'completed' ? 'default' : 'secondary'}
+                variant={
+                  summaryState === 'completed'
+                    ? 'default'
+                    : summaryState === 'running'
+                      ? 'default'
+                      : 'secondary'
+                }
               >
-                {summaryState === 'completed'
-                  ? t('statusCompleted')
-                  : t('statusIdle')}
+                {summaryState === 'running'
+                  ? t('statusRunning')
+                  : summaryState === 'completed'
+                    ? t('statusCompleted')
+                    : t('statusIdle')}
               </Badge>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
               {summaryState === 'completed'
                 ? t('runAt', { date: formatDateTime(lastRunAt!) })
-                : t('idleDescription')}
+                : summaryState === 'running'
+                  ? t('runningDescription')
+                  : t('idleDescription')}
             </p>
           </div>
 
@@ -135,7 +163,11 @@ export function TestRunAreaModal({
           >
             {t('close')}
           </Button>
-          <Button type="button" onClick={handleSimulateRun}>
+          <Button
+            type="button"
+            onClick={handleSimulateRun}
+            disabled={executeMutation.isPending}
+          >
             {summaryState === 'completed' ? t('runAgain') : t('runTest')}
           </Button>
         </DialogFooter>
