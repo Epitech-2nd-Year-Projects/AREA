@@ -7,11 +7,13 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/exceptions/network_exceptions.dart';
 import '../models/area_model.dart';
 import '../models/area_request_model.dart';
+import '../../domain/entities/area_status.dart';
 
 abstract class AreaRemoteDataSource {
   Future<List<AreaModel>> listAreas();
   Future<AreaModel> createArea(AreaRequestModel request);
   Future<AreaModel> updateArea(String areaId, AreaRequestModel request);
+  Future<AreaModel> updateAreaStatus(String areaId, AreaStatus status);
   Future<void> deleteArea(String areaId);
   Future<void> executeArea(String areaId);
 }
@@ -71,6 +73,25 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
         return AreaModel.fromJson(response.data!);
       }
       throw NetworkException('Unexpected response when updating area');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw NetworkException(e.toString());
+    }
+  }
+
+  @override
+  Future<AreaModel> updateAreaStatus(String areaId, AreaStatus status) async {
+    try {
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        '/v1/areas/$areaId/status',
+        data: {'status': status.value},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return AreaModel.fromJson(response.data!);
+      }
+      throw NetworkException('Unexpected response when updating area status');
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {

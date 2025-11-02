@@ -14,18 +14,28 @@ class AreaCard extends StatelessWidget {
   final Area area;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onToggleStatus;
+  final bool isStatusUpdating;
 
   const AreaCard({
     super.key,
     required this.area,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleStatus,
+    required this.isStatusUpdating,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final statusBadge = _buildStatusBadge(context, area.status, l10n);
+    final statusBadge = _buildStatusBadge(
+      context,
+      area.status,
+      l10n,
+      onToggleStatus,
+      isStatusUpdating,
+    );
     final actionSummary = _formatComponent(area.action);
     final reactionSummaries = area.reactions.map(_formatComponent).toList();
     final reactionRowWidgets = reactionSummaries.asMap().entries.map((entry) {
@@ -275,6 +285,8 @@ class AreaCard extends StatelessWidget {
     BuildContext context,
     AreaStatus status,
     AppLocalizations l10n,
+    VoidCallback onToggleStatus,
+    bool isUpdating,
   ) {
     final color = switch (status) {
       AreaStatus.enabled => AppColors.success,
@@ -291,40 +303,76 @@ class AreaCard extends StatelessWidget {
       AreaStatus.disabled => Icons.pause_circle_outline_rounded,
       AreaStatus.archived => Icons.archive_outlined,
     };
+    final isInteractive = status != AreaStatus.archived;
+    final semanticsLabel = 'Status: $label';
+    final onTapHint = status == AreaStatus.enabled
+        ? l10n.pauseAutomationHint
+        : l10n.resumeAutomationHint;
 
-    return Semantics(
-      label: 'Status: $label',
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 16),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              label,
-              style: AppTypography.labelMedium.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                letterSpacing: 0.3,
+    final badgeContent = isUpdating
+        ? SizedBox(
+            height: 18,
+            width: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Colors.white.withValues(alpha: 0.9),
               ),
             ),
-          ],
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label,
+                style: AppTypography.labelMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          );
+
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: badgeContent,
+    );
+
+    if (!isInteractive) {
+      return Semantics(
+        label: semanticsLabel,
+        child: badge,
+      );
+    }
+
+    return Semantics(
+      label: semanticsLabel,
+      button: true,
+      onTapHint: onTapHint,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: isUpdating ? null : onToggleStatus,
+          child: badge,
         ),
       ),
     );

@@ -116,7 +116,26 @@ class _AreasScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<AreasCubit, AreasState>(
+      body: BlocConsumer<AreasCubit, AreasState>(
+        listener: (context, state) {
+          if (state is AreasLoaded && state.messageKey != null) {
+            final message = switch (state.messageKey) {
+              'areaStatusUpdateFailed' => l10n.areaStatusUpdateFailed,
+              _ => null,
+            };
+            if (message != null) {
+              ScaffoldMessenger.of(context)
+                ..clearSnackBars()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              context.read<AreasCubit>().clearFeedback();
+            }
+          }
+        },
         builder: (context, state) {
           if (state is AreasLoading) {
             return Center(
@@ -236,6 +255,10 @@ class _AreasScreen extends StatelessWidget {
                       onDelete: () async {
                         await context.read<AreasCubit>().removeArea(area.id);
                       },
+                      onToggleStatus: () => context
+                          .read<AreasCubit>()
+                          .toggleAreaStatus(area),
+                      isStatusUpdating: state.isUpdating(area.id),
                     ),
                   );
                 },
