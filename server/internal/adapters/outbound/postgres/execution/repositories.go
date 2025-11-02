@@ -12,6 +12,7 @@ import (
 	jobdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/job"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -332,16 +333,45 @@ func (r JobRepository) ListWithDetails(ctx context.Context, opts outbound.JobLis
 	}
 
 	type jobWithDetails struct {
-		jobModel
-		AreaID        uuid.UUID
-		AreaName      string
-		ComponentName *string
-		ProviderName  *string
+		JobID         uuid.UUID      `gorm:"column:job_id"`
+		TriggerID     uuid.UUID      `gorm:"column:trigger_id"`
+		AreaLinkID    uuid.UUID      `gorm:"column:area_link_id"`
+		Status        string         `gorm:"column:status"`
+		Attempt       int            `gorm:"column:attempt"`
+		RunAt         time.Time      `gorm:"column:run_at"`
+		LockedBy      *string        `gorm:"column:locked_by"`
+		LockedAt      *time.Time     `gorm:"column:locked_at"`
+		InputPayload  datatypes.JSON `gorm:"column:input_payload"`
+		ResultPayload datatypes.JSON `gorm:"column:result_payload"`
+		Error         *string        `gorm:"column:error"`
+		CreatedAt     time.Time      `gorm:"column:created_at"`
+		UpdatedAt     time.Time      `gorm:"column:updated_at"`
+		AreaID        uuid.UUID      `gorm:"column:area_id"`
+		AreaName      string         `gorm:"column:area_name"`
+		ComponentName *string        `gorm:"column:component_name"`
+		ProviderName  *string        `gorm:"column:provider_name"`
 	}
 
 	query := r.db.WithContext(ctx).
 		Table("jobs AS j").
-		Select(`j.*, l.area_id, a.name AS area_name, sc.display_name AS component_name, sp.display_name AS provider_name`).
+		Select(`
+			j.id AS job_id,
+			j.trigger_id,
+			j.area_link_id,
+			j.status,
+			j.attempt,
+			j.run_at,
+			j.locked_by,
+			j.locked_at,
+			j.input_payload,
+			j.result_payload,
+			j.error,
+			j.created_at,
+			j.updated_at,
+			l.area_id,
+			a.name AS area_name,
+			sc.display_name AS component_name,
+			sp.display_name AS provider_name`).
 		Joins("JOIN area_links l ON l.id = j.area_link_id").
 		Joins("JOIN areas a ON a.id = l.area_id").
 		Joins("LEFT JOIN user_component_configs cfg ON cfg.id = l.component_config_id").
@@ -363,7 +393,22 @@ func (r JobRepository) ListWithDetails(ctx context.Context, opts outbound.JobLis
 
 	results := make([]outbound.JobDetails, 0, len(rows))
 	for _, row := range rows {
-		job := row.jobModel.toDomain()
+		model := jobModel{
+			ID:            row.JobID,
+			TriggerID:     row.TriggerID,
+			AreaLinkID:    row.AreaLinkID,
+			Status:        row.Status,
+			Attempt:       row.Attempt,
+			RunAt:         row.RunAt,
+			LockedBy:      row.LockedBy,
+			LockedAt:      row.LockedAt,
+			InputPayload:  row.InputPayload,
+			ResultPayload: row.ResultPayload,
+			Error:         row.Error,
+			CreatedAt:     row.CreatedAt,
+			UpdatedAt:     row.UpdatedAt,
+		}
+		job := model.toDomain()
 		details := outbound.JobDetails{
 			Job:           job,
 			AreaID:        row.AreaID,
@@ -386,17 +431,46 @@ func (r JobRepository) FindDetails(ctx context.Context, userID uuid.UUID, jobID 
 	}
 
 	type jobWithDetails struct {
-		jobModel
-		AreaID        uuid.UUID
-		AreaName      string
-		ComponentName *string
-		ProviderName  *string
+		JobID         uuid.UUID      `gorm:"column:job_id"`
+		TriggerID     uuid.UUID      `gorm:"column:trigger_id"`
+		AreaLinkID    uuid.UUID      `gorm:"column:area_link_id"`
+		Status        string         `gorm:"column:status"`
+		Attempt       int            `gorm:"column:attempt"`
+		RunAt         time.Time      `gorm:"column:run_at"`
+		LockedBy      *string        `gorm:"column:locked_by"`
+		LockedAt      *time.Time     `gorm:"column:locked_at"`
+		InputPayload  datatypes.JSON `gorm:"column:input_payload"`
+		ResultPayload datatypes.JSON `gorm:"column:result_payload"`
+		Error         *string        `gorm:"column:error"`
+		CreatedAt     time.Time      `gorm:"column:created_at"`
+		UpdatedAt     time.Time      `gorm:"column:updated_at"`
+		AreaID        uuid.UUID      `gorm:"column:area_id"`
+		AreaName      string         `gorm:"column:area_name"`
+		ComponentName *string        `gorm:"column:component_name"`
+		ProviderName  *string        `gorm:"column:provider_name"`
 	}
 
 	var row jobWithDetails
 	query := r.db.WithContext(ctx).
 		Table("jobs AS j").
-		Select(`j.*, l.area_id, a.name AS area_name, sc.display_name AS component_name, sp.display_name AS provider_name`).
+		Select(`
+			j.id AS job_id,
+			j.trigger_id,
+			j.area_link_id,
+			j.status,
+			j.attempt,
+			j.run_at,
+			j.locked_by,
+			j.locked_at,
+			j.input_payload,
+			j.result_payload,
+			j.error,
+			j.created_at,
+			j.updated_at,
+			l.area_id,
+			a.name AS area_name,
+			sc.display_name AS component_name,
+			sp.display_name AS provider_name`).
 		Joins("JOIN area_links l ON l.id = j.area_link_id").
 		Joins("JOIN areas a ON a.id = l.area_id").
 		Joins("LEFT JOIN user_component_configs cfg ON cfg.id = l.component_config_id").
@@ -409,7 +483,22 @@ func (r JobRepository) FindDetails(ctx context.Context, userID uuid.UUID, jobID 
 		}
 		return outbound.JobDetails{}, fmt.Errorf("postgres.execution.JobRepository.FindDetails: %w", err)
 	}
-	job := row.jobModel.toDomain()
+	model := jobModel{
+		ID:            row.JobID,
+		TriggerID:     row.TriggerID,
+		AreaLinkID:    row.AreaLinkID,
+		Status:        row.Status,
+		Attempt:       row.Attempt,
+		RunAt:         row.RunAt,
+		LockedBy:      row.LockedBy,
+		LockedAt:      row.LockedAt,
+		InputPayload:  row.InputPayload,
+		ResultPayload: row.ResultPayload,
+		Error:         row.Error,
+		CreatedAt:     row.CreatedAt,
+		UpdatedAt:     row.UpdatedAt,
+	}
+	job := model.toDomain()
 	return outbound.JobDetails{
 		Job:           job,
 		AreaID:        row.AreaID,
