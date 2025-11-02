@@ -1,0 +1,3800 @@
+@startuml
+!theme spacelab
+namespace cmd {
+    namespace server {
+    }
+}
+namespace openapi {
+    class "AboutClient" << (S,Aquamarine) >> {
+        + Host string
+
+    }
+    class "AboutComponent" << (S,Aquamarine) >> {
+        + Description string
+        + Name string
+
+    }
+    class "AboutResponse" << (S,Aquamarine) >> {
+        + Client AboutClient
+        + Server AboutServer
+
+    }
+    class "AboutServer" << (S,Aquamarine) >> {
+        + CurrentTime int64
+        + Services []AboutService
+
+    }
+    class "AboutService" << (S,Aquamarine) >> {
+        + Actions []AboutComponent
+        + Name string
+        + Reactions []AboutComponent
+
+    }
+    class "AdminResetPasswordRequest" << (S,Aquamarine) >> {
+        + NewPassword string
+
+    }
+    class "AdminResetUserPassword200JSONResponse" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPassword400Response" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPassword401Response" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPassword403Response" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPassword404Response" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPassword500Response" << (S,Aquamarine) >> {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminResetUserPasswordRequestObject" << (S,Aquamarine) >> {
+        + UserId UserId
+        + Body *AdminResetUserPasswordJSONRequestBody
+
+    }
+    interface "AdminResetUserPasswordResponseObject"  {
+        + VisitAdminResetUserPasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateEmailRequest" << (S,Aquamarine) >> {
+        + Email types.Email
+        + SendVerification *bool
+
+    }
+    class "AdminUpdateStatusRequest" << (S,Aquamarine) >> {
+        + Status string
+
+    }
+    class "AdminUpdateUserEmail200JSONResponse" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail400Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail401Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail403Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail404Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail409Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmail500Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserEmailRequestObject" << (S,Aquamarine) >> {
+        + UserId UserId
+        + Body *AdminUpdateUserEmailJSONRequestBody
+
+    }
+    interface "AdminUpdateUserEmailResponseObject"  {
+        + VisitAdminUpdateUserEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus200JSONResponse" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus400Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus401Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus403Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus404Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatus500Response" << (S,Aquamarine) >> {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "AdminUpdateUserStatusRequestObject" << (S,Aquamarine) >> {
+        + UserId UserId
+        + Body *AdminUpdateUserStatusJSONRequestBody
+
+    }
+    interface "AdminUpdateUserStatusResponseObject"  {
+        + VisitAdminUpdateUserStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "Area" << (S,Aquamarine) >> {
+        + Action *AreaAction
+        + CreatedAt time.Time
+        + Description *string
+        + Id types.UUID
+        + Name string
+        + Reactions []AreaReaction
+        + Status string
+        + UpdatedAt time.Time
+
+    }
+    class "AreaAction" << (S,Aquamarine) >> {
+        + Component ComponentSummary
+        + ComponentId types.UUID
+        + ConfigId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "AreaHistoryEntry" << (S,Aquamarine) >> {
+        + Attempt int
+        + CreatedAt time.Time
+        + Error *string
+        + JobId types.UUID
+        + Reaction AreaHistoryReaction
+        + ResultPayload *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+        + RunAt time.Time
+        + Status string
+        + UpdatedAt time.Time
+
+    }
+    class "AreaHistoryReaction" << (S,Aquamarine) >> {
+        + Component string
+        + Provider string
+
+    }
+    class "AreaHistoryResponse" << (S,Aquamarine) >> {
+        + Executions []AreaHistoryEntry
+
+    }
+    class "AreaReaction" << (S,Aquamarine) >> {
+        + Component ComponentSummary
+        + ComponentId types.UUID
+        + ConfigId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "AuthSessionResponse" << (S,Aquamarine) >> {
+        + ExpiresAt *time.Time
+        + SessionAuth *SessionAuth
+        + TokenType *string
+        + User User
+
+    }
+    class "AuthorizeOAuth200JSONResponse" << (S,Aquamarine) >> {
+        + VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "AuthorizeOAuth400Response" << (S,Aquamarine) >> {
+        + VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "AuthorizeOAuth404Response" << (S,Aquamarine) >> {
+        + VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "AuthorizeOAuth501Response" << (S,Aquamarine) >> {
+        + VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "AuthorizeOAuthRequestObject" << (S,Aquamarine) >> {
+        + Provider OAuthProvider
+        + Body *AuthorizeOAuthJSONRequestBody
+
+    }
+    interface "AuthorizeOAuthResponseObject"  {
+        + VisitAuthorizeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmail202JSONResponse" << (S,Aquamarine) >> {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmail400Response" << (S,Aquamarine) >> {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmail401Response" << (S,Aquamarine) >> {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmail409Response" << (S,Aquamarine) >> {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmail500Response" << (S,Aquamarine) >> {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangeEmailRequest" << (S,Aquamarine) >> {
+        + Email types.Email
+        + Password string
+
+    }
+    class "ChangeEmailRequestObject" << (S,Aquamarine) >> {
+        + Body *ChangeEmailJSONRequestBody
+
+    }
+    interface "ChangeEmailResponseObject"  {
+        + VisitChangeEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangePassword204Response" << (S,Aquamarine) >> {
+        + VisitChangePasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangePassword400Response" << (S,Aquamarine) >> {
+        + VisitChangePasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangePassword401Response" << (S,Aquamarine) >> {
+        + VisitChangePasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangePassword500Response" << (S,Aquamarine) >> {
+        + VisitChangePasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "ChangePasswordRequest" << (S,Aquamarine) >> {
+        + CurrentPassword string
+        + NewPassword string
+
+    }
+    class "ChangePasswordRequestObject" << (S,Aquamarine) >> {
+        + Body *ChangePasswordJSONRequestBody
+
+    }
+    interface "ChangePasswordResponseObject"  {
+        + VisitChangePasswordResponse(w http.ResponseWriter) error
+
+    }
+    class "ComponentListResponse" << (S,Aquamarine) >> {
+        + Components []ComponentSummary
+
+    }
+    class "ComponentSummary" << (S,Aquamarine) >> {
+        + Description *string
+        + DisplayName string
+        + Id types.UUID
+        + Kind ComponentSummaryKind
+        + Metadata *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+        + Name string
+        + Provider ServiceProviderSummary
+
+    }
+    class "CreateArea201JSONResponse" << (S,Aquamarine) >> {
+        + VisitCreateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "CreateArea400Response" << (S,Aquamarine) >> {
+        + VisitCreateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "CreateArea401Response" << (S,Aquamarine) >> {
+        + VisitCreateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "CreateAreaAction" << (S,Aquamarine) >> {
+        + ComponentId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "CreateAreaReaction" << (S,Aquamarine) >> {
+        + ComponentId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "CreateAreaRequest" << (S,Aquamarine) >> {
+        + Action CreateAreaAction
+        + Description *string
+        + Name string
+        + Reactions []CreateAreaReaction
+
+    }
+    class "CreateAreaRequestObject" << (S,Aquamarine) >> {
+        + Body *CreateAreaJSONRequestBody
+
+    }
+    interface "CreateAreaResponseObject"  {
+        + VisitCreateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DeleteArea204Response" << (S,Aquamarine) >> {
+        + VisitDeleteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DeleteArea401Response" << (S,Aquamarine) >> {
+        + VisitDeleteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DeleteArea403Response" << (S,Aquamarine) >> {
+        + VisitDeleteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DeleteArea404Response" << (S,Aquamarine) >> {
+        + VisitDeleteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DeleteAreaRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+
+    }
+    interface "DeleteAreaResponseObject"  {
+        + VisitDeleteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateArea201JSONResponse" << (S,Aquamarine) >> {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateArea400Response" << (S,Aquamarine) >> {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateArea401Response" << (S,Aquamarine) >> {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateArea403Response" << (S,Aquamarine) >> {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateArea404Response" << (S,Aquamarine) >> {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "DuplicateAreaRequest" << (S,Aquamarine) >> {
+        + Description *string
+        + Name *string
+
+    }
+    class "DuplicateAreaRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+        + Body *DuplicateAreaJSONRequestBody
+
+    }
+    interface "DuplicateAreaResponseObject"  {
+        + VisitDuplicateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "EmailChangeResponse" << (S,Aquamarine) >> {
+        + User User
+        + VerificationExpiresAt *time.Time
+
+    }
+    class "ExchangeOAuth200JSONResponse" << (S,Aquamarine) >> {
+        + Body AuthSessionResponse
+        + Headers ExchangeOAuth200ResponseHeaders
+
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExchangeOAuth200ResponseHeaders" << (S,Aquamarine) >> {
+        + SetCookie string
+
+    }
+    class "ExchangeOAuth400Response" << (S,Aquamarine) >> {
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExchangeOAuth404Response" << (S,Aquamarine) >> {
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExchangeOAuth501Response" << (S,Aquamarine) >> {
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExchangeOAuth502Response" << (S,Aquamarine) >> {
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExchangeOAuthRequestObject" << (S,Aquamarine) >> {
+        + Provider OAuthProvider
+        + Body *ExchangeOAuthJSONRequestBody
+
+    }
+    interface "ExchangeOAuthResponseObject"  {
+        + VisitExchangeOAuthResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteArea202Response" << (S,Aquamarine) >> {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteArea401Response" << (S,Aquamarine) >> {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteArea403Response" << (S,Aquamarine) >> {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteArea404Response" << (S,Aquamarine) >> {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteArea500Response" << (S,Aquamarine) >> {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "ExecuteAreaRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+
+    }
+    interface "ExecuteAreaResponseObject"  {
+        + VisitExecuteAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetAbout200JSONResponse" << (S,Aquamarine) >> {
+        + VisitGetAboutResponse(w http.ResponseWriter) error
+
+    }
+    class "GetAbout404Response" << (S,Aquamarine) >> {
+        + VisitGetAboutResponse(w http.ResponseWriter) error
+
+    }
+    class "GetAboutRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "GetAboutResponseObject"  {
+        + VisitGetAboutResponse(w http.ResponseWriter) error
+
+    }
+    class "GetArea200JSONResponse" << (S,Aquamarine) >> {
+        + VisitGetAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetArea401Response" << (S,Aquamarine) >> {
+        + VisitGetAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetArea403Response" << (S,Aquamarine) >> {
+        + VisitGetAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetArea404Response" << (S,Aquamarine) >> {
+        + VisitGetAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetAreaRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+
+    }
+    interface "GetAreaResponseObject"  {
+        + VisitGetAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "GetCurrentUser200JSONResponse" << (S,Aquamarine) >> {
+        + VisitGetCurrentUserResponse(w http.ResponseWriter) error
+
+    }
+    class "GetCurrentUser401Response" << (S,Aquamarine) >> {
+        + VisitGetCurrentUserResponse(w http.ResponseWriter) error
+
+    }
+    class "GetCurrentUserRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "GetCurrentUserResponseObject"  {
+        + VisitGetCurrentUserResponse(w http.ResponseWriter) error
+
+    }
+    class "GinServerOptions" << (S,Aquamarine) >> {
+        + BaseURL string
+        + Middlewares []MiddlewareFunc
+        + ErrorHandler <font color=blue>func</font>(*gin.Context, error, int) 
+
+    }
+    class "IdentityListResponse" << (S,Aquamarine) >> {
+        + Identities []IdentitySummary
+
+    }
+    class "IdentitySummary" << (S,Aquamarine) >> {
+        + ConnectedAt time.Time
+        + ExpiresAt *time.Time
+        + Id types.UUID
+        + Provider string
+        + Scopes *[]string
+        + Subject string
+
+    }
+    class "ListAreaHistory200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListAreaHistoryResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreaHistory401Response" << (S,Aquamarine) >> {
+        + VisitListAreaHistoryResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreaHistory403Response" << (S,Aquamarine) >> {
+        + VisitListAreaHistoryResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreaHistory404Response" << (S,Aquamarine) >> {
+        + VisitListAreaHistoryResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreaHistoryParams" << (S,Aquamarine) >> {
+        + Limit *int
+
+    }
+    class "ListAreaHistoryRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+        + Params ListAreaHistoryParams
+
+    }
+    interface "ListAreaHistoryResponseObject"  {
+        + VisitListAreaHistoryResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreas200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListAreasResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAreasRequestObject" << (S,Aquamarine) >> {
+    }
+    class "ListAreasResponse" << (S,Aquamarine) >> {
+        + Areas []Area
+
+    }
+    interface "ListAreasResponseObject"  {
+        + VisitListAreasResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAvailableComponents200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListAvailableComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAvailableComponents400Response" << (S,Aquamarine) >> {
+        + VisitListAvailableComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAvailableComponents401Response" << (S,Aquamarine) >> {
+        + VisitListAvailableComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAvailableComponents500Response" << (S,Aquamarine) >> {
+        + VisitListAvailableComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListAvailableComponentsParams" << (S,Aquamarine) >> {
+        + Kind *ListAvailableComponentsParamsKind
+        + Provider *string
+
+    }
+    class "ListAvailableComponentsRequestObject" << (S,Aquamarine) >> {
+        + Params ListAvailableComponentsParams
+
+    }
+    interface "ListAvailableComponentsResponseObject"  {
+        + VisitListAvailableComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListComponents200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListComponents400Response" << (S,Aquamarine) >> {
+        + VisitListComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListComponents500Response" << (S,Aquamarine) >> {
+        + VisitListComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListComponentsParams" << (S,Aquamarine) >> {
+        + Kind *ListComponentsParamsKind
+        + Provider *string
+
+    }
+    class "ListComponentsRequestObject" << (S,Aquamarine) >> {
+        + Params ListComponentsParams
+
+    }
+    interface "ListComponentsResponseObject"  {
+        + VisitListComponentsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListIdentities200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListIdentitiesResponse(w http.ResponseWriter) error
+
+    }
+    class "ListIdentities401Response" << (S,Aquamarine) >> {
+        + VisitListIdentitiesResponse(w http.ResponseWriter) error
+
+    }
+    class "ListIdentities500Response" << (S,Aquamarine) >> {
+        + VisitListIdentitiesResponse(w http.ResponseWriter) error
+
+    }
+    class "ListIdentitiesRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "ListIdentitiesResponseObject"  {
+        + VisitListIdentitiesResponse(w http.ResponseWriter) error
+
+    }
+    class "ListServiceProviders200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListServiceProvidersResponse(w http.ResponseWriter) error
+
+    }
+    class "ListServiceProvidersRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "ListServiceProvidersResponseObject"  {
+        + VisitListServiceProvidersResponse(w http.ResponseWriter) error
+
+    }
+    class "ListServiceSubscriptions200JSONResponse" << (S,Aquamarine) >> {
+        + VisitListServiceSubscriptionsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListServiceSubscriptions401Response" << (S,Aquamarine) >> {
+        + VisitListServiceSubscriptionsResponse(w http.ResponseWriter) error
+
+    }
+    class "ListServiceSubscriptionsRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "ListServiceSubscriptionsResponseObject"  {
+        + VisitListServiceSubscriptionsResponse(w http.ResponseWriter) error
+
+    }
+    class "Login200JSONResponse" << (S,Aquamarine) >> {
+        + Body AuthSessionResponse
+        + Headers Login200ResponseHeaders
+
+        + VisitLoginResponse(w http.ResponseWriter) error
+
+    }
+    class "Login200ResponseHeaders" << (S,Aquamarine) >> {
+        + SetCookie string
+
+    }
+    class "Login400Response" << (S,Aquamarine) >> {
+        + VisitLoginResponse(w http.ResponseWriter) error
+
+    }
+    class "Login403Response" << (S,Aquamarine) >> {
+        + VisitLoginResponse(w http.ResponseWriter) error
+
+    }
+    class "LoginRequest" << (S,Aquamarine) >> {
+        + Email types.Email
+        + Password string
+
+    }
+    class "LoginRequestObject" << (S,Aquamarine) >> {
+        + Body *LoginJSONRequestBody
+
+    }
+    interface "LoginResponseObject"  {
+        + VisitLoginResponse(w http.ResponseWriter) error
+
+    }
+    class "Logout204Response" << (S,Aquamarine) >> {
+        + VisitLogoutResponse(w http.ResponseWriter) error
+
+    }
+    class "Logout401Response" << (S,Aquamarine) >> {
+        + VisitLogoutResponse(w http.ResponseWriter) error
+
+    }
+    class "LogoutRequestObject" << (S,Aquamarine) >> {
+    }
+    interface "LogoutResponseObject"  {
+        + VisitLogoutResponse(w http.ResponseWriter) error
+
+    }
+    class "OAuthAuthorizationRequest" << (S,Aquamarine) >> {
+        + Prompt *string
+        + RedirectUri *string
+        + Scopes *[]string
+        + State *string
+        + UsePkce *bool
+
+    }
+    class "OAuthAuthorizationResponse" << (S,Aquamarine) >> {
+        + AuthorizationUrl string
+        + CodeChallenge *string
+        + CodeChallengeMethod *string
+        + CodeVerifier *string
+        + State *string
+
+    }
+    class "OAuthExchangeRequest" << (S,Aquamarine) >> {
+        + Code string
+        + CodeVerifier *string
+        + RedirectUri *string
+        + State *string
+
+    }
+    class "RegisterUser202JSONResponse" << (S,Aquamarine) >> {
+        + VisitRegisterUserResponse(w http.ResponseWriter) error
+
+    }
+    class "RegisterUser400Response" << (S,Aquamarine) >> {
+        + VisitRegisterUserResponse(w http.ResponseWriter) error
+
+    }
+    class "RegisterUser409Response" << (S,Aquamarine) >> {
+        + VisitRegisterUserResponse(w http.ResponseWriter) error
+
+    }
+    class "RegisterUserRequest" << (S,Aquamarine) >> {
+        + Email types.Email
+        + Password string
+
+    }
+    class "RegisterUserRequestObject" << (S,Aquamarine) >> {
+        + Body *RegisterUserJSONRequestBody
+
+    }
+    class "RegisterUserResponse" << (S,Aquamarine) >> {
+        + ExpiresAt time.Time
+        + UserId string
+
+    }
+    interface "RegisterUserResponseObject"  {
+        + VisitRegisterUserResponse(w http.ResponseWriter) error
+
+    }
+    interface "ServerInterface"  {
+        + GetAbout(c *gin.Context) 
+        + AdminUpdateUserEmail(c *gin.Context, userId UserId) 
+        + AdminResetUserPassword(c *gin.Context, userId UserId) 
+        + AdminUpdateUserStatus(c *gin.Context, userId UserId) 
+        + ListAreas(c *gin.Context) 
+        + CreateArea(c *gin.Context) 
+        + DeleteArea(c *gin.Context, areaId types.UUID) 
+        + GetArea(c *gin.Context, areaId types.UUID) 
+        + UpdateArea(c *gin.Context, areaId types.UUID) 
+        + DuplicateArea(c *gin.Context, areaId types.UUID) 
+        + ExecuteArea(c *gin.Context, areaId types.UUID) 
+        + ListAreaHistory(c *gin.Context, areaId types.UUID, params ListAreaHistoryParams) 
+        + UpdateAreaStatus(c *gin.Context, areaId types.UUID) 
+        + ChangeEmail(c *gin.Context) 
+        + Login(c *gin.Context) 
+        + Logout(c *gin.Context) 
+        + GetCurrentUser(c *gin.Context) 
+        + ChangePassword(c *gin.Context) 
+        + VerifyEmail(c *gin.Context) 
+        + ListComponents(c *gin.Context, params ListComponentsParams) 
+        + ListAvailableComponents(c *gin.Context, params ListAvailableComponentsParams) 
+        + ListIdentities(c *gin.Context) 
+        + AuthorizeOAuth(c *gin.Context, provider OAuthProvider) 
+        + ExchangeOAuth(c *gin.Context, provider OAuthProvider) 
+        + ListServiceProviders(c *gin.Context) 
+        + ListServiceSubscriptions(c *gin.Context) 
+        + SubscribeService(c *gin.Context, provider OAuthProvider) 
+        + SubscribeServiceExchange(c *gin.Context, provider OAuthProvider) 
+        + UnsubscribeService(c *gin.Context, provider OAuthProvider) 
+        + RegisterUser(c *gin.Context) 
+
+    }
+    class "ServerInterfaceWrapper" << (S,Aquamarine) >> {
+        + Handler ServerInterface
+        + HandlerMiddlewares []MiddlewareFunc
+        + ErrorHandler <font color=blue>func</font>(*gin.Context, error, int) 
+
+        + GetAbout(c *gin.Context) 
+        + AdminUpdateUserEmail(c *gin.Context) 
+        + AdminResetUserPassword(c *gin.Context) 
+        + AdminUpdateUserStatus(c *gin.Context) 
+        + ListAreas(c *gin.Context) 
+        + CreateArea(c *gin.Context) 
+        + DeleteArea(c *gin.Context) 
+        + GetArea(c *gin.Context) 
+        + UpdateArea(c *gin.Context) 
+        + DuplicateArea(c *gin.Context) 
+        + ExecuteArea(c *gin.Context) 
+        + ListAreaHistory(c *gin.Context) 
+        + UpdateAreaStatus(c *gin.Context) 
+        + ChangeEmail(c *gin.Context) 
+        + Login(c *gin.Context) 
+        + Logout(c *gin.Context) 
+        + GetCurrentUser(c *gin.Context) 
+        + ChangePassword(c *gin.Context) 
+        + VerifyEmail(c *gin.Context) 
+        + ListComponents(c *gin.Context) 
+        + ListAvailableComponents(c *gin.Context) 
+        + ListIdentities(c *gin.Context) 
+        + AuthorizeOAuth(c *gin.Context) 
+        + ExchangeOAuth(c *gin.Context) 
+        + ListServiceProviders(c *gin.Context) 
+        + ListServiceSubscriptions(c *gin.Context) 
+        + SubscribeService(c *gin.Context) 
+        + SubscribeServiceExchange(c *gin.Context) 
+        + UnsubscribeService(c *gin.Context) 
+        + RegisterUser(c *gin.Context) 
+
+    }
+    class "ServiceProviderDetail" << (S,Aquamarine) >> {
+        + Category *string
+        + CreatedAt time.Time
+        + DisplayName string
+        + Enabled bool
+        + Id types.UUID
+        + Name string
+        + OauthType ServiceProviderDetailOauthType
+        + UpdatedAt time.Time
+
+    }
+    class "ServiceProviderListResponse" << (S,Aquamarine) >> {
+        + Providers []ServiceProviderDetail
+
+    }
+    class "ServiceProviderSummary" << (S,Aquamarine) >> {
+        + DisplayName string
+        + Id types.UUID
+        + Name string
+
+    }
+    class "SessionAuth" << (S,Aquamarine) >> {
+        + Method SessionAuthMethod
+        + Provider *string
+
+    }
+    interface "StrictServerInterface"  {
+        + GetAbout(ctx context.Context, request GetAboutRequestObject) (GetAboutResponseObject, error)
+        + AdminUpdateUserEmail(ctx context.Context, request AdminUpdateUserEmailRequestObject) (AdminUpdateUserEmailResponseObject, error)
+        + AdminResetUserPassword(ctx context.Context, request AdminResetUserPasswordRequestObject) (AdminResetUserPasswordResponseObject, error)
+        + AdminUpdateUserStatus(ctx context.Context, request AdminUpdateUserStatusRequestObject) (AdminUpdateUserStatusResponseObject, error)
+        + ListAreas(ctx context.Context, request ListAreasRequestObject) (ListAreasResponseObject, error)
+        + CreateArea(ctx context.Context, request CreateAreaRequestObject) (CreateAreaResponseObject, error)
+        + DeleteArea(ctx context.Context, request DeleteAreaRequestObject) (DeleteAreaResponseObject, error)
+        + GetArea(ctx context.Context, request GetAreaRequestObject) (GetAreaResponseObject, error)
+        + UpdateArea(ctx context.Context, request UpdateAreaRequestObject) (UpdateAreaResponseObject, error)
+        + DuplicateArea(ctx context.Context, request DuplicateAreaRequestObject) (DuplicateAreaResponseObject, error)
+        + ExecuteArea(ctx context.Context, request ExecuteAreaRequestObject) (ExecuteAreaResponseObject, error)
+        + ListAreaHistory(ctx context.Context, request ListAreaHistoryRequestObject) (ListAreaHistoryResponseObject, error)
+        + UpdateAreaStatus(ctx context.Context, request UpdateAreaStatusRequestObject) (UpdateAreaStatusResponseObject, error)
+        + ChangeEmail(ctx context.Context, request ChangeEmailRequestObject) (ChangeEmailResponseObject, error)
+        + Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+        + Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+        + GetCurrentUser(ctx context.Context, request GetCurrentUserRequestObject) (GetCurrentUserResponseObject, error)
+        + ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+        + VerifyEmail(ctx context.Context, request VerifyEmailRequestObject) (VerifyEmailResponseObject, error)
+        + ListComponents(ctx context.Context, request ListComponentsRequestObject) (ListComponentsResponseObject, error)
+        + ListAvailableComponents(ctx context.Context, request ListAvailableComponentsRequestObject) (ListAvailableComponentsResponseObject, error)
+        + ListIdentities(ctx context.Context, request ListIdentitiesRequestObject) (ListIdentitiesResponseObject, error)
+        + AuthorizeOAuth(ctx context.Context, request AuthorizeOAuthRequestObject) (AuthorizeOAuthResponseObject, error)
+        + ExchangeOAuth(ctx context.Context, request ExchangeOAuthRequestObject) (ExchangeOAuthResponseObject, error)
+        + ListServiceProviders(ctx context.Context, request ListServiceProvidersRequestObject) (ListServiceProvidersResponseObject, error)
+        + ListServiceSubscriptions(ctx context.Context, request ListServiceSubscriptionsRequestObject) (ListServiceSubscriptionsResponseObject, error)
+        + SubscribeService(ctx context.Context, request SubscribeServiceRequestObject) (SubscribeServiceResponseObject, error)
+        + SubscribeServiceExchange(ctx context.Context, request SubscribeServiceExchangeRequestObject) (SubscribeServiceExchangeResponseObject, error)
+        + UnsubscribeService(ctx context.Context, request UnsubscribeServiceRequestObject) (UnsubscribeServiceResponseObject, error)
+        + RegisterUser(ctx context.Context, request RegisterUserRequestObject) (RegisterUserResponseObject, error)
+
+    }
+    class "SubscribeExchangeRequest" << (S,Aquamarine) >> {
+        + Code string
+        + CodeVerifier *string
+        + RedirectUri *string
+
+    }
+    class "SubscribeExchangeResponse" << (S,Aquamarine) >> {
+        + Identity *IdentitySummary
+        + Subscription SubscriptionSummary
+
+    }
+    class "SubscribeService200JSONResponse" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeService400Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeService401Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeService404Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeService409Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeService502Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange200JSONResponse" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange400Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange401Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange404Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange409Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchange502Response" << (S,Aquamarine) >> {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceExchangeRequestObject" << (S,Aquamarine) >> {
+        + Provider OAuthProvider
+        + Body *SubscribeServiceExchangeJSONRequestBody
+
+    }
+    interface "SubscribeServiceExchangeResponseObject"  {
+        + VisitSubscribeServiceExchangeResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscribeServiceRequest" << (S,Aquamarine) >> {
+        + Prompt *string
+        + RedirectUri *string
+        + Scopes *[]string
+        + State *string
+        + UsePkce *bool
+
+    }
+    class "SubscribeServiceRequestObject" << (S,Aquamarine) >> {
+        + Provider OAuthProvider
+        + Body *SubscribeServiceJSONRequestBody
+
+    }
+    class "SubscribeServiceResponse" << (S,Aquamarine) >> {
+        + Authorization *OAuthAuthorizationResponse
+        + Status SubscribeServiceResponseStatus
+        + Subscription *SubscriptionSummary
+
+    }
+    interface "SubscribeServiceResponseObject"  {
+        + VisitSubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "SubscriptionListResponse" << (S,Aquamarine) >> {
+        + Subscriptions []UserSubscription
+
+    }
+    class "SubscriptionSummary" << (S,Aquamarine) >> {
+        + CreatedAt time.Time
+        + Id types.UUID
+        + IdentityId *types.UUID
+        + ProviderId types.UUID
+        + ScopeGrants *[]string
+        + Status string
+        + UpdatedAt *time.Time
+
+    }
+    class "UnsubscribeService204Response" << (S,Aquamarine) >> {
+        + VisitUnsubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "UnsubscribeService401Response" << (S,Aquamarine) >> {
+        + VisitUnsubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "UnsubscribeService404Response" << (S,Aquamarine) >> {
+        + VisitUnsubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "UnsubscribeServiceRequestObject" << (S,Aquamarine) >> {
+        + Provider OAuthProvider
+
+    }
+    interface "UnsubscribeServiceResponseObject"  {
+        + VisitUnsubscribeServiceResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateArea200JSONResponse" << (S,Aquamarine) >> {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateArea400Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateArea401Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateArea403Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateArea404Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaAction" << (S,Aquamarine) >> {
+        + ConfigId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "UpdateAreaReaction" << (S,Aquamarine) >> {
+        + ConfigId types.UUID
+        + Name *string
+        + Params *<font color=blue>map</font>[string]<font color=blue>interface</font>{}
+
+    }
+    class "UpdateAreaRequest" << (S,Aquamarine) >> {
+        + Action *UpdateAreaAction
+        + Description *string
+        + Name *string
+        + Reactions *[]UpdateAreaReaction
+
+    }
+    class "UpdateAreaRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+        + Body *UpdateAreaJSONRequestBody
+
+    }
+    interface "UpdateAreaResponseObject"  {
+        + VisitUpdateAreaResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatus200JSONResponse" << (S,Aquamarine) >> {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatus400Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatus401Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatus403Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatus404Response" << (S,Aquamarine) >> {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "UpdateAreaStatusRequest" << (S,Aquamarine) >> {
+        + Status UpdateAreaStatusRequestStatus
+
+    }
+    class "UpdateAreaStatusRequestObject" << (S,Aquamarine) >> {
+        + AreaId types.UUID
+        + Body *UpdateAreaStatusJSONRequestBody
+
+    }
+    interface "UpdateAreaStatusResponseObject"  {
+        + VisitUpdateAreaStatusResponse(w http.ResponseWriter) error
+
+    }
+    class "User" << (S,Aquamarine) >> {
+        + CreatedAt time.Time
+        + Email types.Email
+        + Id types.UUID
+        + LastLoginAt *time.Time
+        + Role string
+        + Status string
+        + UpdatedAt time.Time
+
+    }
+    class "UserResponse" << (S,Aquamarine) >> {
+        + SessionAuth *SessionAuth
+        + User User
+
+    }
+    class "UserSubscription" << (S,Aquamarine) >> {
+        + Provider ServiceProviderDetail
+        + Subscription SubscriptionSummary
+
+    }
+    class "VerifyEmail200JSONResponse" << (S,Aquamarine) >> {
+        + Body AuthSessionResponse
+        + Headers VerifyEmail200ResponseHeaders
+
+        + VisitVerifyEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "VerifyEmail200ResponseHeaders" << (S,Aquamarine) >> {
+        + SetCookie string
+
+    }
+    class "VerifyEmail400Response" << (S,Aquamarine) >> {
+        + VisitVerifyEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "VerifyEmail410Response" << (S,Aquamarine) >> {
+        + VisitVerifyEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "VerifyEmailRequest" << (S,Aquamarine) >> {
+        + Token string
+
+    }
+    class "VerifyEmailRequestObject" << (S,Aquamarine) >> {
+        + Body *VerifyEmailJSONRequestBody
+
+    }
+    interface "VerifyEmailResponseObject"  {
+        + VisitVerifyEmailResponse(w http.ResponseWriter) error
+
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminResetUserPassword200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminResetUserPasswordJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminUpdateUserEmail200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminUpdateUserEmailJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminUpdateUserStatus200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AdminUpdateUserStatusJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AuthorizeOAuth200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.AuthorizeOAuthJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ChangeEmail202JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ChangeEmailJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ChangePasswordJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ComponentSummaryKind" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.CreateArea201JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.CreateAreaJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.DuplicateArea201JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.DuplicateAreaJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ExchangeOAuthJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.GetAbout200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.GetArea200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.GetCurrentUser200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListAreaHistory200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListAreas200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListAvailableComponents200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListAvailableComponentsParamsKind" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListComponents200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListComponentsParamsKind" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListIdentities200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListServiceProviders200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ListServiceSubscriptions200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.LoginJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.MiddlewareFunc" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.OAuthProvider" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.RegisterUser202JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.RegisterUserJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.ServiceProviderDetailOauthType" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SessionAuthMethod" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.StrictHandlerFunc" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.StrictMiddlewareFunc" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SubscribeService200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SubscribeServiceExchange200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SubscribeServiceExchangeJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SubscribeServiceJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.SubscribeServiceResponseStatus" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UpdateArea200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UpdateAreaJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UpdateAreaStatus200JSONResponse" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UpdateAreaStatusJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UpdateAreaStatusRequestStatus" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.UserId" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.inbound.http.openapi.VerifyEmailJSONRequestBody" << (T, #FF7700) >>  {
+    }
+    class "strictHandler" << (S,Aquamarine) >> {
+        + GetAbout(ctx *gin.Context) 
+        + AdminUpdateUserEmail(ctx *gin.Context, userId UserId) 
+        + AdminResetUserPassword(ctx *gin.Context, userId UserId) 
+        + AdminUpdateUserStatus(ctx *gin.Context, userId UserId) 
+        + ListAreas(ctx *gin.Context) 
+        + CreateArea(ctx *gin.Context) 
+        + DeleteArea(ctx *gin.Context, areaId types.UUID) 
+        + GetArea(ctx *gin.Context, areaId types.UUID) 
+        + UpdateArea(ctx *gin.Context, areaId types.UUID) 
+        + DuplicateArea(ctx *gin.Context, areaId types.UUID) 
+        + ExecuteArea(ctx *gin.Context, areaId types.UUID) 
+        + ListAreaHistory(ctx *gin.Context, areaId types.UUID, params ListAreaHistoryParams) 
+        + UpdateAreaStatus(ctx *gin.Context, areaId types.UUID) 
+        + ChangeEmail(ctx *gin.Context) 
+        + Login(ctx *gin.Context) 
+        + Logout(ctx *gin.Context) 
+        + GetCurrentUser(ctx *gin.Context) 
+        + ChangePassword(ctx *gin.Context) 
+        + VerifyEmail(ctx *gin.Context) 
+        + ListComponents(ctx *gin.Context, params ListComponentsParams) 
+        + ListAvailableComponents(ctx *gin.Context, params ListAvailableComponentsParams) 
+        + ListIdentities(ctx *gin.Context) 
+        + AuthorizeOAuth(ctx *gin.Context, provider OAuthProvider) 
+        + ExchangeOAuth(ctx *gin.Context, provider OAuthProvider) 
+        + ListServiceProviders(ctx *gin.Context) 
+        + ListServiceSubscriptions(ctx *gin.Context) 
+        + SubscribeService(ctx *gin.Context, provider OAuthProvider) 
+        + SubscribeServiceExchange(ctx *gin.Context, provider OAuthProvider) 
+        + UnsubscribeService(ctx *gin.Context, provider OAuthProvider) 
+        + RegisterUser(ctx *gin.Context) 
+
+    }
+}
+namespace router {
+    class "Dependencies" << (S,Aquamarine) >> {
+        + AboutLoader catalog.Loader
+        + Clock about.Clock
+        + AuthHandler *auth.Handler
+        + AreaHandler *area.Handler
+        + ComponentHandler *components.Handler
+        + WebhookHandler *area.WebhookHandler
+        + MonitoringHandler *monitoring.Handler
+
+    }
+    class "compositeHandler" << (S,Aquamarine) >> {
+        + GetAbout(c *gin.Context) 
+        + RegisterUser(c *gin.Context) 
+        + ListAreas(c *gin.Context) 
+        + ListComponents(c *gin.Context, params openapi.ListComponentsParams) 
+        + ListAvailableComponents(c *gin.Context, params openapi.ListAvailableComponentsParams) 
+        + CreateArea(c *gin.Context) 
+        + GetArea(c *gin.Context, areaID types.UUID) 
+        + UpdateArea(c *gin.Context, areaID types.UUID) 
+        + UpdateAreaStatus(c *gin.Context, areaID types.UUID) 
+        + DuplicateArea(c *gin.Context, areaID types.UUID) 
+        + ListAreaHistory(c *gin.Context, areaID types.UUID, params openapi.ListAreaHistoryParams) 
+        + VerifyEmail(c *gin.Context) 
+        + Login(c *gin.Context) 
+        + Logout(c *gin.Context) 
+        + GetCurrentUser(c *gin.Context) 
+        + ChangePassword(c *gin.Context) 
+        + ChangeEmail(c *gin.Context) 
+        + ListIdentities(c *gin.Context) 
+        + AuthorizeOAuth(c *gin.Context, provider string) 
+        + ExchangeOAuth(c *gin.Context, provider string) 
+        + SubscribeService(c *gin.Context, provider string) 
+        + SubscribeServiceExchange(c *gin.Context, provider string) 
+        + AdminResetUserPassword(c *gin.Context, userID types.UUID) 
+        + AdminUpdateUserEmail(c *gin.Context, userID types.UUID) 
+        + AdminUpdateUserStatus(c *gin.Context, userID types.UUID) 
+        + ExecuteArea(c *gin.Context, areaId types.UUID) 
+        + DeleteArea(c *gin.Context, areaId types.UUID) 
+        + ListServiceProviders(c *gin.Context) 
+        + ListServiceSubscriptions(c *gin.Context) 
+        + UnsubscribeService(c *gin.Context, provider string) 
+
+    }
+}
+namespace logger {
+    class "Mailer" << (S,Aquamarine) >> {
+        + Logger *zap.Logger
+
+        + Send(ctx context.Context, msg outbound.Mail) error
+
+    }
+}
+namespace sendgrid {
+    class "Mailer" << (S,Aquamarine) >> {
+        + APIKey string
+        + FromEmail string
+        + FromName string
+        + Sandbox bool
+
+        + Send(ctx context.Context, msg outbound.Mail) error
+
+    }
+}
+namespace oauth {
+    class "Manager" << (S,Aquamarine) >> {
+        + Provider(name string) (identity.Provider, bool)
+        + Names() []string
+
+    }
+    class "ManagerConfig" << (S,Aquamarine) >> {
+        + Allowed []string
+        + Providers <font color=blue>map</font>[string]ProviderCredentials
+
+    }
+    class "ProviderCredentials" << (S,Aquamarine) >> {
+        + ClientID string
+        + ClientSecret string
+        + RedirectURI string
+        + Scopes []string
+
+    }
+    class "ProviderDescriptor" << (S,Aquamarine) >> {
+        + DisplayName string
+        + AuthorizationURL string
+        + TokenURL string
+        + UserInfoURL string
+        + UserInfoMethod string
+        + UserInfoBody string
+        + DefaultScopes []string
+        + DefaultPrompt string
+        + Audience string
+        + AuthorizationParams <font color=blue>map</font>[string]string
+        + UserInfoHeaders <font color=blue>map</font>[string]string
+        + ProfileExtractor ProfileExtractor
+        + TokenAuthMethod string
+        + TokenFormat string
+        + TokenHeaders <font color=blue>map</font>[string]string
+
+    }
+    class "provider" << (S,Aquamarine) >> {
+        + Name() string
+        + AuthorizationURL(ctx context.Context, req identity.AuthorizationRequest) (identity.AuthorizationResponse, error)
+        + Exchange(ctx context.Context, code string, req identity.ExchangeRequest) (identity.TokenExchange, error)
+        + Refresh(ctx context.Context, identity identity.Identity) (identity.TokenExchange, error)
+
+    }
+    class "providerConfig" << (S,Aquamarine) >> {
+    }
+    class "server.internal.adapters.outbound.oauth.ProfileExtractor" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.outbound.oauth.ProviderOption" << (T, #FF7700) >>  {
+    }
+    class "server.internal.adapters.outbound.oauth.Registry" << (T, #FF7700) >>  {
+    }
+}
+namespace action {
+    class "Repository" << (S,Aquamarine) >> {
+        + UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + UpsertPollingSource(ctx context.Context, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + ListDueScheduleSources(ctx context.Context, before time.Time, limit int) ([]action.ScheduleBinding, error)
+        + UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+        + FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (action.Source, error)
+        + ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]action.PollingBinding, error)
+        + UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+        + FindWebhookBindingByPath(ctx context.Context, path string) (action.WebhookBinding, error)
+        + UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+
+    }
+    class "pollingBindingModel" << (S,Aquamarine) >> {
+        + SourceID uuid.UUID
+        + ComponentConfigID uuid.UUID
+        + Mode string
+        + Cursor datatypes.JSON
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+        + NextRun time.Time
+        + ConfigID uuid.UUID
+        + ConfigUserID uuid.UUID
+        + ConfigComponentID uuid.UUID
+        + ConfigName *string
+        + ConfigParams datatypes.JSON
+        + ConfigSecretsRef *string
+        + ConfigIsActive bool
+        + ConfigCreatedAt time.Time
+        + ConfigUpdatedAt time.Time
+
+    }
+    class "scheduleBindingModel" << (S,Aquamarine) >> {
+        + SourceID uuid.UUID
+        + ComponentConfigID uuid.UUID
+        + Mode string
+        + Cursor datatypes.JSON
+        + Schedule *string
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+        + NextRun time.Time
+        + ConfigID uuid.UUID
+        + ConfigUserID uuid.UUID
+        + ConfigComponentID uuid.UUID
+        + ConfigName *string
+        + ConfigParams datatypes.JSON
+        + ConfigSecretsRef *string
+        + ConfigIsActive bool
+        + ConfigCreatedAt time.Time
+        + ConfigUpdatedAt time.Time
+
+    }
+    class "sourceModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + ComponentConfigID uuid.UUID
+        + Mode string
+        + Cursor datatypes.JSON
+        + WebhookSecret *string
+        + WebhookURLPath *string
+        + Schedule *string
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "webhookBindingModel" << (S,Aquamarine) >> {
+        + SourceID uuid.UUID
+        + ComponentConfigID uuid.UUID
+        + Mode string
+        + Cursor datatypes.JSON
+        + WebhookSecret *string
+        + WebhookURLPath *string
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+
+    }
+}
+namespace area {
+    class "Repository" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, area area.Area, action area.Link, reactions []area.Link) (area.Area, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (area.Area, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]area.Area, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+        + UpdateMetadata(ctx context.Context, area area.Area) error
+        + UpdateConfig(ctx context.Context, config component.Config) error
+
+    }
+    class "actionSourceModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + ComponentConfigID uuid.UUID
+
+        + TableName() string
+
+    }
+    class "areaLinkModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + AreaID uuid.UUID
+        + Role string
+        + ComponentConfigID uuid.UUID
+        + Position int
+        + RetryPolicy []byte
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + ComponentConfig componentConfigModel
+
+        + TableName() string
+
+    }
+    class "areaModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Name string
+        + Description *string
+        + Status string
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Links []areaLinkModel
+
+        + TableName() string
+
+    }
+    class "componentConfigModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + ComponentID uuid.UUID
+        + Name *string
+        + Params datatypes.JSON
+        + SecretsRef *string
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "jobModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+
+        + TableName() string
+
+    }
+}
+namespace auth {
+    class "Repository" << (S,Aquamarine) >> {
+        + DB() *gorm.DB
+        + Users() outbound.UserRepository
+        + Sessions() outbound.SessionRepository
+        + VerificationTokens() outbound.VerificationTokenRepository
+        + Identities() identity.Repository
+
+    }
+    class "identityModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Provider string
+        + Subject string
+        + AccessToken string
+        + RefreshToken string
+        + Scopes pq.StringArray
+        + ExpiresAt *time.Time
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "identityRepo" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, identity identity.Identity) (identity.Identity, error)
+        + Update(ctx context.Context, identity identity.Identity) error
+        + FindByID(ctx context.Context, id uuid.UUID) (identity.Identity, error)
+        + FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider string) (identity.Identity, error)
+        + FindByProviderSubject(ctx context.Context, provider string, subject string) (identity.Identity, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]identity.Identity, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+
+    }
+    class "sessionModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + IssuedAt time.Time
+        + ExpiresAt time.Time
+        + RevokedAt *time.Time
+        + IP string
+        + UserAgent string
+        + AuthProvider string
+
+        + TableName() string
+
+    }
+    class "sessionRepo" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, session session.Session) (session.Session, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (session.Session, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+        + DeleteByUser(ctx context.Context, userID uuid.UUID) error
+
+    }
+    class "userModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Email string
+        + PasswordHash string
+        + Status string
+        + Role string
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + LastLoginAt *time.Time
+
+        + TableName() string
+
+    }
+    class "userRepo" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, userModelDomain user.User) (user.User, error)
+        + FindByEmail(ctx context.Context, email string) (user.User, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (user.User, error)
+        + Update(ctx context.Context, user user.User) error
+
+    }
+    class "verificationTokenModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Token string
+        + ExpiresAt time.Time
+        + ConsumedAt *time.Time
+        + CreatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "verificationTokenRepo" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, token auth.VerificationToken) (auth.VerificationToken, error)
+        + FindByToken(ctx context.Context, token string) (auth.VerificationToken, error)
+        + MarkConsumed(ctx context.Context, tokenID uuid.UUID, consumedAt int64) error
+        + DeleteByUser(ctx context.Context, userID uuid.UUID) error
+
+    }
+}
+namespace component {
+    class "Repository" << (S,Aquamarine) >> {
+        + FindByID(ctx context.Context, id uuid.UUID) (component.Component, error)
+        + FindByIDs(ctx context.Context, ids []uuid.UUID) (<font color=blue>map</font>[uuid.UUID]component.Component, error)
+        + List(ctx context.Context, opts outbound.ComponentListOptions) ([]component.Component, error)
+
+    }
+    class "componentModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + ProviderID uuid.UUID
+        + Kind string
+        + Name string
+        + DisplayName string
+        + Description *string
+        + Version int
+        + InputSchema datatypes.JSON
+        + OutputSchema datatypes.JSON
+        + Metadata datatypes.JSON
+        + IsEnabled bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Provider providerModel
+
+        + TableName() string
+
+    }
+    class "providerModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Name string
+        + DisplayName string
+
+        + TableName() string
+
+    }
+}
+namespace execution {
+    class "DeliveryLogRepository" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, log job.DeliveryLog) (job.DeliveryLog, error)
+        + ListByJob(ctx context.Context, jobID uuid.UUID, limit int) ([]job.DeliveryLog, error)
+
+    }
+    class "EventRepository" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, event action.Event) (action.Event, error)
+
+    }
+    class "JobRepository" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, job job.Job) (job.Job, error)
+        + CreateBatch(ctx context.Context, jobs []job.Job) ([]job.Job, error)
+        + Update(ctx context.Context, job job.Job) error
+        + Claim(ctx context.Context, id uuid.UUID, worker string, now time.Time) (job.Job, error)
+        + ListWithDetails(ctx context.Context, opts outbound.JobListOptions) ([]outbound.JobDetails, error)
+        + FindDetails(ctx context.Context, userID uuid.UUID, jobID uuid.UUID) (outbound.JobDetails, error)
+
+    }
+    class "Manager" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, event action.Event, triggers []action.Trigger, jobs []job.Job) (action.Event, []action.Trigger, []job.Job, error)
+
+    }
+    class "TriggerRepository" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, trigger action.Trigger) (action.Trigger, error)
+        + CreateBatch(ctx context.Context, triggers []action.Trigger) ([]action.Trigger, error)
+
+    }
+    class "deliveryLogModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + JobID uuid.UUID
+        + Endpoint string
+        + Request datatypes.JSON
+        + Response datatypes.JSON
+        + StatusCode *int
+        + DurationMS *int
+        + CreatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "eventModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + SourceID uuid.UUID
+        + OccurredAt time.Time
+        + ReceivedAt time.Time
+        + Fingerprint string
+        + Payload datatypes.JSON
+        + DedupStatus string
+
+        + TableName() string
+
+    }
+    class "jobModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + TriggerID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + Status string
+        + Attempt int
+        + RunAt time.Time
+        + LockedBy *string
+        + LockedAt *time.Time
+        + InputPayload datatypes.JSON
+        + ResultPayload datatypes.JSON
+        + Error *string
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "triggerModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + EventID uuid.UUID
+        + AreaID uuid.UUID
+        + Status string
+        + MatchInfo datatypes.JSON
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+}
+namespace service {
+    class "Repository" << (S,Aquamarine) >> {
+        + Providers() outbound.ServiceProviderRepository
+        + Subscriptions() outbound.SubscriptionRepository
+
+    }
+    class "providerModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Name string
+        + DisplayName string
+        + Category string
+        + OAuthType string
+        + IsEnabled bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "providerRepo" << (S,Aquamarine) >> {
+        + FindByName(ctx context.Context, name string) (service.Provider, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (service.Provider, error)
+        + List(ctx context.Context) ([]service.Provider, error)
+
+    }
+    class "subscriptionModel" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + ProviderID uuid.UUID
+        + IdentityID *uuid.UUID
+        + Status string
+        + ScopeGrants pq.StringArray
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TableName() string
+
+    }
+    class "subscriptionRepo" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, subscription subscription.Subscription) (subscription.Subscription, error)
+        + Update(ctx context.Context, subscription subscription.Subscription) error
+        + FindByUserAndProvider(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) (subscription.Subscription, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]subscription.Subscription, error)
+
+    }
+}
+namespace dropbox {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "FolderExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "folderConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace gcalendar {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Executor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "eventConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace gdrive {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Executor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "moveFileConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace github {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "IssueExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "issueConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace gitlab {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "IssueExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "issueConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace gmail {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Executor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "messageConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace http {
+    class "Executor" << (S,Aquamarine) >> {
+        + Client *http.Client
+        + Logger *zap.Logger
+
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+        + ExecuteReaction(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+}
+namespace linear {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "IssueExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "issueConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace mail {
+}
+namespace notion {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "CreatePageExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "pageConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace outlook {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Executor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "messageConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace reddit {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Executor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "commentConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace slack {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "MessageExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "messageConfig" << (S,Aquamarine) >> {
+    }
+    class "slackResponse" << (S,Aquamarine) >> {
+        + OK bool
+        + Error string
+
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace spotify {
+    class "AddTrackExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "addTrackConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace zoom {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "MeetingExecutor" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "meetingConfig" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace about {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Handler" << (S,Aquamarine) >> {
+        + Register(r gin.IRouter) 
+        + GetAbout(c *gin.Context) 
+
+    }
+    class "SystemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace area {
+    class "ActionInput" << (S,Aquamarine) >> {
+        + ComponentID uuid.UUID
+        + Name string
+        + Params <font color=blue>map</font>[string]any
+
+    }
+    interface "ActionProvisioner"  {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "ActionProvisionerFunc" << (S,Aquamarine) >> {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    interface "AreaExecutor"  {
+        + ExecuteWithOptions(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts ExecutionOptions) error
+
+    }
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    interface "ComponentPollingHandler"  {
+        + Supports(component *component.Component) bool
+        + Poll(ctx context.Context, req PollingRequest) (PollingResult, error)
+
+    }
+    interface "ComponentReactionHandler"  {
+        + Supports(component *component.Component) bool
+        + Execute(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    class "CompositeReactionExecutor" << (S,Aquamarine) >> {
+        + ExecuteReaction(ctx context.Context, area area.Area, link area.Link) (outbound.ReactionResult, error)
+
+    }
+    class "CookieConfig" << (S,Aquamarine) >> {
+        + Name string
+        + Domain string
+        + Path string
+        + Secure bool
+        + HTTPOnly bool
+        + SameSite http.SameSite
+
+    }
+    class "DuplicateOptions" << (S,Aquamarine) >> {
+        + Name *string
+        + Description *string
+
+    }
+    class "ExecutionInput" << (S,Aquamarine) >> {
+        + Area area.Area
+        + SourceID uuid.UUID
+        + Payload <font color=blue>map</font>[string]any
+        + Fingerprint string
+        + OccurredAt time.Time
+
+    }
+    class "ExecutionOptions" << (S,Aquamarine) >> {
+        + SourceID uuid.UUID
+        + Payload <font color=blue>map</font>[string]any
+        + Fingerprint string
+        + OccurredAt time.Time
+
+    }
+    interface "ExecutionPipeline"  {
+        + Enqueue(ctx context.Context, input ExecutionInput) error
+
+    }
+    class "HTTPPollingHandler" << (S,Aquamarine) >> {
+        + Supports(component *component.Component) bool
+        + Poll(ctx context.Context, req PollingRequest) (PollingResult, error)
+
+    }
+    class "Handler" << (S,Aquamarine) >> {
+        + ListAreas(c *gin.Context) 
+        + CreateArea(c *gin.Context) 
+        + GetArea(c *gin.Context, areaID types.UUID) 
+        + UpdateArea(c *gin.Context, areaID types.UUID) 
+        + UpdateAreaStatus(c *gin.Context, areaID types.UUID) 
+        + DuplicateArea(c *gin.Context, areaID types.UUID) 
+        + ListAreaHistory(c *gin.Context, areaID types.UUID, params openapi.ListAreaHistoryParams) 
+        + ExecuteArea(c *gin.Context, areaID types.UUID) 
+        + DeleteArea(c *gin.Context, areaID types.UUID) 
+
+    }
+    class "NoopProvisioner" << (S,Aquamarine) >> {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "PollingEvent" << (S,Aquamarine) >> {
+        + Payload <font color=blue>map</font>[string]any
+        + Fingerprint string
+        + OccurredAt time.Time
+
+    }
+    class "PollingProvisioner" << (S,Aquamarine) >> {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "PollingRequest" << (S,Aquamarine) >> {
+        + Binding action.PollingBinding
+        + Component component.Component
+        + Cursor <font color=blue>map</font>[string]any
+        + Now time.Time
+        + Identity <font color=blue>map</font>[string]any
+
+    }
+    class "PollingResult" << (S,Aquamarine) >> {
+        + Cursor <font color=blue>map</font>[string]any
+        + Events []PollingEvent
+
+    }
+    class "PollingRunner" << (S,Aquamarine) >> {
+        + Run(ctx context.Context) 
+
+    }
+    class "ReactionInput" << (S,Aquamarine) >> {
+        + ComponentID uuid.UUID
+        + Name string
+        + Params <font color=blue>map</font>[string]any
+
+    }
+    class "RegistryProvisioner" << (S,Aquamarine) >> {
+        + Register(provider string, component string, provisioner ActionProvisioner) 
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "Service" << (S,Aquamarine) >> {
+        + Create(ctx context.Context, userID uuid.UUID, name string, description string, action ActionInput, reactions []ReactionInput) (area.Area, error)
+        + Execute(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error
+        + ExecuteWithOptions(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts ExecutionOptions) error
+        + ProcessWebhook(ctx context.Context, path string, secret string, payload <font color=blue>map</font>[string]any, fingerprint string, occurredAt time.Time) error
+        + List(ctx context.Context, userID uuid.UUID) ([]area.Area, error)
+        + Get(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) (area.Area, error)
+        + Update(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, cmd UpdateAreaCommand) (area.Area, error)
+        + UpdateStatus(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, status area.Status) (area.Area, error)
+        + Duplicate(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts DuplicateOptions) (area.Area, error)
+        + Delete(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) error
+
+    }
+    interface "SessionResolver"  {
+        + ResolveSession(ctx context.Context, sessionID uuid.UUID) (user.User, session.Session, error)
+
+    }
+    class "TimerProvisioner" << (S,Aquamarine) >> {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "TimerScheduler" << (S,Aquamarine) >> {
+        + Run(ctx context.Context) 
+
+    }
+    class "UpdateActionCommand" << (S,Aquamarine) >> {
+        + ConfigID uuid.UUID
+        + Name *string
+        + NameSet bool
+        + Params <font color=blue>map</font>[string]any
+        + ParamsSet bool
+
+    }
+    class "UpdateAreaCommand" << (S,Aquamarine) >> {
+        + Name *string
+        + Description *string
+        + DescriptionSet bool
+        + Action *UpdateActionCommand
+        + Reactions []UpdateReactionCommand
+
+    }
+    class "UpdateReactionCommand" << (S,Aquamarine) >> {
+        + ConfigID uuid.UUID
+        + Name *string
+        + NameSet bool
+        + Params <font color=blue>map</font>[string]any
+        + ParamsSet bool
+
+    }
+    class "WebhookHandler" << (S,Aquamarine) >> {
+        + Handle(c *gin.Context) 
+
+    }
+    class "WebhookProvisioner" << (S,Aquamarine) >> {
+        + Provision(ctx context.Context, area area.Area) error
+
+    }
+    class "dbExecutionPipeline" << (S,Aquamarine) >> {
+        + Enqueue(ctx context.Context, input ExecutionInput) error
+
+    }
+    class "httpHeaderSpec" << (S,Aquamarine) >> {
+        + Name string
+        + Template string
+        + Default string
+        + SkipIfEmpty bool
+
+    }
+    class "httpPollingAuthConfig" << (S,Aquamarine) >> {
+        + Kind string
+        + IdentityParam string
+        + Provider string
+        + Scopes []string
+
+    }
+    class "httpPollingConfig" << (S,Aquamarine) >> {
+        + EndpointTemplate string
+        + Method string
+        + ItemsPath []string
+        + FingerprintPath []string
+        + OccurredAtPath []string
+        + CursorKey string
+        + CursorSource string
+        + CursorItemPath []string
+        + CursorResponsePath []string
+        + CursorInitial string
+        + Query []httpQuerySpec
+        + Headers []httpHeaderSpec
+        + BodyTemplate string
+        + Auth *httpPollingAuthConfig
+        + SkipRules []httpSkipRule
+
+    }
+    class "httpPollingCursor" << (S,Aquamarine) >> {
+        + Key string
+        + Initial string
+        + Source string
+        + ItemPath []string
+        + ResponsePath []string
+
+    }
+    class "httpQuerySpec" << (S,Aquamarine) >> {
+        + Name string
+        + Template string
+        + Default string
+        + SkipIfEmpty bool
+
+    }
+    class "httpSkipRule" << (S,Aquamarine) >> {
+        + Path []string
+        + Contains string
+        + Equals string
+
+    }
+    interface "oauthProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "parameterSpec" << (S,Aquamarine) >> {
+        + Key string
+        + Type string
+        + Required bool
+        + Options []string
+        + Minimum *float64
+        + Maximum *float64
+
+    }
+    class "pollingConfig" << (S,Aquamarine) >> {
+    }
+    class "provisionerKey" << (S,Aquamarine) >> {
+    }
+    class "server.internal.app.area.ActionProvisionerFunc" << (T, #FF7700) >>  {
+    }
+    class "server.internal.app.area.PathGenerator" << (T, #FF7700) >>  {
+    }
+    class "server.internal.app.area.PollingRunnerOption" << (T, #FF7700) >>  {
+    }
+    class "server.internal.app.area.RegistryOption" << (T, #FF7700) >>  {
+    }
+    class "server.internal.app.area.SecretGenerator" << (T, #FF7700) >>  {
+    }
+    class "server.internal.app.area.TimerSchedulerOption" << (T, #FF7700) >>  {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+    class "timerConfig" << (S,Aquamarine) >> {
+    }
+    class "timerUnit" << (S,Aquamarine) >> {
+    }
+    class "webhookConfig" << (S,Aquamarine) >> {
+    }
+}
+namespace auth {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + PasswordMinLength int
+        + SessionTTL time.Duration
+        + VerificationTTL time.Duration
+        + BaseURL string
+        + CookieName string
+
+    }
+    class "CookieConfig" << (S,Aquamarine) >> {
+        + Domain string
+        + Path string
+        + Secure bool
+        + HTTPOnly bool
+        + SameSite http.SameSite
+
+    }
+    class "EmailChangeResult" << (S,Aquamarine) >> {
+        + User user.User
+        + VerificationExpires *time.Time
+
+    }
+    class "Handler" << (S,Aquamarine) >> {
+        + RegisterUser(c *gin.Context) 
+        + VerifyEmail(c *gin.Context) 
+        + Login(c *gin.Context) 
+        + Logout(c *gin.Context) 
+        + GetCurrentUser(c *gin.Context) 
+        + ChangePassword(c *gin.Context) 
+        + ChangeEmail(c *gin.Context) 
+        + ListIdentities(c *gin.Context) 
+        + ListServiceProviders(c *gin.Context) 
+        + ListServiceSubscriptions(c *gin.Context) 
+        + UnsubscribeService(c *gin.Context, provider string) 
+        + AuthorizeOAuth(c *gin.Context, provider string) 
+        + ExchangeOAuth(c *gin.Context, provider string) 
+        + SubscribeService(c *gin.Context, provider string) 
+        + SubscribeServiceExchange(c *gin.Context, provider string) 
+        + AdminResetUserPassword(c *gin.Context, userID types.UUID) 
+        + AdminUpdateUserEmail(c *gin.Context, userID types.UUID) 
+        + AdminUpdateUserStatus(c *gin.Context, userID types.UUID) 
+
+    }
+    class "LoginResult" << (S,Aquamarine) >> {
+        + User user.User
+        + Session session.Session
+        + CookieName string
+
+    }
+    class "Metadata" << (S,Aquamarine) >> {
+        + ClientIP string
+        + UserAgent string
+
+    }
+    class "OAuthService" << (S,Aquamarine) >> {
+        + AuthorizationURL(ctx context.Context, provider string, req identity.AuthorizationRequest) (identity.AuthorizationResponse, error)
+        + Exchange(ctx context.Context, provider string, code string, req identity.ExchangeRequest, meta Metadata) (LoginResult, identity.Identity, error)
+        + ListProviders(ctx context.Context) ([]service.Provider, error)
+        + ListSubscriptions(ctx context.Context, userID uuid.UUID) ([]SubscriptionOverview, error)
+        + Unsubscribe(ctx context.Context, userID uuid.UUID, provider string) (subscription.Subscription, error)
+        + BeginSubscription(ctx context.Context, user user.User, provider string, req identity.AuthorizationRequest) (SubscriptionInitResult, error)
+        + CompleteSubscription(ctx context.Context, user user.User, provider string, code string, req identity.ExchangeRequest) (subscription.Subscription, identity.Identity, error)
+        + LinkService(ctx context.Context, user user.User, provider string, code string, req identity.ExchangeRequest) (subscription.Subscription, identity.Identity, error)
+        + ListIdentities(ctx context.Context, userID uuid.UUID) ([]identity.Identity, error)
+
+    }
+    interface "ProviderResolver"  {
+        + Provider(name string) (identity.Provider, bool)
+
+    }
+    class "RegistrationResult" << (S,Aquamarine) >> {
+        + User user.User
+        + VerificationExpires time.Time
+
+    }
+    class "Service" << (S,Aquamarine) >> {
+        + Register(ctx context.Context, email string, password string) (RegistrationResult, error)
+        + VerifyEmail(ctx context.Context, token string, meta Metadata) (VerificationResult, error)
+        + Login(ctx context.Context, email string, password string, meta Metadata) (LoginResult, error)
+        + ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword string, newPassword string) (user.User, error)
+        + ChangeEmail(ctx context.Context, userID uuid.UUID, password string, email string) (EmailChangeResult, error)
+        + AdminResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) (user.User, error)
+        + AdminChangeEmail(ctx context.Context, userID uuid.UUID, email string, sendVerification bool) (EmailChangeResult, error)
+        + AdminUpdateStatus(ctx context.Context, userID uuid.UUID, status user.Status) (user.User, error)
+        + Logout(ctx context.Context, sessionID uuid.UUID) error
+        + ResolveSession(ctx context.Context, sessionID uuid.UUID) (user.User, session.Session, error)
+
+    }
+    class "SubscriptionInitResult" << (S,Aquamarine) >> {
+        + Authorization *identity.AuthorizationResponse
+        + Subscription *subscription.Subscription
+
+    }
+    class "SubscriptionOverview" << (S,Aquamarine) >> {
+        + Subscription subscription.Subscription
+        + Provider service.Provider
+
+    }
+    class "VerificationResult" << (S,Aquamarine) >> {
+        + User user.User
+        + Session session.Session
+        + CookieName string
+
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace automation {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Worker" << (S,Aquamarine) >> {
+        + Run(ctx context.Context) 
+
+    }
+    class "server.internal.app.automation.Option" << (T, #FF7700) >>  {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+}
+namespace components {
+    class "CookieConfig" << (S,Aquamarine) >> {
+        + Name string
+        + Domain string
+        + Path string
+        + Secure bool
+        + HTTPOnly bool
+        + SameSite http.SameSite
+
+    }
+    class "Handler" << (S,Aquamarine) >> {
+        + ListComponents(c *gin.Context, params openapi.ListComponentsParams) 
+        + ListAvailableComponents(c *gin.Context, params openapi.ListAvailableComponentsParams) 
+
+    }
+    class "ListOptions" << (S,Aquamarine) >> {
+        + Kind string
+        + Provider string
+
+    }
+    class "Service" << (S,Aquamarine) >> {
+        + List(ctx context.Context, opts ListOptions) ([]component.Component, error)
+        + ListAvailable(ctx context.Context, userID uuid.UUID, opts ListOptions) ([]component.Component, error)
+
+    }
+    interface "SessionResolver"  {
+        + ResolveSession(ctx context.Context, sessionID uuid.UUID) (user.User, session.Session, error)
+
+    }
+}
+namespace monitoring {
+    class "AreaSummary" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Name string
+
+    }
+    class "CookieConfig" << (S,Aquamarine) >> {
+        + Name string
+        + Domain string
+        + Path string
+        + Secure bool
+        + HTTPOnly bool
+        + SameSite http.SameSite
+
+    }
+    class "Handler" << (S,Aquamarine) >> {
+        + ListJobs(c *gin.Context) 
+        + ListJobLogs(c *gin.Context) 
+
+    }
+    class "JobOverview" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Status string
+        + Attempt int
+        + RunAt time.Time
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Area AreaSummary
+        + Reaction ReactionSummary
+        + ResultPayload <font color=blue>map</font>[string]any
+        + Error *string
+
+    }
+    class "ListJobsOptions" << (S,Aquamarine) >> {
+        + UserID uuid.UUID
+        + AreaID *uuid.UUID
+        + Status string
+        + Limit int
+
+    }
+    class "ReactionSummary" << (S,Aquamarine) >> {
+        + Component string
+        + Provider string
+
+    }
+    class "Service" << (S,Aquamarine) >> {
+        + ListJobs(ctx context.Context, opts ListJobsOptions) ([]JobOverview, error)
+        + ListJobLogs(ctx context.Context, userID uuid.UUID, jobID uuid.UUID, limit int) ([]job.DeliveryLog, error)
+
+    }
+    interface "SessionResolver"  {
+        + ResolveSession(ctx context.Context, sessionID uuid.UUID) (user.User, session.Session, error)
+
+    }
+}
+namespace action {
+    class "Event" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + SourceID uuid.UUID
+        + OccurredAt time.Time
+        + ReceivedAt time.Time
+        + Fingerprint string
+        + Payload <font color=blue>map</font>[string]any
+        + DedupStatus DedupStatus
+
+    }
+    class "PollingBinding" << (S,Aquamarine) >> {
+        + Source Source
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+        + NextRun time.Time
+        + Config component.Config
+
+    }
+    class "ScheduleBinding" << (S,Aquamarine) >> {
+        + Source Source
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+        + NextRun time.Time
+        + Config component.Config
+
+    }
+    class "Source" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + ComponentConfigID uuid.UUID
+        + Mode Mode
+        + Cursor <font color=blue>map</font>[string]any
+        + WebhookSecret *string
+        + WebhookURLPath *string
+        + Schedule *string
+        + IsActive bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+    }
+    class "Trigger" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + EventID uuid.UUID
+        + AreaID uuid.UUID
+        + Status TriggerStatus
+        + MatchInfo <font color=blue>map</font>[string]any
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+    }
+    class "WebhookBinding" << (S,Aquamarine) >> {
+        + Source Source
+        + AreaID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + UserID uuid.UUID
+
+    }
+    class "server.internal.domain.action.DedupStatus" << (T, #FF7700) >>  {
+    }
+    class "server.internal.domain.action.Mode" << (T, #FF7700) >>  {
+    }
+    class "server.internal.domain.action.TriggerStatus" << (T, #FF7700) >>  {
+    }
+}
+namespace area {
+    class "Area" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Name string
+        + Description *string
+        + Status Status
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Action *Link
+        + Reactions []Link
+
+        + WithDescription(description string) Area
+        + OwnedBy(userID uuid.UUID) bool
+        + WithStatus(status Status) Area
+        + WithTimestamps(created time.Time, updated time.Time) Area
+
+    }
+    class "Link" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + AreaID uuid.UUID
+        + Role LinkRole
+        + Position int
+        + Config component.Config
+        + RetryPolicy *RetryPolicy
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + IsAction() bool
+
+    }
+    class "RetryPolicy" << (S,Aquamarine) >> {
+        + MaxRetries int
+        + Strategy RetryStrategy
+        + BaseDelay time.Duration
+        + MaxDelay time.Duration
+
+        + ShouldRetry(attempt int) bool
+        + Delay(attempt int) time.Duration
+
+    }
+    class "server.internal.domain.area.LinkRole" << (T, #FF7700) >>  {
+    }
+    class "server.internal.domain.area.RetryStrategy" << (T, #FF7700) >>  {
+    }
+    class "server.internal.domain.area.Status" << (T, #FF7700) >>  {
+    }
+}
+namespace auth {
+    class "VerificationToken" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Token string
+        + ExpiresAt time.Time
+        + Consumed *time.Time
+        + CreatedAt time.Time
+
+        + Expired(now time.Time) bool
+        + Used() bool
+
+    }
+}
+namespace component {
+    class "Component" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + ProviderID uuid.UUID
+        + Provider Provider
+        + Kind Kind
+        + Name string
+        + DisplayName string
+        + Description string
+        + Version int
+        + Enabled bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Metadata <font color=blue>map</font>[string]any
+        + InputSchema <font color=blue>map</font>[string]any
+        + OutputSchema <font color=blue>map</font>[string]any
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + ComponentID uuid.UUID
+        + Name string
+        + Params <font color=blue>map</font>[string]any
+        + SecretsRef *string
+        + Active bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + Component *Component
+
+    }
+    class "Provider" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Name string
+        + DisplayName string
+
+    }
+    class "server.internal.domain.component.Kind" << (T, #FF7700) >>  {
+    }
+}
+namespace identity {
+    class "Identity" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + Provider string
+        + Subject string
+        + AccessToken string
+        + RefreshToken string
+        + Scopes []string
+        + ExpiresAt *time.Time
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + TokenExpired(now time.Time) bool
+        + WithTokens(accessToken string, refreshToken string, expiresAt *time.Time, scopes []string) Identity
+
+    }
+    class "Profile" << (S,Aquamarine) >> {
+        + Provider string
+        + Subject string
+        + Email string
+        + Name string
+        + PictureURL string
+        + Raw <font color=blue>map</font>[string]any
+
+        + Empty() bool
+
+    }
+}
+namespace job {
+    class "DeliveryLog" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + JobID uuid.UUID
+        + Endpoint string
+        + Request <font color=blue>map</font>[string]any
+        + Response <font color=blue>map</font>[string]any
+        + StatusCode *int
+        + DurationMS *int
+        + CreatedAt time.Time
+
+    }
+    class "Job" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + TriggerID uuid.UUID
+        + AreaLinkID uuid.UUID
+        + Status Status
+        + Attempt int
+        + RunAt time.Time
+        + LockedBy *string
+        + LockedAt *time.Time
+        + InputPayload <font color=blue>map</font>[string]any
+        + ResultPayload <font color=blue>map</font>[string]any
+        + Error *string
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+    }
+    class "server.internal.domain.job.Status" << (T, #FF7700) >>  {
+    }
+}
+namespace service {
+    class "Provider" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Name string
+        + DisplayName string
+        + Category string
+        + OAuthType OAuthType
+        + Enabled bool
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + RequiresOAuth() bool
+
+    }
+    class "server.internal.domain.service.OAuthType" << (T, #FF7700) >>  {
+    }
+}
+namespace session {
+    class "Session" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + IssuedAt time.Time
+        + ExpiresAt time.Time
+        + RevokedAt *time.Time
+        + IP string
+        + UserAgent string
+        + AuthProvider string
+
+        + Active(now time.Time) bool
+
+    }
+}
+namespace subscription {
+    class "Subscription" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + UserID uuid.UUID
+        + ProviderID uuid.UUID
+        + IdentityID *uuid.UUID
+        + Status Status
+        + ScopeGrants []string
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+
+        + WithIdentity(identityID uuid.UUID) Subscription
+        + WithScopes(scopes []string) Subscription
+
+    }
+    class "server.internal.domain.subscription.Status" << (T, #FF7700) >>  {
+    }
+}
+namespace user {
+    class "User" << (S,Aquamarine) >> {
+        + ID uuid.UUID
+        + Email string
+        + PasswordHash string
+        + Status Status
+        + Role Role
+        + CreatedAt time.Time
+        + UpdatedAt time.Time
+        + LastLoginAt *time.Time
+
+        + Active() bool
+        + PendingVerification() bool
+        + IsAdmin() bool
+        + WithPasswordHash(hash string) User
+        + WithStatus(status Status) User
+        + WithLastLogin(ts time.Time) User
+        + WithRole(role Role) User
+
+    }
+    class "server.internal.domain.user.Role" << (T, #FF7700) >>  {
+    }
+    class "server.internal.domain.user.Status" << (T, #FF7700) >>  {
+    }
+}
+namespace oauth2 {
+    class "AuthorizationRequest" << (S,Aquamarine) >> {
+        + RedirectURI string
+        + Scopes []string
+        + State string
+        + Prompt string
+        + PKCE bool
+        + CodeVerifier string
+        + CodeChallengeMethod CodeChallengeMethod
+        + Extra <font color=blue>map</font>[string]string
+
+    }
+    class "AuthorizationResult" << (S,Aquamarine) >> {
+        + URL string
+        + State string
+        + CodeVerifier string
+        + CodeChallenge string
+        + CodeChallengeMethod CodeChallengeMethod
+
+    }
+    class "Client" << (S,Aquamarine) >> {
+        + AuthorizationURL(ctx context.Context, req AuthorizationRequest) (AuthorizationResult, error)
+        + Exchange(ctx context.Context, req ExchangeRequest) (Token, error)
+        + Refresh(ctx context.Context, req RefreshRequest) (Token, error)
+
+    }
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "CodeChallengeMethod" << (S,Aquamarine) >> {
+        + Valid() bool
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + Name string
+        + ClientID string
+        + ClientSecret string
+        + AuthURL string
+        + TokenURL string
+        + UserInfoURL string
+        + Scopes []string
+        + Prompt string
+        + Audience string
+        + TokenAuthMethod string
+        + TokenFormat string
+        + TokenHeaders <font color=blue>map</font>[string]string
+
+    }
+    class "ExchangeRequest" << (S,Aquamarine) >> {
+        + Code string
+        + RedirectURI string
+        + CodeVerifier string
+        + Extra <font color=blue>map</font>[string]string
+
+    }
+    interface "HTTPClient"  {
+        + Do(req *http.Request) (*http.Response, error)
+
+    }
+    class "RefreshRequest" << (S,Aquamarine) >> {
+        + RefreshToken string
+        + Scopes []string
+        + Extra <font color=blue>map</font>[string]string
+
+    }
+    class "Token" << (S,Aquamarine) >> {
+        + AccessToken string
+        + RefreshToken string
+        + TokenType string
+        + ExpiresAt time.Time
+        + Scope []string
+        + IDToken string
+        + Raw <font color=blue>map</font>[string]any
+
+        + Expired(now time.Time, skew time.Duration) bool
+        + HasRefreshToken() bool
+
+    }
+    class "errorPayload" << (S,Aquamarine) >> {
+        + Error string
+        + ErrorDescription string
+
+    }
+    class "numericValue" << (S,Aquamarine) >> {
+        + UnmarshalJSON(data []byte) error
+        + Int64() int64
+
+    }
+    class "scopeValue" << (S,Aquamarine) >> {
+        + UnmarshalJSON(data []byte) error
+
+    }
+    class "server.internal.oauth2.CodeChallengeMethod" << (T, #FF7700) >>  {
+    }
+    class "server.internal.oauth2.Option" << (T, #FF7700) >>  {
+    }
+    class "server.internal.oauth2.scopeValue" << (T, #FF7700) >>  {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+    class "tokenPayload" << (S,Aquamarine) >> {
+        + AccessToken string
+        + TokenType string
+        + RefreshToken string
+        + ExpiresIn numericValue
+        + ExpiresAt numericValue
+        + Scope scopeValue
+        + IDToken string
+
+    }
+}
+namespace viper {
+    class "AppConfig" << (S,Aquamarine) >> {
+        + Name string
+        + Environment string
+        + BaseURL string
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + App AppConfig
+        + Server ServerConfig
+        + Database DatabaseConfig
+        + Logging LoggingConfig
+        + Queue QueueConfig
+        + Notifier NotifierConfig
+        + Secrets SecretsConfig
+        + OAuth OAuthConfig
+        + Security SecurityConfig
+        + ServicesCatalog ServicesCatalogConfig
+
+    }
+    class "DatabaseConfig" << (S,Aquamarine) >> {
+        + Driver string
+        + Host string
+        + Port int
+        + Name string
+        + UserEnv string
+        + PasswordEnv string
+        + DSNEnv string
+        + SSLMode string
+        + MaxOpenConns int
+        + MaxIdleConns int
+        + ConnMaxLifetime time.Duration
+        + ConnMaxIdleTime time.Duration
+        + User string
+        + Password string
+        + DSN string
+
+    }
+    class "EncryptionConfig" << (S,Aquamarine) >> {
+        + IdentitiesKeyEnv string
+        + IdentitiesKey string
+
+    }
+    class "HTTPCORSConfig" << (S,Aquamarine) >> {
+        + AllowedOrigins []string
+        + AllowedMethods []string
+        + AllowedHeaders []string
+        + AllowCredentials bool
+
+    }
+    class "HTTPConfig" << (S,Aquamarine) >> {
+        + Host string
+        + Port int
+        + ReadTimeout time.Duration
+        + WriteTimeout time.Duration
+        + IdleTimeout time.Duration
+        + CORS HTTPCORSConfig
+        + RateLimit HTTPRateLimitConfig
+
+    }
+    class "HTTPRateLimitConfig" << (S,Aquamarine) >> {
+        + Enabled bool
+        + RequestsPerMinute int
+        + BurstRequestsPerMinute int
+        + BurstWindow time.Duration
+
+    }
+    class "JWTConfig" << (S,Aquamarine) >> {
+        + Issuer string
+        + AccessTokenTTL time.Duration
+        + RefreshTokenTTL time.Duration
+        + AccessSecretEnv string
+        + RefreshSecretEnv string
+        + AccessSecret string
+        + RefreshSecret string
+
+    }
+    class "LoggingConfig" << (S,Aquamarine) >> {
+        + Level string
+        + Format string
+        + Pretty bool
+        + IncludeCaller bool
+        + DefaultFields <font color=blue>map</font>[string]string
+
+    }
+    class "MailerConfig" << (S,Aquamarine) >> {
+        + Provider string
+        + FromEmail string
+        + SandboxMode bool
+        + APIKeyEnv string
+        + APIKey string
+
+    }
+    class "MetricsConfig" << (S,Aquamarine) >> {
+        + Enabled bool
+        + Exporter string
+        + Endpoint string
+
+    }
+    class "NotifierConfig" << (S,Aquamarine) >> {
+        + Webhook WebhookConfig
+        + Mailer MailerConfig
+
+    }
+    class "OAuthConfig" << (S,Aquamarine) >> {
+        + AllowedProviders []string
+        + Providers <font color=blue>map</font>[string]OAuthProviderConfig
+
+    }
+    class "OAuthProviderConfig" << (S,Aquamarine) >> {
+        + ClientIDEnv string
+        + ClientSecretEnv string
+        + RedirectURI string
+        + Scopes []string
+        + ClientID string
+        + ClientSecret string
+
+    }
+    class "PasswordConfig" << (S,Aquamarine) >> {
+        + MinLength int
+        + PepperEnv string
+        + Pepper string
+
+    }
+    class "QueueConfig" << (S,Aquamarine) >> {
+        + Driver string
+        + Redis RedisQueueConfig
+
+    }
+    class "RedisQueueConfig" << (S,Aquamarine) >> {
+        + Addr string
+        + DB int
+        + PasswordEnv string
+        + ConsumerGroup string
+        + Stream string
+        + Password string
+
+    }
+    class "SecretsConfig" << (S,Aquamarine) >> {
+        + Provider string
+        + Path string
+
+    }
+    class "SecurityConfig" << (S,Aquamarine) >> {
+        + JWT JWTConfig
+        + Password PasswordConfig
+        + Sessions SessionConfig
+        + Verification VerificationConfig
+        + Encryption EncryptionConfig
+
+    }
+    class "ServerConfig" << (S,Aquamarine) >> {
+        + HTTP HTTPConfig
+        + Telemetry TelemetryConfig
+
+    }
+    class "ServicesCatalogConfig" << (S,Aquamarine) >> {
+        + RefreshInterval time.Duration
+        + BootstrapFile string
+
+    }
+    class "SessionConfig" << (S,Aquamarine) >> {
+        + CookieName string
+        + Domain string
+        + Path string
+        + Secure bool
+        + HTTPOnly bool
+        + SameSite string
+        + TTL time.Duration
+
+    }
+    class "TelemetryConfig" << (S,Aquamarine) >> {
+        + Tracing TracingConfig
+        + Metrics MetricsConfig
+        + SamplingRatio float64
+
+    }
+    class "TracingConfig" << (S,Aquamarine) >> {
+        + Enabled bool
+        + Exporter string
+        + Endpoint string
+
+    }
+    class "VerificationConfig" << (S,Aquamarine) >> {
+        + TokenTTL time.Duration
+
+    }
+    class "WebhookConfig" << (S,Aquamarine) >> {
+        + Timeout time.Duration
+        + MaxRetries int
+        + RetryBackoff time.Duration
+
+    }
+    class "options" << (S,Aquamarine) >> {
+    }
+    class "server.internal.platform.config.viper.Option" << (T, #FF7700) >>  {
+    }
+}
+namespace postgres {
+}
+namespace ratelimit {
+    interface "Clock"  {
+        + Now() time.Time
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + Enabled bool
+        + BaseRequestsPerMinute int
+        + BurstRequestsPerMinute int
+        + BurstWindow time.Duration
+        + SessionCookieName string
+        + IdleTTL time.Duration
+        + ApplyToAnonymous bool
+
+    }
+    class "Middleware" << (S,Aquamarine) >> {
+        + Handler() gin.HandlerFunc
+
+    }
+    class "limiterStore" << (S,Aquamarine) >> {
+    }
+    class "server.internal.platform.httpmiddleware.ratelimit.Option" << (T, #FF7700) >>  {
+    }
+    class "sessionLimiter" << (S,Aquamarine) >> {
+    }
+    class "systemClock" << (S,Aquamarine) >> {
+        + Now() time.Time
+
+    }
+    class "tokenBucket" << (S,Aquamarine) >> {
+    }
+}
+namespace httpserver {
+    class "CORSConfig" << (S,Aquamarine) >> {
+        + AllowedOrigins []string
+        + AllowedMethods []string
+        + AllowedHeaders []string
+        + AllowCredentials bool
+
+    }
+    class "Config" << (S,Aquamarine) >> {
+        + Host string
+        + Port int
+        + ReadTimeout time.Duration
+        + WriteTimeout time.Duration
+        + IdleTimeout time.Duration
+        + ShutdownTimeout time.Duration
+        + Mode Mode
+        + CORS CORSConfig
+
+        + Normalize() 
+        + Address() string
+
+    }
+    class "server.internal.platform.httpserver.Mode" << (T, #FF7700) >>  {
+    }
+    namespace gin {
+    class "Server" << (S,Aquamarine) >> {
+        + Engine() *gin.Engine
+        + Run(ctx context.Context) error
+        + Shutdown(ctx context.Context) error
+
+    }
+    class "options" << (S,Aquamarine) >> {
+    }
+    class "server.internal.platform.httpserver.gin.Option" << (T, #FF7700) >>  {
+    }
+    }
+}
+namespace logging {
+    class "Config" << (S,Aquamarine) >> {
+        + Level string
+        + Format string
+        + Pretty bool
+        + IncludeCaller bool
+        + DefaultFields <font color=blue>map</font>[string]string
+
+        + Normalize() 
+
+    }
+    namespace zap {
+    class "builderOptions" << (S,Aquamarine) >> {
+    }
+    class "prettyJSONWriter" << (S,Aquamarine) >> {
+        + Write(p []byte) (int, error)
+        + Sync() error
+
+    }
+    class "server.internal.platform.logging.zap.Option" << (T, #FF7700) >>  {
+    }
+    }
+}
+namespace redis {
+    class "Config" << (S,Aquamarine) >> {
+        + Addr string
+        + Password string
+        + DB int
+        + QueueKey string
+        + ProcessingKey string
+        + VisibilityTimeout time.Duration
+
+    }
+    class "Queue" << (S,Aquamarine) >> {
+        + Enqueue(ctx context.Context, msg queue.JobMessage) error
+        + Reserve(ctx context.Context, timeout time.Duration) (queue.Reservation, error)
+
+    }
+    class "payload" << (S,Aquamarine) >> {
+        + JobID string
+        + RunAt time.Time
+
+    }
+    class "reservation" << (S,Aquamarine) >> {
+        + Message() queue.JobMessage
+        + Ack(ctx context.Context) error
+        + Requeue(ctx context.Context, delay time.Duration) error
+
+    }
+}
+namespace cipher {
+    class "AESCipher" << (S,Aquamarine) >> {
+        + Encrypt(value string) (string, error)
+        + Decrypt(value string) (string, error)
+
+    }
+    interface "Cipher"  {
+        + Encrypt(value string) (string, error)
+        + Decrypt(value string) (string, error)
+
+    }
+    class "NoopCipher" << (S,Aquamarine) >> {
+        + Encrypt(value string) (string, error)
+        + Decrypt(value string) (string, error)
+
+    }
+}
+namespace password {
+    class "Hasher" << (S,Aquamarine) >> {
+        + Cost int
+        + Pepper string
+
+        + Hash(password string) (string, error)
+        + Compare(hash string, password string) error
+
+    }
+}
+namespace catalog {
+    class "Catalog" << (S,Aquamarine) >> {
+        + Services []Service
+
+        + Empty() bool
+
+    }
+    class "ChainLoader" << (S,Aquamarine) >> {
+        + Load(ctx context.Context) (Catalog, error)
+
+    }
+    class "Component" << (S,Aquamarine) >> {
+        + Name string
+        + Description string
+
+    }
+    class "DBLoader" << (S,Aquamarine) >> {
+        + DB *gorm.DB
+
+        + Load(ctx context.Context) (Catalog, error)
+
+    }
+    class "EmptyLoader" << (S,Aquamarine) >> {
+        + Load(ctx context.Context) (Catalog, error)
+
+    }
+    class "FileLoader" << (S,Aquamarine) >> {
+        + Path string
+
+        + Load(ctx context.Context) (Catalog, error)
+
+    }
+    interface "Loader"  {
+        + Load(ctx context.Context) (Catalog, error)
+
+    }
+    class "Service" << (S,Aquamarine) >> {
+        + Name string
+        + Actions []Component
+        + Reactions []Component
+
+    }
+    class "componentRow" << (S,Aquamarine) >> {
+        + ProviderID string
+        + Kind string
+        + Name string
+        + Description string
+        + Enabled bool
+
+        + TableName() string
+
+    }
+    class "providerRow" << (S,Aquamarine) >> {
+        + ID string
+        + Name string
+        + Enabled bool
+
+        + TableName() string
+
+    }
+}
+namespace outbound {
+    interface "ActionEventRepository"  {
+        + Create(ctx context.Context, event action.Event) (action.Event, error)
+
+    }
+    interface "ActionSourceRepository"  {
+        + UpsertScheduleSource(ctx context.Context, componentConfigID uuid.UUID, schedule string, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + UpsertPollingSource(ctx context.Context, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + UpsertWebhookSource(ctx context.Context, componentConfigID uuid.UUID, secret string, urlPath string, cursor <font color=blue>map</font>[string]any) (action.Source, error)
+        + ListDueScheduleSources(ctx context.Context, before time.Time, limit int) ([]action.ScheduleBinding, error)
+        + ListDuePollingSources(ctx context.Context, before time.Time, limit int) ([]action.PollingBinding, error)
+        + FindWebhookBindingByPath(ctx context.Context, path string) (action.WebhookBinding, error)
+        + UpdateScheduleCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+        + UpdatePollingCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+        + UpdateWebhookCursor(ctx context.Context, sourceID uuid.UUID, componentConfigID uuid.UUID, cursor <font color=blue>map</font>[string]any) error
+        + FindByComponentConfig(ctx context.Context, componentConfigID uuid.UUID) (action.Source, error)
+
+    }
+    interface "AreaRepository"  {
+        + Create(ctx context.Context, area area.Area, action area.Link, reactions []area.Link) (area.Area, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (area.Area, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]area.Area, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+        + UpdateMetadata(ctx context.Context, area area.Area) error
+        + UpdateConfig(ctx context.Context, config component.Config) error
+
+    }
+    class "ComponentListOptions" << (S,Aquamarine) >> {
+        + Kind *component.Kind
+        + Provider string
+
+    }
+    interface "ComponentRepository"  {
+        + FindByID(ctx context.Context, id uuid.UUID) (component.Component, error)
+        + FindByIDs(ctx context.Context, ids []uuid.UUID) (<font color=blue>map</font>[uuid.UUID]component.Component, error)
+        + List(ctx context.Context, opts ComponentListOptions) ([]component.Component, error)
+
+    }
+    interface "DeliveryLogRepository"  {
+        + Create(ctx context.Context, log job.DeliveryLog) (job.DeliveryLog, error)
+        + ListByJob(ctx context.Context, jobID uuid.UUID, limit int) ([]job.DeliveryLog, error)
+
+    }
+    interface "ExecutionRepository"  {
+        + Create(ctx context.Context, event action.Event, triggers []action.Trigger, jobs []job.Job) (action.Event, []action.Trigger, []job.Job, error)
+
+    }
+    class "JobDetails" << (S,Aquamarine) >> {
+        + Job job.Job
+        + AreaID uuid.UUID
+        + AreaName string
+        + ComponentName string
+        + ProviderName string
+
+    }
+    class "JobListOptions" << (S,Aquamarine) >> {
+        + UserID uuid.UUID
+        + AreaID uuid.UUID
+        + Status *job.Status
+        + Limit int
+
+    }
+    interface "JobRepository"  {
+        + Create(ctx context.Context, job job.Job) (job.Job, error)
+        + CreateBatch(ctx context.Context, jobs []job.Job) ([]job.Job, error)
+        + Update(ctx context.Context, job job.Job) error
+        + Claim(ctx context.Context, id uuid.UUID, worker string, now time.Time) (job.Job, error)
+        + ListWithDetails(ctx context.Context, opts JobListOptions) ([]JobDetails, error)
+        + FindDetails(ctx context.Context, userID uuid.UUID, jobID uuid.UUID) (JobDetails, error)
+
+    }
+    class "Mail" << (S,Aquamarine) >> {
+        + To string
+        + Subject string
+        + HTML string
+        + Text string
+
+    }
+    interface "Mailer"  {
+        + Send(ctx context.Context, msg Mail) error
+
+    }
+    interface "ReactionExecutor"  {
+        + ExecuteReaction(ctx context.Context, area area.Area, link area.Link) (ReactionResult, error)
+
+    }
+    class "ReactionResult" << (S,Aquamarine) >> {
+        + Endpoint string
+        + Request <font color=blue>map</font>[string]any
+        + Response <font color=blue>map</font>[string]any
+        + StatusCode *int
+        + Duration time.Duration
+
+    }
+    interface "ServiceProviderRepository"  {
+        + FindByName(ctx context.Context, name string) (service.Provider, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (service.Provider, error)
+        + List(ctx context.Context) ([]service.Provider, error)
+
+    }
+    interface "SessionRepository"  {
+        + Create(ctx context.Context, session session.Session) (session.Session, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (session.Session, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+        + DeleteByUser(ctx context.Context, userID uuid.UUID) error
+
+    }
+    interface "SubscriptionRepository"  {
+        + Create(ctx context.Context, subscription subscription.Subscription) (subscription.Subscription, error)
+        + Update(ctx context.Context, subscription subscription.Subscription) error
+        + FindByUserAndProvider(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) (subscription.Subscription, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]subscription.Subscription, error)
+
+    }
+    interface "TriggerRepository"  {
+        + Create(ctx context.Context, trigger action.Trigger) (action.Trigger, error)
+        + CreateBatch(ctx context.Context, triggers []action.Trigger) ([]action.Trigger, error)
+
+    }
+    interface "UserRepository"  {
+        + Create(ctx context.Context, user user.User) (user.User, error)
+        + FindByEmail(ctx context.Context, email string) (user.User, error)
+        + FindByID(ctx context.Context, id uuid.UUID) (user.User, error)
+        + Update(ctx context.Context, user user.User) error
+
+    }
+    interface "VerificationTokenRepository"  {
+        + Create(ctx context.Context, token auth.VerificationToken) (auth.VerificationToken, error)
+        + FindByToken(ctx context.Context, token string) (auth.VerificationToken, error)
+        + MarkConsumed(ctx context.Context, tokenID uuid.UUID, consumedAt int64) error
+        + DeleteByUser(ctx context.Context, userID uuid.UUID) error
+
+    }
+    namespace identity {
+    class "AuthorizationRequest" << (S,Aquamarine) >> {
+        + RedirectURI string
+        + Scopes []string
+        + State string
+        + UsePKCE bool
+        + Prompt string
+
+    }
+    class "AuthorizationResponse" << (S,Aquamarine) >> {
+        + AuthorizationURL string
+        + State string
+        + CodeVerifier string
+        + CodeChallenge string
+        + CodeChallengeMethod oauth2.CodeChallengeMethod
+
+    }
+    class "ExchangeRequest" << (S,Aquamarine) >> {
+        + RedirectURI string
+        + CodeVerifier string
+
+    }
+    interface "Provider"  {
+        + Name() string
+        + AuthorizationURL(ctx context.Context, req AuthorizationRequest) (AuthorizationResponse, error)
+        + Exchange(ctx context.Context, code string, req ExchangeRequest) (TokenExchange, error)
+        + Refresh(ctx context.Context, identity identity.Identity) (TokenExchange, error)
+
+    }
+    interface "Repository"  {
+        + Create(ctx context.Context, identity identity.Identity) (identity.Identity, error)
+        + Update(ctx context.Context, identity identity.Identity) error
+        + FindByID(ctx context.Context, id uuid.UUID) (identity.Identity, error)
+        + FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider string) (identity.Identity, error)
+        + FindByProviderSubject(ctx context.Context, provider string, subject string) (identity.Identity, error)
+        + ListByUser(ctx context.Context, userID uuid.UUID) ([]identity.Identity, error)
+        + Delete(ctx context.Context, id uuid.UUID) error
+
+    }
+    class "TokenExchange" << (S,Aquamarine) >> {
+        + Token oauth2.Token
+        + Profile identity.Profile
+        + Raw <font color=blue>map</font>[string]any
+
+    }
+    }
+    namespace queue {
+    interface "JobConsumer"  {
+        + Reserve(ctx context.Context, timeout time.Duration) (Reservation, error)
+
+    }
+    class "JobMessage" << (S,Aquamarine) >> {
+        + JobID uuid.UUID
+        + RunAt time.Time
+
+    }
+    interface "JobProducer"  {
+        + Enqueue(ctx context.Context, msg JobMessage) error
+
+    }
+    interface "JobQueue"  {
+    }
+    interface "Reservation"  {
+        + Message() JobMessage
+        + Ack(ctx context.Context) error
+        + Requeue(ctx context.Context, delay time.Duration) error
+
+    }
+    }
+}
+namespace tools {
+}
+"__builtin__.[]string" #.. "alias of""server.internal.oauth2.scopeValue"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.ComponentSummaryKind"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListAvailableComponentsParamsKind"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListComponentsParamsKind"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.OAuthProvider"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.ServiceProviderDetailOauthType"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.SessionAuthMethod"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.SubscribeServiceResponseStatus"
+"__builtin__.string" #.. "alias of""server.internal.adapters.inbound.http.openapi.UpdateAreaStatusRequestStatus"
+"__builtin__.string" #.. "alias of""server.internal.domain.action.DedupStatus"
+"__builtin__.string" #.. "alias of""server.internal.domain.action.Mode"
+"__builtin__.string" #.. "alias of""server.internal.domain.action.TriggerStatus"
+"__builtin__.string" #.. "alias of""server.internal.domain.area.LinkRole"
+"__builtin__.string" #.. "alias of""server.internal.domain.area.RetryStrategy"
+"__builtin__.string" #.. "alias of""server.internal.domain.area.Status"
+"__builtin__.string" #.. "alias of""server.internal.domain.component.Kind"
+"__builtin__.string" #.. "alias of""server.internal.domain.job.Status"
+"__builtin__.string" #.. "alias of""server.internal.domain.service.OAuthType"
+"__builtin__.string" #.. "alias of""server.internal.domain.subscription.Status"
+"__builtin__.string" #.. "alias of""server.internal.domain.user.Role"
+"__builtin__.string" #.. "alias of""server.internal.domain.user.Status"
+"__builtin__.string" #.. "alias of""server.internal.oauth2.CodeChallengeMethod"
+"__builtin__.string" #.. "alias of""server.internal.platform.httpserver.Mode"
+"server.internaladaptersinboundhttpopenapifontcolorbluefuncfontginContext" #.. "alias of""server.internal.adapters.inbound.http.openapi.MiddlewareFunc"
+"server.internaladaptersinboundhttpopenapiAboutResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.GetAbout200JSONResponse"
+"server.internaladaptersinboundhttpopenapiAdminResetPasswordRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminResetUserPasswordJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiAdminUpdateEmailRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminUpdateUserEmailJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiAdminUpdateStatusRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminUpdateUserStatusJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiArea" #.. "alias of""server.internal.adapters.inbound.http.openapi.CreateArea201JSONResponse"
+"server.internaladaptersinboundhttpopenapiArea" #.. "alias of""server.internal.adapters.inbound.http.openapi.DuplicateArea201JSONResponse"
+"server.internaladaptersinboundhttpopenapiArea" #.. "alias of""server.internal.adapters.inbound.http.openapi.GetArea200JSONResponse"
+"server.internaladaptersinboundhttpopenapiArea" #.. "alias of""server.internal.adapters.inbound.http.openapi.UpdateArea200JSONResponse"
+"server.internaladaptersinboundhttpopenapiArea" #.. "alias of""server.internal.adapters.inbound.http.openapi.UpdateAreaStatus200JSONResponse"
+"server.internaladaptersinboundhttpopenapiAreaHistoryResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListAreaHistory200JSONResponse"
+"server.internaladaptersinboundhttpopenapiChangeEmailRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.ChangeEmailJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiChangePasswordRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.ChangePasswordJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiComponentListResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListAvailableComponents200JSONResponse"
+"server.internaladaptersinboundhttpopenapiComponentListResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListComponents200JSONResponse"
+"server.internaladaptersinboundhttpopenapiCreateAreaRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.CreateAreaJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiDuplicateAreaRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.DuplicateAreaJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiEmailChangeResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminUpdateUserEmail200JSONResponse"
+"server.internaladaptersinboundhttpopenapiEmailChangeResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ChangeEmail202JSONResponse"
+"server.internaladaptersinboundhttpopenapiIdentityListResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListIdentities200JSONResponse"
+"server.internaladaptersinboundhttpopenapiListAreasResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListAreas200JSONResponse"
+"server.internaladaptersinboundhttpopenapiLoginRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.LoginJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiOAuthAuthorizationRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.AuthorizeOAuthJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiOAuthAuthorizationResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.AuthorizeOAuth200JSONResponse"
+"server.internaladaptersinboundhttpopenapiOAuthExchangeRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.ExchangeOAuthJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiRegisterUserRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.RegisterUserJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiRegisterUserResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.RegisterUser202JSONResponse"
+"server.internaladaptersinboundhttpopenapiServiceProviderListResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListServiceProviders200JSONResponse"
+"server.internaladaptersinboundhttpopenapiSubscribeExchangeRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.SubscribeServiceExchangeJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiSubscribeExchangeResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.SubscribeServiceExchange200JSONResponse"
+"server.internaladaptersinboundhttpopenapiSubscribeServiceRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.SubscribeServiceJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiSubscribeServiceResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.SubscribeService200JSONResponse"
+"server.internaladaptersinboundhttpopenapiSubscriptionListResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.ListServiceSubscriptions200JSONResponse"
+"server.internaladaptersinboundhttpopenapiUpdateAreaRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.UpdateAreaJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiUpdateAreaStatusRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.UpdateAreaStatusJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiUserResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminResetUserPassword200JSONResponse"
+"server.internaladaptersinboundhttpopenapiUserResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.AdminUpdateUserStatus200JSONResponse"
+"server.internaladaptersinboundhttpopenapiUserResponse" #.. "alias of""server.internal.adapters.inbound.http.openapi.GetCurrentUser200JSONResponse"
+"server.internaladaptersinboundhttpopenapiVerifyEmailRequest" #.. "alias of""server.internal.adapters.inbound.http.openapi.VerifyEmailJSONRequestBody"
+"server.internaladaptersinboundhttpopenapiginStrictGinHandlerFunc" #.. "alias of""server.internal.adapters.inbound.http.openapi.StrictHandlerFunc"
+"server.internaladaptersinboundhttpopenapiginStrictGinMiddlewareFunc" #.. "alias of""server.internal.adapters.inbound.http.openapi.StrictMiddlewareFunc"
+"server.internaladaptersinboundhttpopenapitypesUUID" #.. "alias of""server.internal.adapters.inbound.http.openapi.UserId"
+"server.internaladaptersoutboundoauthfontcolorbluefuncfontproviderConfig" #.. "alias of""server.internal.adapters.outbound.oauth.ProviderOption"
+"server.internaladaptersoutboundoauthfontcolorbluefuncfontfontcolorbluemapfontstringanyidentityProfileerror" #.. "alias of""server.internal.adapters.outbound.oauth.ProfileExtractor"
+"server.internaladaptersoutboundoauthfontcolorbluemapfontstringProviderDescriptor" #.. "alias of""server.internal.adapters.outbound.oauth.Registry"
+"server.internalappareafontcolorbluefuncfontstringerror" #.. "alias of""server.internal.app.area.SecretGenerator"
+"server.internalappareafontcolorbluefuncfontPollingRunner" #.. "alias of""server.internal.app.area.PollingRunnerOption"
+"server.internalappareafontcolorbluefuncfontRegistryProvisioner" #.. "alias of""server.internal.app.area.RegistryOption"
+"server.internalappareafontcolorbluefuncfontTimerScheduler" #.. "alias of""server.internal.app.area.TimerSchedulerOption"
+"server.internalappareafontcolorbluefuncfontareaAreastringerror" #.. "alias of""server.internal.app.area.PathGenerator"
+"server.internalappareafontcolorbluefuncfontcontextContextareaAreaerror" #.. "alias of""server.internal.app.area.ActionProvisionerFunc"
+"server.internalappautomationfontcolorbluefuncfontWorker" #.. "alias of""server.internal.app.automation.Option"
+"server.internaloauth2fontcolorbluefuncfontClient" #.. "alias of""server.internal.oauth2.Option"
+"server.internalplatformconfigviperfontcolorbluefuncfontoptions" #.. "alias of""server.internal.platform.config.viper.Option"
+"server.internalplatformhttpmiddlewareratelimitfontcolorbluefuncfontMiddleware" #.. "alias of""server.internal.platform.httpmiddleware.ratelimit.Option"
+"server.internalplatformhttpserverginfontcolorbluefuncfontoptions" #.. "alias of""server.internal.platform.httpserver.gin.Option"
+"server.internalplatformloggingzapfontcolorbluefuncfontbuilderOptions" #.. "alias of""server.internal.platform.logging.zap.Option"
+"server.internal.ports.outbound.queue.JobConsumer" *-- "extends""server.internal.ports.outbound.queue.JobQueue"
+"server.internal.ports.outbound.queue.JobProducer" *-- "extends""server.internal.ports.outbound.queue.JobQueue"
+
+
+
+@enduml
