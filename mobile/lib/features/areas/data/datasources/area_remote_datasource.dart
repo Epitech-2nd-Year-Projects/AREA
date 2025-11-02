@@ -7,12 +7,13 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/exceptions/network_exceptions.dart';
 import '../models/area_model.dart';
 import '../models/area_request_model.dart';
+import '../models/area_update_request_model.dart';
 import '../../domain/entities/area_status.dart';
 
 abstract class AreaRemoteDataSource {
   Future<List<AreaModel>> listAreas();
   Future<AreaModel> createArea(AreaRequestModel request);
-  Future<AreaModel> updateArea(String areaId, AreaRequestModel request);
+  Future<AreaModel> updateArea(String areaId, AreaUpdateRequestModel request);
   Future<AreaModel> updateAreaStatus(String areaId, AreaStatus status);
   Future<void> deleteArea(String areaId);
   Future<void> executeArea(String areaId);
@@ -63,11 +64,19 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
   }
 
   @override
-  Future<AreaModel> updateArea(String areaId, AreaRequestModel request) async {
+  Future<AreaModel> updateArea(
+    String areaId,
+    AreaUpdateRequestModel request,
+  ) async {
     try {
-      final response = await _apiClient.put<Map<String, dynamic>>(
+      final payload = request.toJson();
+      if (payload.isEmpty) {
+        throw NetworkException('No changes detected.');
+      }
+
+      final response = await _apiClient.patch<Map<String, dynamic>>(
         '/v1/areas/$areaId',
-        data: request.toJson(),
+        data: payload,
       );
       if (response.statusCode == 200 && response.data != null) {
         return AreaModel.fromJson(response.data!);

@@ -389,7 +389,7 @@ class AreaFormCubit extends Cubit<AreaFormState> {
         final created = await _createArea(draft);
         emit(AreaFormSuccess(created));
       } else {
-        final result = await _updateArea(initialArea!.id, draft);
+        final result = await _updateArea(initialArea!, draft);
         emit(AreaFormSuccess(result));
       }
     } catch (error) {

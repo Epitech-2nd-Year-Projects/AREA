@@ -7,7 +7,7 @@ class UpdateArea {
 
   UpdateArea(this._repository);
 
-  Future<Area> call(String areaId, AreaDraft draft) async {
-    return _repository.updateArea(areaId, draft);
+  Future<Area> call(Area initialArea, AreaDraft draft) async {
+    return _repository.updateArea(initialArea, draft);
   }
 }
