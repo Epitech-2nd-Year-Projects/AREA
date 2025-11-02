@@ -21,6 +21,8 @@ import (
 	executionpostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/execution"
 	servicepostgres "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/postgres/service"
 	dropboxexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/dropbox"
+	gcalendarexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gcalendar"
+	gdriveexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gdrive"
 	githubexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/github"
 	gitlabexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gitlab"
 	gmailexecutor "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/adapters/outbound/reaction/gmail"
@@ -378,6 +380,26 @@ func run() error {
 			)
 			if zoomExecutor != nil {
 				reactionHandlers = append(reactionHandlers, zoomExecutor)
+			}
+			gcalendarExecutor := gcalendarexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gcalendarExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gcalendarExecutor)
+			}
+			gdriveExecutor := gdriveexecutor.NewExecutor(
+				repo.Identities(),
+				oauthManager,
+				&http.Client{Timeout: 20 * time.Second},
+				nil,
+				logger,
+			)
+			if gdriveExecutor != nil {
+				reactionHandlers = append(reactionHandlers, gdriveExecutor)
 			}
 		}
 		reactionExecutor := areaapp.NewCompositeReactionExecutor(nil, logger, reactionHandlers...)

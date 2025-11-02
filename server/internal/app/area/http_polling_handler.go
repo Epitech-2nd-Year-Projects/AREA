@@ -438,7 +438,11 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 
 	if hasLatestCursor && strings.TrimSpace(latestCursorValue) != "" {
 		assignCursorValue(result.Cursor, cursorState, config.CursorKey, latestCursorValue)
-		assignCursorValue(result.Cursor, cursorState, "last_seen_name", latestCursorValue)
+		if _, err := time.Parse(time.RFC3339Nano, latestCursorValue); err == nil {
+			assignCursorValue(result.Cursor, cursorState, "last_seen_ts", latestCursorValue)
+		} else {
+			assignCursorValue(result.Cursor, cursorState, "last_seen_name", latestCursorValue)
+		}
 		h.logger.Debug("polling cursor updated",
 			zap.String("component", req.Component.Name),
 			zap.String("provider", req.Component.Provider.Name),
@@ -455,6 +459,15 @@ func (h *HTTPPollingHandler) Poll(ctx context.Context, req PollingRequest) (Poll
 	} else if strings.TrimSpace(stringify(cursorView[config.CursorKey])) == "" && config.CursorInitial != "" {
 		assignCursorValue(result.Cursor, cursorState, config.CursorKey, config.CursorInitial)
 	}
+
+	if strings.TrimSpace(stringify(cursorState["last_seen_ts"])) == "" {
+		initialTs := "2000-01-01T00:00:00Z"
+		if stringify(cursorView["last_polled_at"]) != "" {
+			initialTs = req.Now.UTC().Format(time.RFC3339Nano)
+		}
+		assignCursorValue(result.Cursor, cursorState, "last_seen_ts", initialTs)
+	}
+
 	assignCursorValue(result.Cursor, cursorState, "last_polled_at", req.Now.UTC().Format(time.RFC3339Nano))
 
 	return result, nil
