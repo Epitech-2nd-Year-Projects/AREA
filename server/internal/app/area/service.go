@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -55,6 +56,9 @@ var (
 	ErrWebhookNotFound             = errors.New("area: webhook source not found")
 	ErrWebhookSecretMissing        = errors.New("area: webhook secret missing")
 	ErrWebhookSecretInvalid        = errors.New("area: webhook secret invalid")
+	ErrAreaUpdateNoChanges         = errors.New("area: no changes detected")
+	ErrAreaConfigNotFound          = errors.New("area: component config not found")
+	ErrAreaStatusInvalid           = errors.New("area: invalid status")
 )
 
 const (
@@ -95,6 +99,39 @@ type ReactionInput struct {
 	ComponentID uuid.UUID
 	Name        string
 	Params      map[string]any
+}
+
+// UpdateAreaCommand carries optional fields that can be patched on an automation
+type UpdateAreaCommand struct {
+	Name           *string
+	Description    *string
+	DescriptionSet bool
+	Action         *UpdateActionCommand
+	Reactions      []UpdateReactionCommand
+}
+
+// UpdateActionCommand encapsulates updates applied to the action configuration
+type UpdateActionCommand struct {
+	ConfigID  uuid.UUID
+	Name      *string
+	NameSet   bool
+	Params    map[string]any
+	ParamsSet bool
+}
+
+// UpdateReactionCommand encapsulates updates applied to a reaction configuration
+type UpdateReactionCommand struct {
+	ConfigID  uuid.UUID
+	Name      *string
+	NameSet   bool
+	Params    map[string]any
+	ParamsSet bool
+}
+
+// DuplicateOptions customises the duplication of an existing automation
+type DuplicateOptions struct {
+	Name        *string
+	Description *string
 }
 
 // ExecutionOptions control how an AREA execution is enqueued
@@ -424,7 +461,7 @@ func (s *Service) Get(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) (
 		return areadomain.Area{}, fmt.Errorf("area.Service.Get: repo.FindByID: %w", err)
 	}
 	if !area.OwnedBy(userID) {
-		return areadomain.Area{}, fmt.Errorf("area.Service.Get: not owner")
+		return areadomain.Area{}, fmt.Errorf("area.Service.Get: %w", ErrAreaNotOwned)
 	}
 	areas, err := s.populateComponents(ctx, []areadomain.Area{area})
 	if err != nil {
@@ -434,6 +471,291 @@ func (s *Service) Get(ctx context.Context, userID uuid.UUID, areaID uuid.UUID) (
 		return areadomain.Area{}, fmt.Errorf("area.Service.Get: area missing after enrichment")
 	}
 	return areas[0], nil
+}
+
+// Update applies partial modifications to an automation ensuring ownership
+func (s *Service) Update(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, cmd UpdateAreaCommand) (areadomain.Area, error) {
+	if s.repo == nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: repository unavailable")
+	}
+	area, err := s.repo.FindByID(ctx, areaID)
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: repo.FindByID: %w", err)
+	}
+	if !area.OwnedBy(userID) {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrAreaNotOwned)
+	}
+
+	enriched, err := s.populateComponents(ctx, []areadomain.Area{area})
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: populateComponents: %w", err)
+	}
+	if len(enriched) == 0 {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: enrichment failed")
+	}
+	area = enriched[0]
+	updated := cloneArea(area)
+
+	now := s.clock.Now().UTC()
+	metadataChanged := false
+	configChanges := make([]componentdomain.Config, 0)
+
+	if cmd.Name != nil {
+		name := strings.TrimSpace(*cmd.Name)
+		if name == "" {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrNameRequired)
+		}
+		if utf8.RuneCountInString(name) > nameMaxLength {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrNameTooLong)
+		}
+		if name != area.Name {
+			updated.Name = name
+			metadataChanged = true
+		}
+	}
+
+	if cmd.DescriptionSet {
+		description, err := normalizeDescription(cmd.Description)
+		if err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", err)
+		}
+		if !stringPointersEqual(area.Description, description) {
+			updated.Description = description
+			metadataChanged = true
+		}
+	}
+
+	if cmd.Action != nil {
+		if updated.Action == nil || updated.Action.Config.ID == uuid.Nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrAreaMisconfigured)
+		}
+		if cmd.Action.ConfigID == uuid.Nil || cmd.Action.ConfigID != updated.Action.Config.ID {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrAreaConfigNotFound)
+		}
+		actionConfig := updated.Action.Config
+		configChanged := false
+
+		if cmd.Action.NameSet {
+			name := ""
+			if cmd.Action.Name != nil {
+				name = strings.TrimSpace(*cmd.Action.Name)
+				if utf8.RuneCountInString(name) > nameMaxLength {
+					return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrNameTooLong)
+				}
+			}
+			if strings.TrimSpace(actionConfig.Name) != name {
+				actionConfig.Name = name
+				configChanged = true
+			}
+		}
+
+		if cmd.Action.ParamsSet {
+			params := cloneParamsMap(cmd.Action.Params)
+			if actionConfig.Component == nil {
+				return areadomain.Area{}, fmt.Errorf("area.Service.Update: action component missing")
+			}
+			if err := s.validateComponentParams(*actionConfig.Component, params); err != nil {
+				return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", err)
+			}
+			if !mapsEqual(actionConfig.Params, params) {
+				actionConfig.Params = params
+				configChanged = true
+			}
+		}
+
+		if configChanged {
+			actionConfig.UpdatedAt = now
+			updated.Action.Config = actionConfig
+			configChanges = append(configChanges, actionConfig)
+		}
+	}
+
+	if len(cmd.Reactions) > 0 {
+		reactionByConfig := make(map[uuid.UUID]*areadomain.Link, len(updated.Reactions))
+		for i := range updated.Reactions {
+			reaction := &updated.Reactions[i]
+			if reaction.Config.ID != uuid.Nil {
+				reactionByConfig[reaction.Config.ID] = reaction
+			}
+		}
+
+		for _, patch := range cmd.Reactions {
+			reaction, ok := reactionByConfig[patch.ConfigID]
+			if !ok {
+				return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrAreaConfigNotFound)
+			}
+			reactionConfig := reaction.Config
+			configChanged := false
+
+			if patch.NameSet {
+				name := ""
+				if patch.Name != nil {
+					name = strings.TrimSpace(*patch.Name)
+					if utf8.RuneCountInString(name) > nameMaxLength {
+						return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrNameTooLong)
+					}
+				}
+				if strings.TrimSpace(reactionConfig.Name) != name {
+					reactionConfig.Name = name
+					configChanged = true
+				}
+			}
+
+			if patch.ParamsSet {
+				params := cloneParamsMap(patch.Params)
+				if reactionConfig.Component == nil {
+					return areadomain.Area{}, fmt.Errorf("area.Service.Update: reaction component missing")
+				}
+				if err := s.validateComponentParams(*reactionConfig.Component, params); err != nil {
+					return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", err)
+				}
+				if !mapsEqual(reactionConfig.Params, params) {
+					reactionConfig.Params = params
+					configChanged = true
+				}
+			}
+
+			if configChanged {
+				reactionConfig.UpdatedAt = now
+				reaction.Config = reactionConfig
+				configChanges = append(configChanges, reactionConfig)
+			}
+		}
+	}
+
+	if !metadataChanged && len(configChanges) == 0 {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: %w", ErrAreaUpdateNoChanges)
+	}
+
+	updated.UpdatedAt = now
+	if metadataChanged || len(configChanges) > 0 {
+		updated.Status = area.Status
+		if err := s.repo.UpdateMetadata(ctx, updated); err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: repo.UpdateMetadata: %w", err)
+		}
+	}
+
+	for _, cfg := range configChanges {
+		if err := s.repo.UpdateConfig(ctx, cfg); err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Update: repo.UpdateConfig: %w", err)
+		}
+	}
+
+	result, err := s.populateComponents(ctx, []areadomain.Area{updated})
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: populateComponents: %w", err)
+	}
+	if len(result) == 0 {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Update: enrichment failed")
+	}
+	return result[0], nil
+}
+
+// UpdateStatus toggles the lifecycle status of an automation
+func (s *Service) UpdateStatus(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, status areadomain.Status) (areadomain.Area, error) {
+	if s.repo == nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.UpdateStatus: repository unavailable")
+	}
+	if status != areadomain.StatusEnabled && status != areadomain.StatusDisabled && status != areadomain.StatusArchived {
+		return areadomain.Area{}, fmt.Errorf("area.Service.UpdateStatus: %w", ErrAreaStatusInvalid)
+	}
+
+	area, err := s.repo.FindByID(ctx, areaID)
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.UpdateStatus: repo.FindByID: %w", err)
+	}
+	if !area.OwnedBy(userID) {
+		return areadomain.Area{}, fmt.Errorf("area.Service.UpdateStatus: %w", ErrAreaNotOwned)
+	}
+
+	if area.Status == status {
+		return s.Get(ctx, userID, areaID)
+	}
+
+	area.Status = status
+	area.UpdatedAt = s.clock.Now().UTC()
+	if err := s.repo.UpdateMetadata(ctx, area); err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.UpdateStatus: repo.UpdateMetadata: %w", err)
+	}
+	return s.Get(ctx, userID, areaID)
+}
+
+// Duplicate clones an existing automation and persists it for the same user
+func (s *Service) Duplicate(ctx context.Context, userID uuid.UUID, areaID uuid.UUID, opts DuplicateOptions) (areadomain.Area, error) {
+	if s.repo == nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: repository unavailable")
+	}
+	area, err := s.repo.FindByID(ctx, areaID)
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: repo.FindByID: %w", err)
+	}
+	if !area.OwnedBy(userID) {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: %w", ErrAreaNotOwned)
+	}
+
+	enriched, err := s.populateComponents(ctx, []areadomain.Area{area})
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: populateComponents: %w", err)
+	}
+	if len(enriched) == 0 {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: enrichment failed")
+	}
+	area = enriched[0]
+
+	name := area.Name
+	if opts.Name != nil {
+		value := strings.TrimSpace(*opts.Name)
+		if value == "" {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: %w", ErrNameRequired)
+		}
+		if utf8.RuneCountInString(value) > nameMaxLength {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: %w", ErrNameTooLong)
+		}
+		name = value
+	} else {
+		name = generateDuplicateName(area.Name)
+	}
+
+	desc := ""
+	if opts.Description != nil {
+		desc = strings.TrimSpace(*opts.Description)
+	} else if area.Description != nil {
+		desc = strings.TrimSpace(*area.Description)
+	}
+
+	if area.Action == nil || area.Action.Config.ComponentID == uuid.Nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: %w", ErrAreaMisconfigured)
+	}
+
+	actionInput := ActionInput{
+		ComponentID: area.Action.Config.ComponentID,
+		Name:        strings.TrimSpace(area.Action.Config.Name),
+		Params:      cloneParamsMap(area.Action.Config.Params),
+	}
+
+	reactionInputs := make([]ReactionInput, 0, len(area.Reactions))
+	for _, reaction := range area.Reactions {
+		reactionInputs = append(reactionInputs, ReactionInput{
+			ComponentID: reaction.Config.ComponentID,
+			Name:        strings.TrimSpace(reaction.Config.Name),
+			Params:      cloneParamsMap(reaction.Config.Params),
+		})
+	}
+
+	duplicate, err := s.Create(ctx, userID, name, desc, actionInput, reactionInputs)
+	if err != nil {
+		return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: create: %w", err)
+	}
+
+	if area.Status != areadomain.StatusEnabled {
+		duplicate.Status = area.Status
+		duplicate.UpdatedAt = s.clock.Now().UTC()
+		if err := s.repo.UpdateMetadata(ctx, duplicate); err != nil {
+			return areadomain.Area{}, fmt.Errorf("area.Service.Duplicate: repo.UpdateMetadata: %w", err)
+		}
+	}
+
+	return duplicate, nil
 }
 
 // Delete removes an automation owned by the given user
@@ -522,6 +844,107 @@ func (s *Service) resolveSourceID(ctx context.Context, area areadomain.Area) (uu
 		return uuid.Nil, err
 	}
 	return source.ID, nil
+}
+
+func cloneArea(area areadomain.Area) areadomain.Area {
+	clone := area
+	if area.Action != nil {
+		actionCopy := *area.Action
+		actionCopy.Config = cloneConfig(area.Action.Config)
+		clone.Action = &actionCopy
+	}
+	if len(area.Reactions) > 0 {
+		clone.Reactions = make([]areadomain.Link, len(area.Reactions))
+		for i, reaction := range area.Reactions {
+			clone.Reactions[i] = cloneLink(reaction)
+		}
+	}
+	return clone
+}
+
+func cloneLink(link areadomain.Link) areadomain.Link {
+	copy := link
+	copy.Config = cloneConfig(link.Config)
+	return copy
+}
+
+func cloneConfig(cfg componentdomain.Config) componentdomain.Config {
+	copy := cfg
+	if cfg.Component != nil {
+		componentCopy := *cfg.Component
+		copy.Component = &componentCopy
+	}
+	copy.Params = cloneParamsMap(cfg.Params)
+	return copy
+}
+
+func cloneParamsMap(source map[string]any) map[string]any {
+	if len(source) == 0 {
+		return map[string]any{}
+	}
+	clone := make(map[string]any, len(source))
+	for key, value := range source {
+		clone[key] = value
+	}
+	return clone
+}
+
+func stringPointersEqual(a *string, b *string) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a == nil || b == nil:
+		return false
+	default:
+		return *a == *b
+	}
+}
+
+func normalizeDescription(value *string) (*string, error) {
+	if value == nil {
+		return nil, nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil, nil
+	}
+	if utf8.RuneCountInString(trimmed) > descriptionMaxLength {
+		return nil, ErrDescriptionTooLong
+	}
+	desc := trimmed
+	return &desc, nil
+}
+
+func generateDuplicateName(base string) string {
+	trimmed := strings.TrimSpace(base)
+	if trimmed == "" {
+		trimmed = "Automation"
+	}
+	suffix := " (copy)"
+	total := trimmed + suffix
+	if utf8.RuneCountInString(total) <= nameMaxLength {
+		return total
+	}
+	maxBase := nameMaxLength - utf8.RuneCountInString(suffix)
+	if maxBase <= 0 {
+		runes := []rune(suffix)
+		if len(runes) > nameMaxLength {
+			return string(runes[:nameMaxLength])
+		}
+		return suffix
+	}
+	runes := []rune(trimmed)
+	if len(runes) > maxBase {
+		runes = runes[:maxBase]
+	}
+	return string(runes) + suffix
+}
+
+func mapsEqual(a map[string]any, b map[string]any) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a, b)
 }
 
 func (s *Service) ensureProviderSubscription(ctx context.Context, userID uuid.UUID, providerID uuid.UUID) error {

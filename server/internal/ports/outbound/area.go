@@ -4,6 +4,7 @@ import (
 	"context"
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	"github.com/google/uuid"
 )
 
@@ -13,4 +14,6 @@ type AreaRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (areadomain.Area, error)
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]areadomain.Area, error)
 	Delete(ctx context.Context, id uuid.UUID) error
+	UpdateMetadata(ctx context.Context, area areadomain.Area) error
+	UpdateConfig(ctx context.Context, config componentdomain.Config) error
 }

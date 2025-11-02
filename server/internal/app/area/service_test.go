@@ -534,6 +534,304 @@ func TestService_DeleteRejectsForeignArea(t *testing.T) {
 	}
 }
 
+func TestService_UpdateAppliesMetadataAndConfigs(t *testing.T) {
+	ctx := context.Background()
+	now := time.Unix(1720000000, 0).UTC()
+	next := now.Add(2 * time.Minute)
+	userID := uuid.New()
+	actionComponent := uuid.New()
+	reactionComponent := uuid.New()
+	actionConfigID := uuid.New()
+	reactionConfigID := uuid.New()
+
+	areaID := uuid.New()
+	repo := &memoryAreaRepo{
+		items: map[uuid.UUID]areadomain.Area{
+			areaID: {
+				ID:          areaID,
+				UserID:      userID,
+				Name:        "Daily summary",
+				Description: ptrString("Sends a summary each morning"),
+				Status:      areadomain.StatusEnabled,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+				Action: &areadomain.Link{
+					ID:       uuid.New(),
+					Role:     areadomain.LinkRoleAction,
+					AreaID:   areaID,
+					Position: 1,
+					Config: componentdomain.Config{
+						ID:          actionConfigID,
+						ComponentID: actionComponent,
+						Params:      map[string]any{"channel": "email"},
+						Active:      true,
+					},
+				},
+				Reactions: []areadomain.Link{
+					{
+						ID:       uuid.New(),
+						Role:     areadomain.LinkRoleReaction,
+						AreaID:   areaID,
+						Position: 1,
+						Config: componentdomain.Config{
+							ID:          reactionConfigID,
+							ComponentID: reactionComponent,
+							Params:      map[string]any{"subject": "Summary"},
+							Active:      true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	components := &memoryComponentRepo{
+		items: map[uuid.UUID]componentdomain.Component{
+			actionComponent: {
+				ID:         actionComponent,
+				Kind:       componentdomain.KindAction,
+				Enabled:    true,
+				ProviderID: uuid.New(),
+			},
+			reactionComponent: {
+				ID:         reactionComponent,
+				Kind:       componentdomain.KindReaction,
+				Enabled:    true,
+				ProviderID: uuid.New(),
+			},
+		},
+	}
+
+	service := NewService(repo, components, allowAllSubscriptions{}, nil, nil, stubClock{now: next}, nil)
+
+	newName := "Daily summary updated"
+	newDescription := "  Updated description "
+	actionName := "Trigger"
+	updateCmd := UpdateAreaCommand{
+		Name:           &newName,
+		Description:    &newDescription,
+		DescriptionSet: true,
+		Action: &UpdateActionCommand{
+			ConfigID:  actionConfigID,
+			Name:      &actionName,
+			NameSet:   true,
+			Params:    map[string]any{"channel": "chat"},
+			ParamsSet: true,
+		},
+		Reactions: []UpdateReactionCommand{
+			{
+				ConfigID:  reactionConfigID,
+				Params:    map[string]any{"subject": "Updated"},
+				ParamsSet: true,
+			},
+		},
+	}
+
+	updated, err := service.Update(ctx, userID, areaID, updateCmd)
+	if err != nil {
+		t.Fatalf("Update returned error: %v", err)
+	}
+	if updated.Name != newName {
+		t.Fatalf("expected name %q, got %q", newName, updated.Name)
+	}
+	if updated.Description == nil || *updated.Description != "Updated description" {
+		t.Fatalf("expected trimmed description, got %#v", updated.Description)
+	}
+	if !updated.UpdatedAt.Equal(next) {
+		t.Fatalf("expected updated timestamp %v, got %v", next, updated.UpdatedAt)
+	}
+	if updated.Action == nil || updated.Action.Config.Name != actionName {
+		t.Fatalf("action name not updated")
+	}
+	if updated.Action.Config.Params["channel"] != "chat" {
+		t.Fatalf("action params not updated")
+	}
+	if len(updated.Reactions) != 1 {
+		t.Fatalf("unexpected reactions count %d", len(updated.Reactions))
+	}
+	if updated.Reactions[0].Config.Params["subject"] != "Updated" {
+		t.Fatalf("reaction params not updated")
+	}
+
+	stored := repo.items[areaID]
+	if stored.Name != newName {
+		t.Fatalf("repository not updated with new name")
+	}
+	if stored.Description == nil || *stored.Description != "Updated description" {
+		t.Fatalf("repository description mismatch")
+	}
+	if !stored.UpdatedAt.Equal(next) {
+		t.Fatalf("repository updated timestamp mismatch")
+	}
+	if stored.Action.Config.Name != actionName {
+		t.Fatalf("repository action name mismatch")
+	}
+	if stored.Action.Config.Params["channel"] != "chat" {
+		t.Fatalf("repository action params mismatch")
+	}
+	if stored.Reactions[0].Config.Params["subject"] != "Updated" {
+		t.Fatalf("repository reaction params mismatch")
+	}
+	updateCmd.Action.Params["channel"] = "mutated"
+	if updated.Action.Config.Params["channel"] != "chat" {
+		t.Fatalf("params map should be cloned")
+	}
+}
+
+func TestService_UpdateReturnsErrorWhenNoChanges(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	areaID := uuid.New()
+	repo := &memoryAreaRepo{
+		items: map[uuid.UUID]areadomain.Area{
+			areaID: {
+				ID:        areaID,
+				UserID:    userID,
+				Name:      "No change",
+				Status:    areadomain.StatusEnabled,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+	}
+	service := NewService(repo, nil, nil, nil, nil, stubClock{now: time.Now()}, nil)
+
+	if _, err := service.Update(ctx, userID, areaID, UpdateAreaCommand{}); !errors.Is(err, ErrAreaUpdateNoChanges) {
+		t.Fatalf("expected ErrAreaUpdateNoChanges, got %v", err)
+	}
+}
+
+func TestService_UpdateStatus(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().UTC()
+	userID := uuid.New()
+	areaID := uuid.New()
+	repo := &memoryAreaRepo{
+		items: map[uuid.UUID]areadomain.Area{
+			areaID: {
+				ID:        areaID,
+				UserID:    userID,
+				Name:      "Workflow",
+				Status:    areadomain.StatusDisabled,
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		},
+	}
+	service := NewService(repo, nil, nil, nil, nil, stubClock{now: now.Add(time.Minute)}, nil)
+
+	updated, err := service.UpdateStatus(ctx, userID, areaID, areadomain.StatusEnabled)
+	if err != nil {
+		t.Fatalf("UpdateStatus returned error: %v", err)
+	}
+	if updated.Status != areadomain.StatusEnabled {
+		t.Fatalf("expected enabled status, got %s", updated.Status)
+	}
+	if !updated.UpdatedAt.Equal(now.Add(time.Minute)) {
+		t.Fatalf("expected updated timestamp to change")
+	}
+	if repo.items[areaID].Status != areadomain.StatusEnabled {
+		t.Fatalf("repository status not updated")
+	}
+}
+
+func TestService_DuplicateCreatesIndependentCopy(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().UTC()
+	userID := uuid.New()
+	actionComponent := uuid.New()
+	reactionComponent := uuid.New()
+	actionConfigID := uuid.New()
+	reactionConfigID := uuid.New()
+	areaID := uuid.New()
+
+	repo := &memoryAreaRepo{
+		items: map[uuid.UUID]areadomain.Area{
+			areaID: {
+				ID:        areaID,
+				UserID:    userID,
+				Name:      "Original",
+				Status:    areadomain.StatusDisabled,
+				CreatedAt: now,
+				UpdatedAt: now,
+				Action: &areadomain.Link{
+					ID:     uuid.New(),
+					Role:   areadomain.LinkRoleAction,
+					AreaID: areaID,
+					Config: componentdomain.Config{
+						ID:          actionConfigID,
+						ComponentID: actionComponent,
+						Name:        "Trigger",
+						Params:      map[string]any{"seed": "value"},
+						Active:      true,
+					},
+				},
+				Reactions: []areadomain.Link{
+					{
+						ID:     uuid.New(),
+						Role:   areadomain.LinkRoleReaction,
+						AreaID: areaID,
+						Config: componentdomain.Config{
+							ID:          reactionConfigID,
+							ComponentID: reactionComponent,
+							Params:      map[string]any{"message": "hello"},
+							Active:      true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	components := &memoryComponentRepo{
+		items: map[uuid.UUID]componentdomain.Component{
+			actionComponent: {
+				ID:         actionComponent,
+				Kind:       componentdomain.KindAction,
+				Enabled:    true,
+				ProviderID: uuid.New(),
+			},
+			reactionComponent: {
+				ID:         reactionComponent,
+				Kind:       componentdomain.KindReaction,
+				Enabled:    true,
+				ProviderID: uuid.New(),
+			},
+		},
+	}
+
+	service := NewService(repo, components, allowAllSubscriptions{}, nil, nil, stubClock{now: now.Add(time.Minute)}, nil)
+
+	duplicate, err := service.Duplicate(ctx, userID, areaID, DuplicateOptions{})
+	if err != nil {
+		t.Fatalf("Duplicate returned error: %v", err)
+	}
+	if duplicate.ID == areaID {
+		t.Fatalf("duplicate should have a new identifier")
+	}
+	if duplicate.Name != "Original (copy)" {
+		t.Fatalf("expected default duplicate name, got %q", duplicate.Name)
+	}
+	if duplicate.Status != areadomain.StatusDisabled {
+		t.Fatalf("expected duplicate to inherit status, got %s", duplicate.Status)
+	}
+	if duplicate.Action == nil || duplicate.Action.Config.ComponentID != actionComponent {
+		t.Fatalf("action component not preserved")
+	}
+	if duplicate.Action.Config.Params["seed"] != "value" {
+		t.Fatalf("action params not copied")
+	}
+	if len(duplicate.Reactions) != 1 || duplicate.Reactions[0].Config.ComponentID != reactionComponent {
+		t.Fatalf("reaction component not preserved")
+	}
+	if duplicate.Reactions[0].Config.Params["message"] != "hello" {
+		t.Fatalf("reaction params not copied")
+	}
+	if len(repo.items) != 2 {
+		t.Fatalf("expected two areas persisted, got %d", len(repo.items))
+	}
+}
+
 type memoryAreaRepo struct {
 	items map[uuid.UUID]areadomain.Area
 }
@@ -593,6 +891,46 @@ func (m *memoryAreaRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]ar
 func (m *memoryAreaRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	delete(m.items, id)
 	return nil
+}
+
+func (m *memoryAreaRepo) UpdateMetadata(ctx context.Context, area areadomain.Area) error {
+	stored, ok := m.items[area.ID]
+	if !ok {
+		return outbound.ErrNotFound
+	}
+	stored.Name = area.Name
+	stored.Description = area.Description
+	stored.Status = area.Status
+	stored.UpdatedAt = area.UpdatedAt
+	m.items[area.ID] = stored
+	return nil
+}
+
+func (m *memoryAreaRepo) UpdateConfig(ctx context.Context, config componentdomain.Config) error {
+	for id, area := range m.items {
+		if area.Action != nil && area.Action.Config.ID == config.ID {
+			area.Action.Config.Name = config.Name
+			area.Action.Config.Params = cloneParamsMap(config.Params)
+			area.Action.Config.UpdatedAt = config.UpdatedAt
+			m.items[id] = area
+			return nil
+		}
+		for i := range area.Reactions {
+			if area.Reactions[i].Config.ID == config.ID {
+				area.Reactions[i].Config.Name = config.Name
+				area.Reactions[i].Config.Params = cloneParamsMap(config.Params)
+				area.Reactions[i].Config.UpdatedAt = config.UpdatedAt
+				m.items[id] = area
+				return nil
+			}
+		}
+	}
+	return outbound.ErrNotFound
+}
+
+func ptrString(value string) *string {
+	v := value
+	return &v
 }
 
 type memoryComponentRepo struct {
