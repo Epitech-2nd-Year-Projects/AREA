@@ -160,7 +160,10 @@
     "duplicateArea": "Dupliquer l’AREA",
     "deleteArea": "Supprimer l’AREA",
     "enableArea": "Activer l’AREA",
-    "disableArea": "Désactiver l’AREA"
+    "disableArea": "Désactiver l’AREA",
+    "statusEnabled": "{area} est désormais active.",
+    "statusDisabled": "{area} est désormais désactivée.",
+    "statusError": "Impossible de mettre à jour le statut de l’AREA."
   },
   "Sidebar": {
     "admin": "Admin",
@@ -168,7 +171,7 @@
     "adminUsers": "Gestion des utilisateurs",
     "myArea": "Mon espace",
     "services": "Services",
-    "links": "Liens"
+    "areas": "AREAs"
   },
   "SidebarUserNavigation": {
     "profile": "Profil",
@@ -219,7 +222,7 @@
       "save": "Enregistrer les modifications"
     }
   },
-  "LinksPage": {
+  "AreasPage": {
     "searchAreas": "Rechercher des AREAs…",
     "loadingAreas": "Chargement de vos AREAs…",
     "errorLoadingAreas": "Impossible de charger vos AREAs. Veuillez réessayer.",
@@ -309,19 +312,27 @@
     "areaDescriptionLabel": "Description de l’AREA",
     "areaDescriptionPlaceholder": "Décrivez ce que fera votre AREA",
     "cancel": "Annuler",
-    "submit": "Enregistrer les modifications"
+    "submit": "Enregistrer les modifications",
+    "success": "{area} a été mise à jour.",
+    "error": "Nous n’avons pas pu mettre à jour cette AREA.",
+    "nameRequired": "Un nom est requis pour enregistrer votre AREA.",
+    "noChanges": "Aucune modification détectée."
   },
   "DuplicateAreaModal": {
     "title": "Dupliquer l’AREA",
     "description": "Une copie de {area} sera créée. Vous pourrez ajuster les détails après la duplication.",
     "cancel": "Annuler",
-    "confirm": "Dupliquer"
+    "confirm": "Dupliquer",
+    "success": "{area} a été dupliquée.",
+    "error": "Impossible de dupliquer cette AREA."
   },
   "DeleteAreaModal": {
     "title": "Supprimer l’AREA",
     "description": "Voulez‑vous vraiment supprimer {area} ? Cette action est irréversible.",
     "cancel": "Annuler",
-    "confirm": "Supprimer"
+    "confirm": "Supprimer",
+    "success": "{area} a été supprimée.",
+    "error": "Impossible de supprimer cette AREA."
   },
   "TestRunAreaModal": {
     "title": "Exécution de test",
@@ -329,14 +340,18 @@
     "summaryTitle": "Dernier récapitulatif de test",
     "statusIdle": "Non exécuté",
     "statusCompleted": "Terminé",
+    "statusRunning": "En cours",
     "idleDescription": "Lancez une exécution de test pour simuler le workflow et examiner les résultats.",
+    "runningDescription": "Patientez pendant l’exécution de cette AREA et la récupération des résultats.",
     "runAt": "Simulé le {date}",
     "actionHeading": "Action",
     "reactionsHeading": "Réactions",
     "noReactions": "Aucune réaction configurée.",
     "close": "Fermer",
     "runTest": "Lancer le test",
-    "runAgain": "Relancer"
+    "runAgain": "Relancer",
+    "success": "Exécution de test déclenchée pour {area}.",
+    "error": "Impossible de déclencher l’exécution de test."
   },
   "ComponentConfigSheet": {
     "titleAction": "Configurer {componentName}",
@@ -366,6 +381,7 @@
     "empty": "Aucune exécution enregistrée pour le moment.",
     "statusSuccess": "Réussite",
     "statusFailure": "Échec",
+    "statusGeneric": "{status}",
     "successSummary": "{count, plural, one {# réaction effectuée} other {# réactions effectuées}} en {duration}.",
     "failureSummary": "Échec après {duration}. {error}",
     "triggeredBy": "Déclenché par {action}",
@@ -373,7 +389,11 @@
     "durationSeconds": "{seconds} s",
     "duration": "Durée : {duration}",
     "close": "Fermer",
-    "unknownError": "Erreur inconnue"
+    "unknownError": "Erreur inconnue",
+    "loading": "Chargement de l’historique…",
+    "error": "Impossible de charger l’historique des exécutions.",
+    "retry": "Réessayer",
+    "durationUnavailable": "indisponible"
   },
   "ExploreServicePage": {
     "loading": "Chargement des détails du service…",

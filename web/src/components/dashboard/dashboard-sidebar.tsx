@@ -69,8 +69,8 @@ const navData: {
           icon: <NotebookTextIcon />
         },
         {
-          internationalizedTitle: 'links',
-          href: '/dashboard/links',
+          internationalizedTitle: 'areas',
+          href: '/dashboard/areas',
           icon: <LinkIcon />
         }
       ]

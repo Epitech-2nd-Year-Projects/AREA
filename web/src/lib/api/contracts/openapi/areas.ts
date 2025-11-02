@@ -69,3 +69,52 @@ export type CreateAreaRequestDTO = {
   action: CreateAreaComponentRequestDTO
   reactions: CreateAreaComponentRequestDTO[]
 }
+
+export type UpdateAreaActionRequestDTO = {
+  configId: string
+  name?: string
+  params?: Record<string, unknown>
+}
+
+export type UpdateAreaReactionRequestDTO = {
+  configId: string
+  name?: string
+  params?: Record<string, unknown>
+}
+
+export type UpdateAreaRequestDTO = {
+  name?: string
+  description?: string | null
+  action?: UpdateAreaActionRequestDTO
+  reactions?: UpdateAreaReactionRequestDTO[]
+}
+
+export type UpdateAreaStatusRequestDTO = {
+  status: 'enabled' | 'disabled' | 'archived'
+}
+
+export type DuplicateAreaRequestDTO = {
+  name?: string
+  description?: string | null
+}
+
+export type AreaHistoryReactionDTO = {
+  component: string
+  provider: string
+}
+
+export type AreaHistoryEntryDTO = {
+  jobId: string
+  status: string
+  attempt: number
+  runAt: string
+  createdAt: string
+  updatedAt: string
+  error?: string | null
+  resultPayload?: Record<string, unknown>
+  reaction: AreaHistoryReactionDTO
+}
+
+export type AreaHistoryResponseDTO = {
+  executions: AreaHistoryEntryDTO[]
+}

@@ -1,8 +1,13 @@
 'use client'
-import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { Area } from '@/lib/api/contracts/areas'
-import { buildMockAreaHistory, type MockAreaRun } from '@/lib/api/mock'
+import {
+  AlertTriangleIcon,
+  CheckCircle2Icon,
+  HistoryIcon,
+  Loader2
+} from 'lucide-react'
+import { Area, AreaHistoryEntry } from '@/lib/api/contracts/areas'
+import { useAreaHistoryQuery } from '@/lib/api/openapi/areas'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +20,6 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { AlertTriangleIcon, CheckCircle2Icon, HistoryIcon } from 'lucide-react'
 
 const MILLISECONDS_IN_SECOND = 1000
 
@@ -50,29 +54,117 @@ export function AreaHistoryModal({
   onOpenChange
 }: AreaHistoryModalProps) {
   const t = useTranslations('AreaHistoryModal')
-  const history = useMemo<MockAreaRun[]>(
-    () => buildMockAreaHistory(area),
-    [area]
-  )
+  const historyQuery = useAreaHistoryQuery(area.id, {
+    enabled: open
+  })
+  const history = historyQuery.data ?? []
 
-  const statusMeta: Record<
-    MockAreaRun['status'],
-    {
-      label: string
-      Icon: typeof CheckCircle2Icon
-      badgeVariant: 'secondary' | 'destructive'
+  const getStatusMeta = (
+    entry: AreaHistoryEntry
+  ): {
+    label: string
+    Icon: typeof CheckCircle2Icon
+    badgeVariant: 'secondary' | 'destructive'
+  } => {
+    const status = entry.status.toLowerCase()
+    if (status === 'succeeded' || status === 'success') {
+      return {
+        label: t('statusSuccess'),
+        Icon: CheckCircle2Icon,
+        badgeVariant: 'secondary'
+      }
     }
-  > = {
-    success: {
-      label: t('statusSuccess'),
-      Icon: CheckCircle2Icon,
+    if (status === 'failed' || status === 'failure') {
+      return {
+        label: t('statusFailure'),
+        Icon: AlertTriangleIcon,
+        badgeVariant: 'destructive'
+      }
+    }
+    return {
+      label: t('statusGeneric', { status: entry.status }),
+      Icon: HistoryIcon,
       badgeVariant: 'secondary'
-    },
-    failure: {
-      label: t('statusFailure'),
-      Icon: AlertTriangleIcon,
-      badgeVariant: 'destructive'
     }
+  }
+
+  const renderHistoryList = (entries: AreaHistoryEntry[]) => {
+    if (entries.length === 0) {
+      return (
+        <div className="rounded-md border border-dashed bg-muted/40 p-8 text-center">
+          <p className="text-sm text-muted-foreground">{t('empty')}</p>
+        </div>
+      )
+    }
+
+    return (
+      <ScrollArea className="mt-2 max-h-[320px] pr-2">
+        <div className="space-y-3">
+          {entries.map((entry) => {
+            const meta = getStatusMeta(entry)
+            const durationMs = (() => {
+              const raw = entry.resultPayload?.durationMs
+              return typeof raw === 'number' ? raw : null
+            })()
+            const reactionsTriggered = (() => {
+              const raw = entry.resultPayload?.reactionsTriggered
+              return typeof raw === 'number' ? raw : 0
+            })()
+            const durationLabel = durationMs
+              ? formatDuration(durationMs, ({ seconds }) =>
+                  t('durationSeconds', { seconds })
+                )
+              : t('durationUnavailable')
+
+            const summaryText =
+              meta.badgeVariant === 'destructive'
+                ? t('failureSummary', {
+                    duration: durationLabel,
+                    error: entry.error ?? t('unknownError')
+                  })
+                : t('successSummary', {
+                    count: reactionsTriggered,
+                    duration: durationLabel
+                  })
+
+            return (
+              <div
+                key={entry.jobId}
+                className="space-y-3 rounded-md border bg-card p-4 shadow-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {formatDateTime(entry.runAt)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('triggeredBy', { action: area.action.name })}
+                    </p>
+                  </div>
+                  <Badge variant={meta.badgeVariant}>
+                    <meta.Icon className="size-3" />
+                    {meta.label}
+                  </Badge>
+                </div>
+
+                <p className="text-sm text-muted-foreground">{summaryText}</p>
+
+                <Separator />
+
+                <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+                  <span>
+                    {t('reactionsTriggered', {
+                      count: reactionsTriggered
+                    })}
+                  </span>
+                  <span>{t('duration', { duration: durationLabel })}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </ScrollArea>
+    )
   }
 
   return (
@@ -88,67 +180,27 @@ export function AreaHistoryModal({
           </DialogDescription>
         </DialogHeader>
 
-        {history.length === 0 ? (
-          <div className="rounded-md border border-dashed bg-muted/40 p-8 text-center">
-            <p className="text-sm text-muted-foreground">{t('empty')}</p>
+        {historyQuery.isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">
+              {t('loading')}
+            </span>
+          </div>
+        ) : historyQuery.isError ? (
+          <div className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed bg-muted/40 p-8 text-center">
+            <p className="text-sm text-muted-foreground">{t('error')}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => historyQuery.refetch()}
+            >
+              {t('retry')}
+            </Button>
           </div>
         ) : (
-          <ScrollArea className="mt-2 max-h-[320px] pr-2">
-            <div className="space-y-3">
-              {history.map((run) => {
-                const meta = statusMeta[run.status]
-                const durationLabel = formatDuration(
-                  run.durationMs,
-                  ({ seconds }) => t('durationSeconds', { seconds })
-                )
-
-                return (
-                  <div
-                    key={run.id}
-                    className="space-y-3 rounded-md border bg-card p-4 shadow-sm"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-medium">
-                          {formatDateTime(run.executedAt)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('triggeredBy', { action: area.action.name })}
-                        </p>
-                      </div>
-                      <Badge variant={meta.badgeVariant}>
-                        <meta.Icon className="size-3" />
-                        {meta.label}
-                      </Badge>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">
-                      {run.status === 'success'
-                        ? t('successSummary', {
-                            count: run.reactionsTriggered,
-                            duration: durationLabel
-                          })
-                        : t('failureSummary', {
-                            duration: durationLabel,
-                            error: run.errorMessage ?? t('unknownError')
-                          })}
-                    </p>
-
-                    <Separator />
-
-                    <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-                      <span>
-                        {t('reactionsTriggered', {
-                          count: run.reactionsTriggered
-                        })}
-                      </span>
-                      <span>{t('duration', { duration: durationLabel })}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </ScrollArea>
+          renderHistoryList(history)
         )}
 
         <DialogFooter>
