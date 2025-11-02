@@ -21,14 +21,19 @@ jobs:
 
       # Server
       - uses: actions/setup-go@v5
-        with: { go-version: "1.25.1" }
+        with: { go-version: "1.25.3" }
       - name: Go deps, vet, test
         working-directory: server
         run: |
           go mod download
           go vet ./...
-          go test ./...
-
+          go test -coverprofile=coverage.txt ./...
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Epitech-2nd-Year-Projects/AREA
+      
       # Web
       - uses: actions/setup-node@v4
         with:
