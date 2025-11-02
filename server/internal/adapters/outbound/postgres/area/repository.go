@@ -8,6 +8,7 @@ import (
 	"time"
 
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
+	componentdomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/component"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/ports/outbound"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -296,6 +297,76 @@ func (r Repository) Delete(ctx context.Context, id uuid.UUID) error {
 
 		return nil
 	})
+}
+
+// UpdateMetadata updates mutable attributes on an area record
+func (r Repository) UpdateMetadata(ctx context.Context, area areadomain.Area) error {
+	if r.db == nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateMetadata: nil db handle")
+	}
+	if area.ID == uuid.Nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateMetadata: missing id")
+	}
+
+	desc := interface{}(nil)
+	if area.Description != nil {
+		value := strings.TrimSpace(*area.Description)
+		if value != "" {
+			desc = value
+		}
+	}
+
+	updates := map[string]any{
+		"name":        strings.TrimSpace(area.Name),
+		"status":      string(area.Status),
+		"description": desc,
+		"updated_at":  area.UpdatedAt.UTC(),
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&areaModel{}).
+		Where("id = ?", area.ID).
+		Updates(updates).Error; err != nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateMetadata: %w", err)
+	}
+	return nil
+}
+
+// UpdateConfig persists changes to an existing component configuration
+func (r Repository) UpdateConfig(ctx context.Context, config componentdomain.Config) error {
+	if r.db == nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateConfig: nil db handle")
+	}
+	if config.ID == uuid.Nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateConfig: missing id")
+	}
+
+	model, err := configFromDomain(config)
+	if err != nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateConfig: encode params: %w", err)
+	}
+
+	name := interface{}(nil)
+	if model.Name != nil {
+		if trimmed := strings.TrimSpace(*model.Name); trimmed != "" {
+			name = trimmed
+		}
+	}
+
+	updates := map[string]any{
+		"name":       name,
+		"params":     model.Params,
+		"is_active":  model.IsActive,
+		"updated_at": model.UpdatedAt.UTC(),
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&componentConfigModel{}).
+		Where("id = ?", model.ID).
+		Updates(updates).Error; err != nil {
+		return fmt.Errorf("postgres.area.Repository.UpdateConfig: %w", err)
+	}
+	return nil
 }
 
 func isUniqueViolation(err error) bool {
