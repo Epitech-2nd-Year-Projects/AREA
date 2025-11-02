@@ -38,6 +38,12 @@
       }
     }
   },
+  "Common": {
+    "themeSwitcher": {
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme"
+    }
+  },
   "LoginPage": {
     "welcomeBack": "Welcome back",
     "loginToAccount": "Login to your AREA account",

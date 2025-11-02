@@ -2,15 +2,20 @@
 import { AreaCardList } from '@/components/areas/area-card-list'
 import CreateAreaModal from '@/components/areas/create-area-modal'
 import { Input } from '@/components/ui/input'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useMemo, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAreasQuery } from '@/lib/api/openapi/areas'
 
 export default function LinksPage() {
+  const locale = useLocale()
   const t = useTranslations('LinksPage')
   const { data: areas, isLoading, isError, error } = useAreasQuery()
   const [searchValue, setSearchValue] = useState('')
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
 
   useEffect(() => {
     if (isError) {

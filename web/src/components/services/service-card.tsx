@@ -139,7 +139,7 @@ export function ServiceCard({
         ) : (
           <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
         )}
-        <h3 className="text-base font-semibold">{service.displayName}</h3>
+        <h2 className="text-base font-semibold">{service.displayName}</h2>
         <div className="flex flex-wrap justify-center gap-2">
           {service.category && (
             <Badge variant="secondary" className="uppercase">
@@ -148,7 +148,10 @@ export function ServiceCard({
           )}
         </div>
       </CardContent>
-      <CardFooter className="p-4" onClick={(e) => e.stopPropagation()}>
+      <CardFooter
+        className="p-4 [&_button.bg-destructive]:text-destructive-foreground [&_button.bg-destructive]:hover:bg-destructive/90 [&_button.bg-destructive]:focus-visible:ring-destructive/50 [&_button.bg-destructive]:dark:bg-destructive [&_button.bg-destructive]:dark:hover:bg-destructive/90"
+        onClick={(e) => e.stopPropagation()}
+      >
         {linked ? (
           <DisconnectModal
             serviceName={service.displayName}

@@ -1,0 +1,393 @@
+{
+  "HomePage": {
+    "title": "Accueil",
+    "badgeLabel": "Automatisez tout",
+    "headline": "Créez des automatisations fiables sans gérer de serveur.",
+    "subheadline": "Cessez d’attendre que les développeurs mettent de l’ordre dans vos applis. Prenez la main avec AREA, simplifiez vos tâches et faites plus avec moins d’efforts.",
+    "primaryCta": "Commencer gratuitement",
+    "secondaryCta": "Parcourir les workflows",
+    "downloadCta": {
+      "label": "Télécharger l’application Android",
+      "helper": "Récupérez la dernière APK AREA directement depuis le client web."
+    },
+    "features": {
+      "instantTriggers": {
+        "title": "Déclencheurs instantanés",
+        "description": "Connectez des centaines de services et réagissez aux événements en temps réel sans gestion de file."
+      },
+      "unifiedData": {
+        "title": "Données unifiées",
+        "description": "Rassemblez tout grâce aux connecteurs préconfigurés, aux jetons réutilisables et aux variables d’environnement partagées."
+      },
+      "teamReady": {
+        "title": "Prêt pour l’équipe",
+        "description": "Invitez des coéquipiers, révisez les changements et déployez en toute sécurité avec le versionnement et les espaces de staging intégrés."
+      }
+    },
+    "cta": {
+      "title": "Voyez AREA propulser votre prochain lancement.",
+      "description": "AREA vous aide à automatiser les tâches les plus fastidieuses de votre quotidien. Avec plus de 8 000 intégrations et services, nous permettons aux entreprises partout de créer des processus qui laissent les ordinateurs faire ce qu’ils font le mieux et les humains faire ce qu’ils font le mieux.",
+      "button": "Parler à notre équipe"
+    },
+    "footer": {
+      "copy": "© {year} AREA. Tous droits réservés.",
+      "links": {
+        "about": "À propos",
+        "explore": "Explorer",
+        "contact": "Contact"
+      }
+    }
+  },
+  "Common": {
+    "themeSwitcher": {
+      "switchToLight": "Activer le thème clair",
+      "switchToDark": "Activer le thème sombre"
+    }
+  },
+  "LoginPage": {
+    "welcomeBack": "Bon retour",
+    "loginToAccount": "Connectez-vous à votre compte AREA",
+    "email": "E‑mail",
+    "password": "Mot de passe",
+    "forgotYourPassword": "Mot de passe oublié ?",
+    "login": "Connexion",
+    "orContinueWith": "Ou continuer avec",
+    "loginWithApple": "Se connecter avec Apple",
+    "loginWithGoogle": "Se connecter avec Google",
+    "loginWithMeta": "Se connecter avec Meta",
+    "dontHaveAnAccount": "Pas de compte ? ",
+    "signUp": "Créer un compte",
+    "byClickingContinueYouAgreeToOur": "En cliquant sur Continuer, vous acceptez nos",
+    "termsOfService": "Conditions d’utilisation",
+    "and": "et",
+    "privacyPolicy": "Politique de confidentialité",
+    "emailNotVerified": "Nous avons remarqué que {email} doit encore être vérifiée.",
+    "emailNotVerifiedInstructions": "Vérifiez votre boîte de réception pour notre e‑mail de confirmation, puis réessayez de vous connecter.",
+    "loginSuccess": "Connexion réussie.",
+    "loginSuccessDetails": "Parfait. Nous vous redirigerons une fois le tableau de bord prêt.",
+    "errors": {
+      "emailRequired": "Veuillez saisir votre adresse e‑mail.",
+      "passwordRequired": "Veuillez saisir votre mot de passe.",
+      "invalidCredentials": "E‑mail ou mot de passe invalide.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "oauth": {
+      "starting": "Redirection vers Google…",
+      "exchanging": "Connexion via Google…",
+      "canceled": "La connexion Google a été annulée.",
+      "stateMismatch": "Le lien de connexion n’est plus valable. Veuillez réessayer.",
+      "initFailed": "Impossible de démarrer la connexion Google. Veuillez réessayer.",
+      "unavailable": "La connexion Google n’est pas disponible pour le moment.",
+      "exchangeFailed": "Impossible de terminer la connexion Google. Veuillez réessayer."
+    }
+  },
+  "RegisterPage": {
+    "welcome": "Bienvenue",
+    "createAccountToAccess": "Créez un compte pour accéder à AREA",
+    "email": "E‑mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "register": "S’inscrire",
+    "orRegisterWith": "Ou s’inscrire avec",
+    "registerWithApple": "S’inscrire avec Apple",
+    "registerWithGoogle": "S’inscrire avec Google",
+    "registerWithMeta": "S’inscrire avec Meta",
+    "alreadyHaveAnAccount": "Vous avez déjà un compte ? ",
+    "signIn": "Se connecter",
+    "byClickingContinueYouAgreeToOur": "En cliquant sur Continuer, vous acceptez nos",
+    "termsOfService": "Conditions d’utilisation",
+    "and": "et",
+    "privacyPolicy": "Politique de confidentialité",
+    "verificationEmailSent": "Nous venons d’envoyer un e‑mail de vérification à {email}.",
+    "verificationEmailInstructions": "Veuillez confirmer votre adresse avant d’essayer de vous connecter.",
+    "errors": {
+      "emailRequired": "Veuillez saisir votre adresse e‑mail.",
+      "passwordRequired": "Veuillez saisir votre mot de passe.",
+      "passwordTooShort": "Votre mot de passe doit contenir au moins {minLength} caractères.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "emailAlreadyUsed": "Un compte existe déjà pour {email}.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
+    }
+  },
+  "AuthShared": {
+    "resendVerification": "Renvoyer l’e‑mail de vérification",
+    "resendVerificationSuccess": "E‑mail de vérification renvoyé à {email}.",
+    "resendVerificationError": "Impossible de renvoyer l’e‑mail de vérification pour le moment. Veuillez réessayer."
+  },
+  "ExplorePage": {
+    "title": "Explorer les services",
+    "description": "Gagnez du temps et accomplissez plus",
+    "loading": "Chargement des services…",
+    "error": "Une erreur est survenue lors du chargement des services."
+  },
+  "AboutPage": {
+    "title": "À propos d’AREA",
+    "description": "En savoir plus sur le client et le serveur de la plateforme.",
+    "clientSectionTitle": "Client",
+    "clientSectionDescription": "Informations sur le client qui effectue la requête.",
+    "serverSectionTitle": "Serveur",
+    "serverSectionDescription": "Détails d’état du serveur AREA.",
+    "hostLabel": "Hôte",
+    "currentTimeLabel": "Heure actuelle",
+    "servicesLabel": "Services",
+    "actionsLabel": "actions",
+    "reactionsLabel": "réactions",
+    "loading": "Chargement des détails…",
+    "error": "Une erreur est survenue lors du chargement des détails."
+  },
+  "ServiceCard": {
+    "getStarted": "Commencer",
+    "connect": "Connecter",
+    "subscribe": "S’abonner",
+    "linked": "Déjà lié",
+    "actions": "actions",
+    "reactions": "réactions",
+    "viewCapabilities": "Voir les capacités"
+  },
+  "DisconnectModal": {
+    "trigger": "Déconnecter",
+    "title": "Déconnecter le service",
+    "description": "Voulez‑vous vraiment déconnecter {service} ?",
+    "cancel": "Annuler",
+    "confirm": "Déconnecter"
+  },
+  "AreaCard": {
+    "actionsLabel": "Action",
+    "openActions": "Ouvrir le menu des actions",
+    "testRunArea": "Exécuter un test",
+    "seeHistory": "Voir l’historique",
+    "editArea": "Modifier l’AREA",
+    "duplicateArea": "Dupliquer l’AREA",
+    "deleteArea": "Supprimer l’AREA",
+    "enableArea": "Activer l’AREA",
+    "disableArea": "Désactiver l’AREA"
+  },
+  "Sidebar": {
+    "admin": "Admin",
+    "adminLogs": "Journaux",
+    "adminUsers": "Gestion des utilisateurs",
+    "myArea": "Mon espace",
+    "services": "Services",
+    "links": "Liens"
+  },
+  "SidebarUserNavigation": {
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "backToHome": "Retour à l’accueil",
+    "logout": "Déconnexion"
+  },
+  "DashboardPage": {
+    "searchServices": "Rechercher des services…",
+    "loading": "Chargement du tableau de bord…"
+  },
+  "AdminUsersPage": {
+    "title": "Gestion des utilisateurs",
+    "table": {
+      "filterPlaceholder": "Filtrer les e‑mails…",
+      "noResults": "Aucun résultat.",
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "columns": {
+        "id": "ID",
+        "email": "E‑mail",
+        "role": "Rôle",
+        "actions": "Actions"
+      },
+      "actions": {
+        "openMenu": "Ouvrir le menu",
+        "label": "Actions",
+        "copyId": "Copier l’ID utilisateur",
+        "editUser": "Modifier l’utilisateur"
+      }
+    },
+    "editDialog": {
+      "title": "Modifier l’utilisateur",
+      "description": "Apportez ici les modifications au profil utilisateur. Cliquez sur Enregistrer quand vous avez terminé.",
+      "oauthUserDescription": "Cet utilisateur est authentifié via OAuth. L’e‑mail et le mot de passe ne peuvent pas être modifiés ici.",
+      "email": "E‑mail",
+      "newPassword": "Nouveau mot de passe",
+      "status": "Statut",
+      "statusPlaceholder": "Sélectionnez un statut",
+      "statuses": {
+        "active": "Actif",
+        "pending": "En attente",
+        "suspended": "Suspendu",
+        "deleted": "Supprimé"
+      },
+      "save": "Enregistrer les modifications"
+    }
+  },
+  "LinksPage": {
+    "searchAreas": "Rechercher des AREAs…",
+    "loadingAreas": "Chargement de vos AREAs…",
+    "errorLoadingAreas": "Impossible de charger vos AREAs. Veuillez réessayer.",
+    "emptyState": "Vous n’avez pas encore d’AREA. Créez‑en une pour commencer.",
+    "noMatches": "Aucune AREA ne correspond à cette recherche. Essayez un autre mot‑clé."
+  },
+  "ProfilePage": {
+    "pageTitle": "Profil",
+    "pageDescription": "Afficher et gérer les préférences de votre compte.",
+    "profileInformationTitle": "Informations du profil",
+    "profileInformationDescription": "Mettre à jour votre e‑mail et votre avatar.",
+    "oauthProfileDescription": "Vos informations de profil sont gérées par votre fournisseur OAuth. Vous ne pouvez pas les modifier ici.",
+    "avatarUploadLabel": "Photo de profil",
+    "avatarUploadButton": "Téléverser une photo",
+    "avatarResetButton": "Réinitialiser par défaut",
+    "emailLabel": "E‑mail",
+    "saveProfileButton": "Enregistrer les modifications",
+    "cancelProfileButton": "Annuler",
+    "profileSaved": "Informations du profil mises à jour.",
+    "passwordSectionTitle": "Changer le mot de passe",
+    "passwordSectionDescription": "Définissez un nouveau mot de passe pour sécuriser votre compte.",
+    "oauthPasswordDescription": "Votre mot de passe est géré par votre fournisseur OAuth. Vous ne pouvez pas le modifier ici.",
+    "currentPasswordLabel": "Mot de passe actuel",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+    "updatePasswordButton": "Mettre à jour le mot de passe",
+    "cancelPasswordButton": "Annuler",
+    "passwordMissing": "Veuillez remplir tous les champs de mot de passe.",
+    "passwordMismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas.",
+    "passwordUpdated": "Mot de passe mis à jour avec succès.",
+    "roleAdmin": "Administrateur",
+    "roleUser": "Utilisateur",
+    "connectedServicesTitle": "Services connectés",
+    "connectedServicesDescription": "Passez en revue les services connectés à votre compte AREA.",
+    "noServices": "Aucun service connecté pour le moment.",
+    "loading": "Chargement du profil…"
+  },
+  "CreateAreaModal": {
+    "createNewArea": "Créer une nouvelle AREA",
+    "title": "Créer une AREA",
+    "subtitle": "Sélectionnez une action, ajoutez une ou plusieurs réactions, puis décrivez votre AREA.",
+    "actionLabel": "Action",
+    "actionPlaceholder": "Choisir une action",
+    "actionsSearchPlaceholder": "Rechercher des actions par service…",
+    "actionsEmpty": "Aucune action trouvée.",
+    "actionAriaLabel": "Sélectionner une action pour cette AREA",
+    "configureAction": "Configurer l’action sélectionnée",
+    "reactionsLabel": "Réactions",
+    "reactionsHelper": "Vous pouvez ajouter autant de réactions que nécessaire.",
+    "reactionAriaLabel": "Réaction",
+    "reactionPlaceholder": "Choisir une réaction",
+    "reactionsSearchPlaceholder": "Rechercher des réactions par service…",
+    "reactionsEmpty": "Aucune réaction trouvée.",
+    "configureReaction": "Configurer la réaction sélectionnée",
+    "removeReaction": "Supprimer la réaction",
+    "addReaction": "Ajouter une autre réaction",
+    "areaNameLabel": "Nom de l’AREA",
+    "areaNamePlaceholder": "Donnez un nom descriptif à votre AREA",
+    "areaDescriptionLabel": "Description de l’AREA",
+    "areaDescriptionPlaceholder": "Décrivez ce que fera votre AREA",
+    "cancel": "Annuler",
+    "submit": "Créer l’AREA",
+    "submitting": "Création…",
+    "missingRequiredFields": "Sélectionnez une action, choisissez au moins une réaction et saisissez un nom d’AREA.",
+    "unknownError": "Une erreur est survenue lors de la création de l’AREA. Veuillez réessayer."
+  },
+  "EditAreaModal": {
+    "title": "Modifier l’AREA",
+    "subtitle": "Mettez à jour l’action, les réactions et la description de cette AREA.",
+    "actionLabel": "Action",
+    "actionPlaceholder": "Choisir une action",
+    "actionsSearchPlaceholder": "Rechercher des actions par service…",
+    "actionsEmpty": "Aucune action trouvée.",
+    "actionAriaLabel": "Sélectionner une action pour cette AREA",
+    "configureAction": "Configurer l’action sélectionnée",
+    "reactionsLabel": "Réactions",
+    "reactionsHelper": "Vous pouvez ajouter autant de réactions que nécessaire.",
+    "reactionAriaLabel": "Réaction n°{index}",
+    "reactionPlaceholder": "Choisir une réaction",
+    "reactionsSearchPlaceholder": "Rechercher des réactions par service…",
+    "reactionsEmpty": "Aucune réaction trouvée.",
+    "configureReaction": "Configurer la réaction sélectionnée",
+    "removeReaction": "Supprimer la réaction",
+    "addReaction": "Ajouter une autre réaction",
+    "areaNameLabel": "Nom de l’AREA",
+    "areaNamePlaceholder": "Donnez un nom descriptif à votre AREA",
+    "areaDescriptionLabel": "Description de l’AREA",
+    "areaDescriptionPlaceholder": "Décrivez ce que fera votre AREA",
+    "cancel": "Annuler",
+    "submit": "Enregistrer les modifications"
+  },
+  "DuplicateAreaModal": {
+    "title": "Dupliquer l’AREA",
+    "description": "Une copie de {area} sera créée. Vous pourrez ajuster les détails après la duplication.",
+    "cancel": "Annuler",
+    "confirm": "Dupliquer"
+  },
+  "DeleteAreaModal": {
+    "title": "Supprimer l’AREA",
+    "description": "Voulez‑vous vraiment supprimer {area} ? Cette action est irréversible.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer"
+  },
+  "TestRunAreaModal": {
+    "title": "Exécution de test",
+    "description": "Aperçu de l’exécution immédiate de {area}.",
+    "summaryTitle": "Dernier récapitulatif de test",
+    "statusIdle": "Non exécuté",
+    "statusCompleted": "Terminé",
+    "idleDescription": "Lancez une exécution de test pour simuler le workflow et examiner les résultats.",
+    "runAt": "Simulé le {date}",
+    "actionHeading": "Action",
+    "reactionsHeading": "Réactions",
+    "noReactions": "Aucune réaction configurée.",
+    "close": "Fermer",
+    "runTest": "Lancer le test",
+    "runAgain": "Relancer"
+  },
+  "ComponentConfigSheet": {
+    "titleAction": "Configurer {componentName}",
+    "titleReaction": "Configurer {componentName}",
+    "fallbackActionName": "l’action",
+    "fallbackReactionName": "la réaction",
+    "descriptionAction": "Fournissez les identifiants et paramètres pour l’action sélectionnée.",
+    "descriptionReaction": "Fournissez les identifiants et paramètres pour cette réaction.",
+    "secretsRefLabel": "Référence des secrets",
+    "secretsRefPlaceholder": "ex. github-main-token",
+    "paramsLabel": "Paramètres",
+    "paramsHelper": "Indiquez une valeur pour chaque paramètre requis par ce composant.",
+    "emptyParams": "Ce composant ne requiert pas de paramètres supplémentaires.",
+    "addParam": "Ajouter un paramètre",
+    "paramKey": "Clé",
+    "paramValue": "Valeur",
+    "identityValuePlaceholder": "Identité liée sélectionnée automatiquement",
+    "identityResolvedHelper": "Compte {subject} utilisé.",
+    "identityUnresolvedHelper": "Aucune identité liée trouvée. Connectez le service depuis votre profil.",
+    "removeParam": "Supprimer le paramètre",
+    "cancel": "Annuler",
+    "save": "Enregistrer la configuration"
+  },
+  "AreaHistoryModal": {
+    "title": "Historique d’exécution",
+    "description": "Consultez l’activité récente pour {area}.",
+    "empty": "Aucune exécution enregistrée pour le moment.",
+    "statusSuccess": "Réussite",
+    "statusFailure": "Échec",
+    "successSummary": "{count, plural, one {# réaction effectuée} other {# réactions effectuées}} en {duration}.",
+    "failureSummary": "Échec après {duration}. {error}",
+    "triggeredBy": "Déclenché par {action}",
+    "reactionsTriggered": "{count, plural, one {# réaction exécutée} other {# réactions exécutées}}",
+    "durationSeconds": "{seconds} s",
+    "duration": "Durée : {duration}",
+    "close": "Fermer",
+    "unknownError": "Erreur inconnue"
+  },
+  "ExploreServicePage": {
+    "loading": "Chargement des détails du service…",
+    "errorLoading": "Une erreur est survenue lors du chargement des détails du service.",
+    "serviceNotFound": "Le service demandé est introuvable.",
+    "integrationDetails": "Détails de l’intégration",
+    "linked": "Lié",
+    "subscribe": "S’abonner",
+    "getStarted": "Commencer",
+    "actionsTitle": "Actions",
+    "noActions": "Aucune action disponible pour ce service.",
+    "reactionsTitle": "Réactions",
+    "noReactions": "Aucune réaction disponible pour ce service.",
+    "disconnectError": "Une erreur est survenue lors de la déconnexion du service.",
+    "connectError": "Une erreur est survenue lors de la connexion du service."
+  }
+}
