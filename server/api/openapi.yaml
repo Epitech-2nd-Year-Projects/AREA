@@ -18,7 +18,7 @@ info:
     3. Call authenticated endpoints such as `GET /v1/auth/me` with the session cookie attached as a standard cookie header.
 
     Refer to the environment selector in the sidebar to toggle between production, staging, and local URLs.
-    
+
     ### Rate limits & reliability
     - Default rate limit: **120 requests per minute** per authenticated session.
     - Burst tolerance: short spikes up to 300 requests per minute are accepted for 30 seconds.

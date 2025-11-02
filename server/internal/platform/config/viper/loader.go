@@ -157,6 +157,16 @@ func normalizeConfig(cfg *Config) {
 	if cfg.Security.Verification.TokenTTL == 0 {
 		cfg.Security.Verification.TokenTTL = _defaultConfig.Security.Verification.TokenTTL
 	}
+
+	if cfg.Server.HTTP.RateLimit.RequestsPerMinute == 0 {
+		cfg.Server.HTTP.RateLimit.RequestsPerMinute = _defaultConfig.Server.HTTP.RateLimit.RequestsPerMinute
+	}
+	if cfg.Server.HTTP.RateLimit.BurstRequestsPerMinute == 0 {
+		cfg.Server.HTTP.RateLimit.BurstRequestsPerMinute = _defaultConfig.Server.HTTP.RateLimit.BurstRequestsPerMinute
+	}
+	if cfg.Server.HTTP.RateLimit.BurstWindow == 0 {
+		cfg.Server.HTTP.RateLimit.BurstWindow = _defaultConfig.Server.HTTP.RateLimit.BurstWindow
+	}
 }
 
 func loadSecrets(cfg SecretsConfig) error {
