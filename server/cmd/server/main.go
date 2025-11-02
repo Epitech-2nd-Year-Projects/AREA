@@ -40,6 +40,7 @@ import (
 	areadomain "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/domain/area"
 	configviper "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/config/viper"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/database/postgres"
+	ratelimitmw "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpmiddleware/ratelimit"
 	"github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver"
 	ginhttp "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/httpserver/gin"
 	projectlogging "github.com/Epitech-2nd-Year-Projects/AREA/server/internal/platform/logging"
@@ -100,7 +101,19 @@ func run() error {
 		},
 	}
 
-	server, err := ginhttp.New(httpCfg, ginhttp.WithLogger(logger))
+	rateLimitCfg := cfg.Server.HTTP.RateLimit
+	rateLimiter, err := ratelimitmw.New(ratelimitmw.Config{
+		Enabled:                rateLimitCfg.Enabled,
+		BaseRequestsPerMinute:  rateLimitCfg.RequestsPerMinute,
+		BurstRequestsPerMinute: rateLimitCfg.BurstRequestsPerMinute,
+		BurstWindow:            rateLimitCfg.BurstWindow,
+		SessionCookieName:      cfg.Security.Sessions.CookieName,
+	})
+	if err != nil {
+		return fmt.Errorf("ratelimitmw.New: %w", err)
+	}
+
+	server, err := ginhttp.New(httpCfg, ginhttp.WithLogger(logger), ginhttp.WithMiddleware(rateLimiter.Handler()))
 	if err != nil {
 		return fmt.Errorf("ginhttp.New: %w", err)
 	}
