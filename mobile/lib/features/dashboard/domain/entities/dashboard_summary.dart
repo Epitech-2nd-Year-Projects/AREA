@@ -219,6 +219,7 @@ class DashboardActivity extends Equatable {
   final String areaName;
   final String serviceId;
   final String serviceName;
+  final String status;
   final bool wasSuccessful;
   final Duration duration;
   final DateTime completedAt;
@@ -228,6 +229,7 @@ class DashboardActivity extends Equatable {
     required this.areaName,
     required this.serviceId,
     required this.serviceName,
+    required this.status,
     required this.wasSuccessful,
     required this.duration,
     required this.completedAt,
@@ -239,6 +241,7 @@ class DashboardActivity extends Equatable {
     areaName,
     serviceId,
     serviceName,
+    status,
     wasSuccessful,
     duration,
     completedAt,

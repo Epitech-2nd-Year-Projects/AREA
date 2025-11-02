@@ -17,6 +17,7 @@ import '../widgets/areas_summary_card.dart';
 import '../widgets/dashboard_loading_view.dart';
 import '../widgets/onboarding_checklist_card.dart';
 import '../widgets/quick_actions_row.dart';
+import '../widgets/recent_activity_card.dart';
 import '../widgets/services_summary_card.dart';
 import '../widgets/system_status_card.dart';
 import '../widgets/templates_carousel.dart';
@@ -191,6 +192,10 @@ class _LoadedBody extends StatelessWidget {
                   AreasSummaryCard(
                     summary: summary.areasSummary,
                     onTap: () => context.go('/areas'),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  RecentActivityCard(
+                    activities: summary.recentActivity,
                   ),
                   if (summary.templates.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),

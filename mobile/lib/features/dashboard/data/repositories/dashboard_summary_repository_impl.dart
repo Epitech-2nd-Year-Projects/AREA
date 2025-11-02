@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../areas/domain/entities/area.dart';
+import '../../../areas/domain/entities/area_history_entry.dart';
 import '../../../areas/domain/entities/area_status.dart';
 import '../../../areas/domain/repositories/area_repository.dart';
 import '../../../services/domain/entities/service_identity_summary.dart';
@@ -79,10 +80,15 @@ class DashboardSummaryRepositoryImpl implements DashboardSummaryRepository {
       serviceIndex: serviceIndex,
     );
 
-    final List<DashboardActivity> recentActivity = _buildRecentActivity(
-      areas: areas,
-      serviceIndex: serviceIndex,
-    );
+    List<DashboardActivity> recentActivity = [];
+    try {
+      recentActivity = await _buildRecentActivity(
+        areas: areas,
+        serviceIndex: serviceIndex,
+      );
+    } catch (error, stackTrace) {
+      _logError('buildRecentActivity', error, stackTrace);
+    }
 
     final int failuresLast24h = recentActivity.where((activity) {
       final isRecent = activity.completedAt.isAfter(
@@ -251,38 +257,84 @@ class DashboardSummaryRepositoryImpl implements DashboardSummaryRepository {
     return runs;
   }
 
-  List<DashboardActivity> _buildRecentActivity({
+  Future<List<DashboardActivity>> _buildRecentActivity({
     required List<Area> areas,
     required Map<String, ServiceWithStatus> serviceIndex,
-  }) {
-    final List<DashboardActivity> activity = [];
+  }) async {
+    final activeAreas = areas
+        .where((area) => area.status == AreaStatus.enabled)
+        .toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-    if (kDebugMode && areas.isNotEmpty) {
-      final sampleAreas = areas.take(5).toList();
-      for (var i = 0; i < sampleAreas.length; i++) {
-        final area = sampleAreas[i];
-        final provider = area.action.component.provider;
-        final normalizedProviderId = _normalize(provider.id);
-        final matchingService = serviceIndex[normalizedProviderId];
-        final serviceName =
-            matchingService?.provider.displayName ?? provider.displayName;
-        final serviceId = matchingService?.provider.id ?? provider.id;
+    if (activeAreas.isEmpty) {
+      return <DashboardActivity>[];
+    }
 
-        activity.add(
-          DashboardActivity(
-            id: '${area.id}-activity-$i',
-            areaName: area.name,
-            serviceId: serviceId,
-            serviceName: serviceName,
-            wasSuccessful: i.isEven,
-            duration: Duration(seconds: 30 + (i * 12)),
-            completedAt: DateTime.now().subtract(Duration(minutes: i * 22)),
-          ),
+    final List<_AreaExecutionRecord> records = [];
+    for (final area in activeAreas.take(10)) {
+      try {
+        final history = await _areaRepository.getAreaHistory(
+          area.id,
+          limit: 5,
         );
+        for (final entry in history) {
+          records.add(_AreaExecutionRecord(area: area, entry: entry));
+        }
+      } catch (error, stackTrace) {
+        _logError('history:${area.id}', error, stackTrace);
       }
     }
 
-    return activity;
+    if (records.isEmpty) {
+      return <DashboardActivity>[];
+    }
+
+    records.sort(
+      (a, b) => b.entry.updatedAt.compareTo(a.entry.updatedAt),
+    );
+
+    final List<DashboardActivity> activities = [];
+    for (final record in records) {
+      if (activities.length >= 5) {
+        break;
+      }
+
+      activities.add(
+        _toDashboardActivity(
+          area: record.area,
+          entry: record.entry,
+          serviceIndex: serviceIndex,
+        ),
+      );
+    }
+
+    return activities;
+  }
+
+  DashboardActivity _toDashboardActivity({
+    required Area area,
+    required AreaHistoryEntry entry,
+    required Map<String, ServiceWithStatus> serviceIndex,
+  }) {
+    final providerKey = _normalize(entry.reactionProvider);
+    final matchingService = serviceIndex[providerKey];
+    final serviceName =
+        matchingService?.provider.displayName ?? entry.reactionProvider;
+    final serviceId = matchingService?.provider.id ?? entry.reactionProvider;
+
+    final duration = entry.duration ?? Duration.zero;
+    final safeDuration = duration.isNegative ? duration.abs() : duration;
+
+    return DashboardActivity(
+      id: '${area.id}:${entry.jobId}',
+      areaName: area.name,
+      serviceId: serviceId,
+      serviceName: serviceName,
+      status: entry.status,
+      wasSuccessful: entry.isSuccessful,
+      duration: safeDuration,
+      completedAt: entry.updatedAt.toLocal(),
+    );
   }
 
   List<DashboardTemplate> _buildTemplates({
@@ -365,6 +417,13 @@ class DashboardSummaryRepositoryImpl implements DashboardSummaryRepository {
   String _normalize(String value) {
     return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
+}
+
+class _AreaExecutionRecord {
+  final Area area;
+  final AreaHistoryEntry entry;
+
+  _AreaExecutionRecord({required this.area, required this.entry});
 }
 
 class _TemplateStepDefinition {

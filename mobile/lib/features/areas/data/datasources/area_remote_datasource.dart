@@ -8,12 +8,17 @@ import '../../../../core/network/exceptions/network_exceptions.dart';
 import '../models/area_model.dart';
 import '../models/area_request_model.dart';
 import '../models/area_update_request_model.dart';
+import '../models/area_history_entry_model.dart';
 import '../../domain/entities/area_status.dart';
 
 abstract class AreaRemoteDataSource {
   Future<List<AreaModel>> listAreas();
   Future<AreaModel> createArea(AreaRequestModel request);
   Future<AreaModel> updateArea(String areaId, AreaUpdateRequestModel request);
+  Future<List<AreaHistoryEntryModel>> getAreaHistory(
+    String areaId, {
+    int limit = 5,
+  });
   Future<AreaModel> updateAreaStatus(String areaId, AreaStatus status);
   Future<void> deleteArea(String areaId);
   Future<void> executeArea(String areaId);
@@ -101,6 +106,34 @@ class AreaRemoteDataSourceImpl implements AreaRemoteDataSource {
         return AreaModel.fromJson(response.data!);
       }
       throw NetworkException('Unexpected response when updating area status');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw NetworkException(e.toString());
+    }
+  }
+
+  @override
+  Future<List<AreaHistoryEntryModel>> getAreaHistory(
+    String areaId, {
+    int limit = 5,
+  }) async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/v1/areas/$areaId/history',
+        queryParameters: {'limit': limit},
+      );
+
+      final data = response.data;
+      if (data == null || data['executions'] is! List) {
+        throw NetworkException('Invalid history response');
+      }
+
+      final executions = data['executions'] as List;
+      return executions
+          .whereType<Map<String, dynamic>>()
+          .map(AreaHistoryEntryModel.fromJson)
+          .toList();
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
