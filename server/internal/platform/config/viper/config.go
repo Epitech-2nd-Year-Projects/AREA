@@ -31,12 +31,13 @@ type ServerConfig struct {
 
 // HTTPConfig captures HTTP server runtime settings
 type HTTPConfig struct {
-	Host         string         `mapstructure:"host"`
-	Port         int            `mapstructure:"port"`
-	ReadTimeout  time.Duration  `mapstructure:"readTimeout"`
-	WriteTimeout time.Duration  `mapstructure:"writeTimeout"`
-	IdleTimeout  time.Duration  `mapstructure:"idleTimeout"`
-	CORS         HTTPCORSConfig `mapstructure:"cors"`
+	Host         string              `mapstructure:"host"`
+	Port         int                 `mapstructure:"port"`
+	ReadTimeout  time.Duration       `mapstructure:"readTimeout"`
+	WriteTimeout time.Duration       `mapstructure:"writeTimeout"`
+	IdleTimeout  time.Duration       `mapstructure:"idleTimeout"`
+	CORS         HTTPCORSConfig      `mapstructure:"cors"`
+	RateLimit    HTTPRateLimitConfig `mapstructure:"rateLimit"`
 }
 
 // HTTPCORSConfig lists Cross-Origin Resource Sharing parameters
@@ -45,6 +46,14 @@ type HTTPCORSConfig struct {
 	AllowedMethods   []string `mapstructure:"allowedMethods"`
 	AllowedHeaders   []string `mapstructure:"allowedHeaders"`
 	AllowCredentials bool     `mapstructure:"allowCredentials"`
+}
+
+// HTTPRateLimitConfig captures HTTP rate limiting thresholds
+type HTTPRateLimitConfig struct {
+	Enabled                bool          `mapstructure:"enabled"`
+	RequestsPerMinute      int           `mapstructure:"requestsPerMinute"`
+	BurstRequestsPerMinute int           `mapstructure:"burstRequestsPerMinute"`
+	BurstWindow            time.Duration `mapstructure:"burstWindow"`
 }
 
 // TelemetryConfig holds tracing and metrics exporter settings

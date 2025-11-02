@@ -19,6 +19,12 @@ var _defaultConfig = Config{
 			ReadTimeout:  15 * time.Second,
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  60 * time.Second,
+			RateLimit: HTTPRateLimitConfig{
+				Enabled:                true,
+				RequestsPerMinute:      120,
+				BurstRequestsPerMinute: 300,
+				BurstWindow:            30 * time.Second,
+			},
 			CORS: HTTPCORSConfig{
 				AllowedOrigins:   []string{"http://localhost:8081"},
 				AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -227,6 +233,10 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("server.http.readTimeout", _defaultConfig.Server.HTTP.ReadTimeout.String())
 	v.SetDefault("server.http.writeTimeout", _defaultConfig.Server.HTTP.WriteTimeout.String())
 	v.SetDefault("server.http.idleTimeout", _defaultConfig.Server.HTTP.IdleTimeout.String())
+	v.SetDefault("server.http.rateLimit.enabled", _defaultConfig.Server.HTTP.RateLimit.Enabled)
+	v.SetDefault("server.http.rateLimit.requestsPerMinute", _defaultConfig.Server.HTTP.RateLimit.RequestsPerMinute)
+	v.SetDefault("server.http.rateLimit.burstRequestsPerMinute", _defaultConfig.Server.HTTP.RateLimit.BurstRequestsPerMinute)
+	v.SetDefault("server.http.rateLimit.burstWindow", _defaultConfig.Server.HTTP.RateLimit.BurstWindow.String())
 	v.SetDefault("server.http.cors.allowedOrigins", _defaultConfig.Server.HTTP.CORS.AllowedOrigins)
 	v.SetDefault("server.http.cors.allowedMethods", _defaultConfig.Server.HTTP.CORS.AllowedMethods)
 	v.SetDefault("server.http.cors.allowedHeaders", _defaultConfig.Server.HTTP.CORS.AllowedHeaders)
