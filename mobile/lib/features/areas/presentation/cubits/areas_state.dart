@@ -3,6 +3,7 @@ import '../../domain/entities/area.dart';
 
 abstract class AreasState extends Equatable {
   const AreasState();
+
   @override
   List<Object?> get props => [];
 }
@@ -13,9 +14,32 @@ class AreasLoading extends AreasState {}
 
 class AreasLoaded extends AreasState {
   final List<Area> areas;
-  const AreasLoaded(this.areas);
+  final Set<String> updatingAreaIds;
+  final String? messageKey;
+
+  const AreasLoaded(
+    this.areas, {
+    this.updatingAreaIds = const <String>{},
+    this.messageKey,
+  });
+
+  AreasLoaded copyWith({
+    List<Area>? areas,
+    Set<String>? updatingAreaIds,
+    String? messageKey,
+    bool clearMessage = false,
+  }) {
+    return AreasLoaded(
+      areas ?? this.areas,
+      updatingAreaIds: updatingAreaIds ?? this.updatingAreaIds,
+      messageKey: clearMessage ? null : (messageKey ?? this.messageKey),
+    );
+  }
+
+  bool isUpdating(String areaId) => updatingAreaIds.contains(areaId);
+
   @override
-  List<Object?> get props => [areas];
+  List<Object?> get props => [areas, updatingAreaIds, messageKey];
 }
 
 class AreasError extends AreasState {
