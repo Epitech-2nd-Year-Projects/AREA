@@ -27,8 +27,14 @@ export default function DashboardPage() {
       return []
     }
 
+    // Exclude revoked subscriptions so the card reflects the connect state
     const providers =
-      subscriptionsData?.subscriptions.map((sub) => sub.provider.name) ?? []
+      subscriptionsData?.subscriptions
+        ?.filter((sub) => {
+          const status = sub.subscription.status.toLowerCase()
+          return !status.startsWith('revok')
+        })
+        .map((sub) => sub.provider.name) ?? []
 
     return Array.from(new Set(providers))
   }, [subscriptionsData, isUserAuthenticated])
