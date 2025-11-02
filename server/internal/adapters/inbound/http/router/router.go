@@ -45,6 +45,9 @@ func Register(r gin.IRouter, deps Dependencies) error {
 	if deps.AuthHandler != nil {
 		r.GET("/v1/auth/verify", deps.AuthHandler.VerifyEmail)
 	}
+	if handler.about != nil {
+		r.GET("/v1/about.json", handler.GetAbout)
+	}
 	if deps.WebhookHandler != nil {
 		r.POST("/hooks/*path", deps.WebhookHandler.Handle)
 	}

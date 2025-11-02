@@ -348,6 +348,7 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("security.sessions.sameSite", _defaultConfig.Security.Sessions.SameSite)
 	v.SetDefault("security.sessions.ttl", _defaultConfig.Security.Sessions.TTL.String())
 	v.SetDefault("security.verification.tokenTTL", _defaultConfig.Security.Verification.TokenTTL.String())
+	v.SetDefault("security.encryption.identitiesKeyEnv", _defaultConfig.Security.Encryption.IdentitiesKeyEnv)
 
 	v.SetDefault("servicesCatalog.refreshInterval", _defaultConfig.ServicesCatalog.RefreshInterval.String())
 	v.SetDefault("servicesCatalog.bootstrapFile", _defaultConfig.ServicesCatalog.BootstrapFile)

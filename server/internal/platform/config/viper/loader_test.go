@@ -21,6 +21,7 @@ func setRequiredSecrets(t *testing.T) {
 	t.Setenv("JWT_ACCESS_SECRET", fakeAccessSecret)
 	t.Setenv("JWT_REFRESH_SECRET", fakeRefreshSecret)
 	t.Setenv("PASSWORD_PEPPER", fakePepper)
+	t.Setenv("IDENTITY_ENCRYPTION_KEY", "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
 }
 
 func TestLoadDefaults(t *testing.T) {
