@@ -10,6 +10,11 @@ server:
     readTimeout: 15s
     writeTimeout: 15s
     idleTimeout: 60s
+    rateLimit:
+      enabled: true
+      requestsPerMinute: 120
+      burstRequestsPerMinute: 300
+      burstWindow: 30s
     cors:
       allowedOrigins:
         - http://localhost:8081
