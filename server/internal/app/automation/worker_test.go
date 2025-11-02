@@ -184,6 +184,14 @@ func (s stubAreaRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (s stubAreaRepository) UpdateMetadata(ctx context.Context, area areadomain.Area) error {
+	return nil
+}
+
+func (s stubAreaRepository) UpdateConfig(ctx context.Context, config componentdomain.Config) error {
+	return nil
+}
+
 type stubComponentRepository struct {
 	components map[uuid.UUID]componentdomain.Component
 }
