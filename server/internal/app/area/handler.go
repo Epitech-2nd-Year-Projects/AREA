@@ -1,8 +1,12 @@
 package area
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -40,17 +44,18 @@ type Handler struct {
 	service  *Service
 	sessions SessionResolver
 	cookies  CookieConfig
+	jobs     outbound.JobRepository
 }
 
 // NewHandler assembles an area HTTP handler
-func NewHandler(service *Service, sessions SessionResolver, cookies CookieConfig) *Handler {
+func NewHandler(service *Service, sessions SessionResolver, cookies CookieConfig, jobs outbound.JobRepository) *Handler {
 	if cookies.Path == "" {
 		cookies.Path = "/"
 	}
 	if cookies.Name == "" {
 		cookies.Name = "area_session"
 	}
-	return &Handler{service: service, sessions: sessions, cookies: cookies}
+	return &Handler{service: service, sessions: sessions, cookies: cookies, jobs: jobs}
 }
 
 // ListAreas handles GET /v1/areas
@@ -108,6 +113,152 @@ func (h *Handler) CreateArea(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, toOpenAPIArea(created))
+}
+
+// GetArea handles GET /v1/areas/{areaId}
+func (h *Handler) GetArea(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	area, err := h.service.Get(c.Request.Context(), usr.ID, areaID)
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, toOpenAPIArea(area))
+}
+
+// UpdateArea handles PATCH /v1/areas/{areaId}
+func (h *Handler) UpdateArea(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	payload, err := readRequestBody(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+	if len(strings.TrimSpace(string(payload))) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "empty request payload"})
+		return
+	}
+
+	cmd, err := decodeUpdateAreaPayload(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updated, err := h.service.Update(c.Request.Context(), usr.ID, areaID, cmd)
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, toOpenAPIArea(updated))
+}
+
+// UpdateAreaStatus handles PATCH /v1/areas/{areaId}/status
+func (h *Handler) UpdateAreaStatus(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	var payload openapi.UpdateAreaStatusRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	updated, err := h.service.UpdateStatus(c.Request.Context(), usr.ID, areaID, areadomain.Status(payload.Status))
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, toOpenAPIArea(updated))
+}
+
+// DuplicateArea handles POST /v1/areas/{areaId}/duplicate
+func (h *Handler) DuplicateArea(c *gin.Context, areaID openapitypes.UUID) {
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	data, err := readRequestBody(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	var overrides openapi.DuplicateAreaRequest
+	if len(strings.TrimSpace(string(data))) > 0 {
+		if err := json.Unmarshal(data, &overrides); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+			return
+		}
+	}
+
+	opts := DuplicateOptions{
+		Name:        overrides.Name,
+		Description: overrides.Description,
+	}
+
+	clone, err := h.service.Duplicate(c.Request.Context(), usr.ID, areaID, opts)
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, toOpenAPIArea(clone))
+}
+
+// ListAreaHistory handles GET /v1/areas/{areaId}/history
+func (h *Handler) ListAreaHistory(c *gin.Context, areaID openapitypes.UUID, params openapi.ListAreaHistoryParams) {
+	if h.jobs == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "history unavailable"})
+		return
+	}
+
+	usr, _, ok := h.authorize(c)
+	if !ok {
+		return
+	}
+
+	if _, err := h.service.Get(c.Request.Context(), usr.ID, areaID); err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	limit := 50
+	if params.Limit != nil {
+		if *params.Limit <= 0 || *params.Limit > 200 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
+			return
+		}
+		limit = *params.Limit
+	}
+
+	jobs, err := h.jobs.ListWithDetails(c.Request.Context(), outbound.JobListOptions{
+		UserID: usr.ID,
+		AreaID: areaID,
+		Limit:  limit,
+	})
+	if err != nil {
+		zap.L().Error("failed to list area history", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list history"})
+		return
+	}
+
+	response := toOpenAPIHistoryResponse(jobs)
+	c.JSON(http.StatusOK, response)
 }
 
 // ExecuteArea handles POST /v1/areas/{areaId}/execute
@@ -182,6 +333,14 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid component params"})
 	case errors.Is(err, ErrProviderSubscriptionMissing):
 		c.JSON(http.StatusForbidden, gin.H{"error": "provider subscription required"})
+	case errors.Is(err, ErrAreaNotOwned):
+		c.JSON(http.StatusForbidden, gin.H{"error": "not owner"})
+	case errors.Is(err, ErrAreaConfigNotFound):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown component configuration"})
+	case errors.Is(err, ErrAreaUpdateNoChanges):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no changes to apply"})
+	case errors.Is(err, ErrAreaStatusInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 	case errors.Is(err, outbound.ErrConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": "area conflict"})
 	case errors.Is(err, outbound.ErrNotFound):
@@ -356,4 +515,187 @@ func cloneMap(source map[string]any) map[string]interface{} {
 		result[key] = value
 	}
 	return result
+}
+
+func readRequestBody(c *gin.Context) ([]byte, error) {
+	if c.Request == nil || c.Request.Body == nil {
+		return []byte{}, nil
+	}
+	data, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
+	return data, nil
+}
+
+func decodeUpdateAreaPayload(data []byte) (UpdateAreaCommand, error) {
+	cmd := UpdateAreaCommand{}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return cmd, fmt.Errorf("invalid request payload")
+	}
+
+	if value, ok := raw["name"]; ok {
+		if isJSONNull(value) {
+			return cmd, fmt.Errorf("name cannot be null")
+		}
+		var name string
+		if err := json.Unmarshal(value, &name); err != nil {
+			return cmd, fmt.Errorf("invalid name")
+		}
+		cmd.Name = &name
+	}
+
+	if value, ok := raw["description"]; ok {
+		cmd.DescriptionSet = true
+		if isJSONNull(value) {
+			cmd.Description = nil
+		} else {
+			var desc string
+			if err := json.Unmarshal(value, &desc); err != nil {
+				return cmd, fmt.Errorf("invalid description")
+			}
+			cmd.Description = &desc
+		}
+	}
+
+	if value, ok := raw["action"]; ok {
+		if isJSONNull(value) {
+			return cmd, fmt.Errorf("action cannot be null")
+		}
+		var payload map[string]json.RawMessage
+		if err := json.Unmarshal(value, &payload); err != nil {
+			return cmd, fmt.Errorf("invalid action payload")
+		}
+		rawConfig, ok := payload["configId"]
+		if !ok {
+			return cmd, fmt.Errorf("action.configId is required")
+		}
+		var configID uuid.UUID
+		if err := json.Unmarshal(rawConfig, &configID); err != nil || configID == uuid.Nil {
+			return cmd, fmt.Errorf("invalid action configId")
+		}
+		action := UpdateActionCommand{ConfigID: configID}
+		if nameRaw, ok := payload["name"]; ok {
+			action.NameSet = true
+			if isJSONNull(nameRaw) {
+				action.Name = nil
+			} else {
+				var name string
+				if err := json.Unmarshal(nameRaw, &name); err != nil {
+					return cmd, fmt.Errorf("invalid action name")
+				}
+				action.Name = &name
+			}
+		}
+		if paramsRaw, ok := payload["params"]; ok {
+			action.ParamsSet = true
+			if isJSONNull(paramsRaw) {
+				action.Params = map[string]any{}
+			} else {
+				var params map[string]any
+				if err := json.Unmarshal(paramsRaw, &params); err != nil {
+					return cmd, fmt.Errorf("invalid action params")
+				}
+				action.Params = params
+			}
+		}
+		cmd.Action = &action
+	}
+
+	if value, ok := raw["reactions"]; ok {
+		if isJSONNull(value) {
+			return cmd, fmt.Errorf("reactions cannot be null")
+		}
+		var items []json.RawMessage
+		if err := json.Unmarshal(value, &items); err != nil {
+			return cmd, fmt.Errorf("invalid reactions payload")
+		}
+		if len(items) > 0 {
+			cmd.Reactions = make([]UpdateReactionCommand, 0, len(items))
+			seen := make(map[uuid.UUID]struct{})
+			for _, item := range items {
+				var payload map[string]json.RawMessage
+				if err := json.Unmarshal(item, &payload); err != nil {
+					return cmd, fmt.Errorf("invalid reaction payload")
+				}
+				rawConfig, ok := payload["configId"]
+				if !ok {
+					return cmd, fmt.Errorf("reaction.configId is required")
+				}
+				var configID uuid.UUID
+				if err := json.Unmarshal(rawConfig, &configID); err != nil || configID == uuid.Nil {
+					return cmd, fmt.Errorf("invalid reaction configId")
+				}
+				if _, exists := seen[configID]; exists {
+					return cmd, fmt.Errorf("duplicate reaction configId")
+				}
+				seen[configID] = struct{}{}
+				reaction := UpdateReactionCommand{ConfigID: configID}
+				if nameRaw, ok := payload["name"]; ok {
+					reaction.NameSet = true
+					if isJSONNull(nameRaw) {
+						reaction.Name = nil
+					} else {
+						var name string
+						if err := json.Unmarshal(nameRaw, &name); err != nil {
+							return cmd, fmt.Errorf("invalid reaction name")
+						}
+						reaction.Name = &name
+					}
+				}
+				if paramsRaw, ok := payload["params"]; ok {
+					reaction.ParamsSet = true
+					if isJSONNull(paramsRaw) {
+						reaction.Params = map[string]any{}
+					} else {
+						var params map[string]any
+						if err := json.Unmarshal(paramsRaw, &params); err != nil {
+							return cmd, fmt.Errorf("invalid reaction params")
+						}
+						reaction.Params = params
+					}
+				}
+				cmd.Reactions = append(cmd.Reactions, reaction)
+			}
+		}
+	}
+
+	return cmd, nil
+}
+
+func isJSONNull(data []byte) bool {
+	return bytes.Equal(bytes.TrimSpace(data), []byte("null"))
+}
+
+func toOpenAPIHistoryResponse(details []outbound.JobDetails) openapi.AreaHistoryResponse {
+	if len(details) == 0 {
+		return openapi.AreaHistoryResponse{Executions: make([]openapi.AreaHistoryEntry, 0)}
+	}
+
+	executions := make([]openapi.AreaHistoryEntry, 0, len(details))
+	for _, detail := range details {
+		entry := openapi.AreaHistoryEntry{
+			JobId:     detail.Job.ID,
+			Status:    string(detail.Job.Status),
+			Attempt:   detail.Job.Attempt,
+			RunAt:     detail.Job.RunAt,
+			CreatedAt: detail.Job.CreatedAt,
+			UpdatedAt: detail.Job.UpdatedAt,
+			Reaction: openapi.AreaHistoryReaction{
+				Component: detail.ComponentName,
+				Provider:  detail.ProviderName,
+			},
+		}
+		if detail.Job.Error != nil {
+			entry.Error = detail.Job.Error
+		}
+		if len(detail.Job.ResultPayload) > 0 {
+			payload := cloneMap(detail.Job.ResultPayload)
+			entry.ResultPayload = &payload
+		}
+		executions = append(executions, entry)
+	}
+	return openapi.AreaHistoryResponse{Executions: executions}
 }
