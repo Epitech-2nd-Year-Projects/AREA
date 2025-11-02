@@ -10,6 +10,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/serve
 FROM alpine:3.22 AS runner
 WORKDIR /
 COPY --from=builder /out/server /server
+COPY config /config
+RUN if [ ! -f /config/config.yaml ] && [ -f /config/config.example.yaml ]; then cp /config/config.example.yaml /config/config.yaml; fi
 EXPOSE 8080
 ENTRYPOINT ["/server"]
-
