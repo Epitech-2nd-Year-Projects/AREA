@@ -101,11 +101,12 @@ const buildUrl = (path: string) => {
       : normalized
 
   const base = baseUrl === '/' ? '' : baseUrl
+  const baseForContext = !isBrowser && proxyTarget ? proxyTarget : base
   if (withoutBasePath === '/') {
-    return base || '/'
+    return baseForContext || '/'
   }
 
-  return `${base}${withoutBasePath}`
+  return `${baseForContext}${withoutBasePath}`
 }
 
 process.env.NEXT_PUBLIC_API_URL = baseUrl
