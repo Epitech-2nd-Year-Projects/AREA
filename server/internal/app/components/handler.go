@@ -55,11 +55,6 @@ func (h *Handler) ListComponents(c *gin.Context, params openapi.ListComponentsPa
 		return
 	}
 
-	_, _, ok := h.authorize(c)
-	if !ok {
-		return
-	}
-
 	opts := ListOptions{}
 	if params.Kind != nil {
 		kind := string(*params.Kind)

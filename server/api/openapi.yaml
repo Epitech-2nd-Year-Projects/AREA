@@ -130,8 +130,6 @@ paths:
       operationId: listComponents
       tags:
         - catalog
-      security:
-        - sessionAuth: []
       parameters:
         - in: query
           name: kind
@@ -153,8 +151,6 @@ paths:
                 $ref: '#/components/schemas/ComponentListResponse'
         '400':
           description: Invalid request
-        '401':
-          description: Authentication required
         '500':
           description: Failed to load component catalog
   /v1/components/available:
